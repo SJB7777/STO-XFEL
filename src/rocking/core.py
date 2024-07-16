@@ -16,13 +16,16 @@ Preprocess = Callable[[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]
 
 class RockingProcessor:
     
-    def __init__(self, preprocessing_functions: list[Preprocess] | None = None):
+    def __init__(self, preprocessing_functions: list[Preprocess] | None = None, logger: Logger | None = None):
         if preprocessing_functions is None:
             preprocessing_functions = []
         self.preprocessing_functions: list[Preprocess] = preprocessing_functions
         
         self.images_dict: dict[str, np.ndarray] = {}
-        self.logger = Logger("RockingProcessor")
+        if logger is None:
+            self.logger = Logger("RockingProcessor")
+        else:
+            self.logger = logger
 
     def scan(self, run_num: int):
         self.logger.info(f"Starting scan for run number: {run_num}")
@@ -126,7 +129,7 @@ if __name__ == "__main__":
     divide_by_qbpm = lambda images, qbpm : (nomalize_by_qbpm(images, qbpm), qbpm)
     
     preprocessing_functions: list[Preprocess] = [remove_outlier, divide_by_qbpm]
-    rocking = RockingProcessor(preprocessing_functions)
+    rocking = RockingProcessor(preprocessing_functions, logger)
     
     for run_num in run_nums:
         rocking.scan(run_num)

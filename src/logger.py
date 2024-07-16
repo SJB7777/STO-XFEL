@@ -8,6 +8,7 @@ def format_run_scan_number(run_scan_list):
     return ', '.join([f'({x}, {y})' for x, y in run_scan_list])
 
 class Logger:
+
     def __init__(self, name: str, log_dir:str = "logs"):
         self.log_dir = log_dir
         self.logger = self._setup_logger(name)
@@ -24,12 +25,15 @@ class Logger:
         log_path = os.path.join(self.log_dir, log_file)
         file_handler = logging.FileHandler(log_path)
         file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
         
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
         
+        if not logger.handlers:
+            logger.addHandler(console_handler)
+            logger.addHandler(file_handler)
+        else:
+            print("what?")
         return logger
 
     def add_result(self, key, value):
