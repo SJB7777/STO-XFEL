@@ -1,0 +1,94 @@
+   
+import numpy as np
+import h5py
+from numpy.lib.npyio import savez
+import csv
+import matplotlib.pyplot as plt
+
+# 압축 전략 인터페이스
+class CompressionStrategy:
+    def compress(self, data):
+        pass
+
+# 분석 전략 인터페이스
+class AnalysisStrategy:
+    def analyze(self, data, roi):
+        pass
+
+# 스트레티지 패턴을 이용한 이미지 처리 클래스
+class ImageProcessor:
+    def __init__(self, compression_strategy, analysis_strategy):
+        self.compression_strategy = compression_strategy
+        self.analysis_strategy = analysis_strategy
+
+    def compress_and_save(self, input_filename, output_filename):
+        # HDF 파일에서 데이터를 읽어오기
+        data = self.load_hdf_data(input_filename)
+
+        # 데이터 압축 및 저장
+        compressed_data = self.compression_strategy.compress(data)
+        self.save_compressed_data(compressed_data, output_filename)
+        
+    def process_images(self, input_filename, output_filename, roi):
+        # HDF 파일 불러오기
+        data = self.load_hdf_data(input_filename)
+
+        # 데이터 압축
+        compressed_data = self.compression_strategy.compress(data)
+        self.save_compressed_data(compressed_data, output_filename)
+
+        # 압축된 데이터 불러오기
+        loaded_compressed_data = self.load_compressed_data(output_filename)
+
+        # ROI 분석
+        analysis_result = self.analysis_strategy.analyze(loaded_compressed_data, roi)
+
+        # 결과 저장
+        self.save_results(analysis_result)
+
+    def load_hdf_data(self, filename):
+        # HDF 파일에서 데이터를 읽어오는 로직
+        pass
+
+    def save_compressed_data(self, data, filename):
+        # 압축된 데이터를 파일로 저장하는 로직
+        pass
+
+    def load_compressed_data(self, filename):
+        # 압축된 데이터를 파일에서 읽어오는 로직
+        pass
+
+    def save_results(self, results):
+        # 결과를 CSV 파일로 저장하고, 그래프와 이미지를 생성하여 저장하는 로직
+        pass
+
+# 실제 압축 전략 구현
+class HDF5Compression(CompressionStrategy):
+    def compress(self, data):
+        # HDF5 파일을 압축하는 로직
+        print("Compressing data using HDF5 compression")
+        return data.mean(axis=0)  # 평균을 내어 압축된 데이터 생성
+
+# 실제 분석 전략 구현
+class BraggPeakAnalysis(AnalysisStrategy):
+    def analyze(self, data, roi):
+        # Bragg Peak를 분석하는 로직
+        print(f"Analyzing data for ROI: {roi}")
+        # 여기에 실제 분석 알고리즘을 구현
+        return {"peak_position": np.random.rand(), "intensity_variation": np.random.rand()}
+
+# 예시로 사용할 ROI 설정 클래스
+class ROI:
+    def __init__(self, x_start, x_end, y_start, y_end):
+        self.x_start = x_start
+        self.x_end = x_end
+        self.y_start = y_start
+        self.y_end = y_end
+
+# 예시 사용
+roi_example = ROI(x_start=10, x_end=20, y_start=5, y_end=15)
+compression_strategy_example = HDF5Compression()
+analysis_strategy_example = BraggPeakAnalysis()
+
+processor = ImageProcessor(compression_strategy_example, analysis_strategy_example)
+processor.process_images("input_data.h5", "output_compressed_data.npz", roi_example)
