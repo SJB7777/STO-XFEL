@@ -1,7 +1,6 @@
 import os
 import json
 import logging
-import yaml
 from datetime import datetime
 
 def format_run_scan_number(run_scan_list):
@@ -13,7 +12,6 @@ class Logger:
         self.log_dir = log_dir
         self.logger = self._setup_logger(name)
         self.logger.info("Starting analysis")
-        self.metadata = {}
         self.results = {}
 
     def _setup_logger(self, name):
@@ -35,6 +33,9 @@ class Logger:
         else:
             print("what?")
         return logger
+
+    def add_metadata(self, metadata:dict):
+        self.logger.info(f"{metadata}")
 
     def add_result(self, key, value):
         self.results[key] = value
@@ -59,6 +60,7 @@ class Logger:
     def error(self, message):
         self.logger.error(message)
 
+
 def run_analysis(name: str):
     record = Logger(name)
 
@@ -71,5 +73,3 @@ def run_analysis(name: str):
 
     return record
 
-# 분석 실행
-# analysis_record = run_analysis()

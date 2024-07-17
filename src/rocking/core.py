@@ -9,14 +9,14 @@ from rocking.rocking_scan import ReadRockingH5
 from utils.file_util import get_run_scan_directory, get_folder_list, get_file_list
 from logger import Logger
 
-from typing import Callable
+from typing import Callable, Optional
 
 
 Preprocess = Callable[[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray]]
 
 class RockingProcessor:
     
-    def __init__(self, preprocessing_functions: list[Preprocess] | None = None, logger: Logger | None = None):
+    def __init__(self, preprocessing_functions: Optional[list[Preprocess]] = None, logger: Optional[Logger] = None):
         if preprocessing_functions is None:
             preprocessing_functions = []
         self.preprocessing_functions: list[Preprocess] = preprocessing_functions
@@ -26,6 +26,10 @@ class RockingProcessor:
             self.logger = Logger("RockingProcessor")
         else:
             self.logger = logger
+        
+        config = load_palxfel_config("config.ini")
+        self.logger.add_metadata(config.to_config_dict())
+
 
     def scan(self, run_num: int):
         self.logger.info(f"Starting scan for run number: {run_num}")
