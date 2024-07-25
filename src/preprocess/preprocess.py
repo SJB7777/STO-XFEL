@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.optimize import curve_fit
-
-
+from scipy.io import loadmat
 def get_linear_regression_confidence_lower_upper_bound(
     y: np.ndarray, 
     x: np.ndarray, 
@@ -27,6 +26,7 @@ def get_linear_regression_confidence_lower_upper_bound(
     Returns:
     lowerbound (np.ndarray): Lower bounds of y
     upperbound (np.ndarray): Upper bounds of y
+    y_fit (np.ndarray): Fitted y
 
     Note:
     This method assumes a linear relationship in the data. For strong non-linearities,
@@ -46,7 +46,7 @@ def get_linear_regression_confidence_lower_upper_bound(
     upper_bound = y_fit + error * sigma
     lower_bound = y_fit - error * sigma
 
-    return lower_bound, upper_bound
+    return lower_bound, upper_bound, y_fit
 
 def filter_images_qbpm_by_linear_model(
     images: np.ndarray, qbpm: np.ndarray, sigma: float
@@ -73,10 +73,10 @@ def filter_images_qbpm_by_linear_model(
     on the linear regression model and confidence interval.
     """
     intensites = images.sum(axis=(1, 2))
-    lower_bound, upper_bound = get_linear_regression_confidence_lower_upper_bound(intensites, qbpm, sigma)
+    lower_bound, upper_bound, _ = get_linear_regression_confidence_lower_upper_bound(intensites, qbpm, sigma)
     mask = np.logical_and(intensites >= lower_bound, intensites <= upper_bound)
     
-    return intensites[mask], qbpm[mask]
+    return images[mask], qbpm[mask]
 
 def nomalize_by_qbpm(images, qbpm) -> np.ndarray:
     """
@@ -91,30 +91,14 @@ def nomalize_by_qbpm(images, qbpm) -> np.ndarray:
     """
     return images / qbpm[:, np.newaxis, np.newaxis]
 
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    
-    images = np.random.randn(300, 400, 100)
-    intensites = images.sum(axis=(1, 2))
-    qbpm = intensites / 100
-    
-    # Add Noise to images
-    images += np.random.randn(*images.shape) * 0.25
-    intensites = images.sum(axis=(1, 2))
-    
-    lower_bound, upper_bound = get_linear_regression_confidence_lower_upper_bound(intensites, qbpm, 3)
-    mask = np.logical_and(intensites >= lower_bound, intensites <= upper_bound)
-    cleared_images = images[mask]
-    cleared_qbpm = qbpm[mask]
-    
-    fig, axs = plt.subplots(1, 1)
-    # axs.scatter(qbpm, intensites, color="red")
-    # axs.scatter(cleared_qbpm, cleared_intensites, color="blue")
+def subtract_dark(images: np.ndarray) -> np.ndarray:
+    dark_file = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\DARK\\dark.npy"
+    dark_images = np.load(dark_file)
+    dark = np.mean(dark_images, axis=0)
+    return np.maximum(images - dark[np.newaxis,:,:], 0)
 
-    # axs.scatter(qbpm, lower_bound)
-    # axs.scatter(qbpm, upper_bound)
-    
-    axs.plot([qbpm[0], qbpm[-1]], [lower_bound[0], lower_bound[-1]])
-    axs.plot([qbpm[0], qbpm[-1]], [upper_bound[0], upper_bound[-1]])
-    plt.show()
-    
+if __name__ == "__main__":
+    sample = np.random.randint(0, 255, (10, 514, 1030))
+    result = subtract_dark(sample)
+    print(result.shape)
+    print(result)
