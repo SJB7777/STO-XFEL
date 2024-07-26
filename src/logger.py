@@ -20,8 +20,12 @@ class Logger:
         formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
         
         log_file = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_analysis.log"
-        log_path = os.path.join(self.log_dir, log_file)
+        log_dir = os.path.join(self.log_dir, str(datetime.now().date()))
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+        log_path = os.path.join(log_dir, log_file)
         file_handler = logging.FileHandler(log_path)
+
         file_handler.setFormatter(formatter)
         
         console_handler = logging.StreamHandler()
@@ -30,8 +34,7 @@ class Logger:
         if not logger.handlers:
             logger.addHandler(console_handler)
             logger.addHandler(file_handler)
-        else:
-            print("what?")
+        
         return logger
 
     def add_metadata(self, metadata:dict):

@@ -11,18 +11,20 @@ from cuptlib_config.palxfel import load_palxfel_config
 class ReadRockingH5:
     # FIXME: Add docstrings
 
-    def __init__(self, file_name: str):
-        if not os.path.isfile(file_name):
-            raise FileNotFoundError(f"No such file: {file_name}")
+    def __init__(self, file: str):
+        if not os.path.isfile(file):
+            raise FileNotFoundError(f"No such file: {file}")
 
         config = load_palxfel_config("config.ini")
 
-        self.metadata = pd.read_hdf(file_name, 'metadata')
+        self.metadata = pd.read_hdf(file, 'metadata')
         # self.theta = self.metadata['th_value']
-        with h5py.File(file_name) as file:
-            self.images = np.asarray(file[f'detector/{config.param.hutch}/{config.param.detector}/image/block0_values'])
-            self.images_ts = np.asarray(file[f'detector/{config.param.hutch}/{config.param.detector}/image/block0_items'])
-            qbpm = file[f'qbpm/{config.param.hutch}/qbpm1']
+        with h5py.File(file) as hf:
+            if "detector" not in hf:
+                raise KeyError(f"Key 'detector' not found in the HDF5 file")
+            self.images = np.asarray(hf[f'detector/{config.param.hutch}/{config.param.detector}/image/block0_values'])
+            self.images_ts = np.asarray(hf[f'detector/{config.param.hutch}/{config.param.detector}/image/block0_items'])
+            qbpm = hf[f'qbpm/{config.param.hutch}/qbpm1']
 
             # FIXME: KeyError: 'th_value'
             # self.theta = np.asarray(self.metadata['th_value'])[0]
@@ -73,3 +75,14 @@ class ReadRockingH5:
         merged_df = pd.merge(image_df, qbpm_df, left_index=True, right_index=True, how='inner')
 
         return pd.merge(self.metadata, merged_df, left_index=True, right_index=True, how='inner')
+    
+
+if __name__ == "__main__":
+    config = load_palxfel_config("config.ini")
+
+    file = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\run=156\\scan=001\\p0030.h5"
+    with h5py.File(file) as f:
+        print(f["detector"])
+        # images = np.asarray(f[f'detector/{config.param.hutch}/{config.param.detector}/image/block0_values'])
+    
+    # rr = ReadRockingH5(file)

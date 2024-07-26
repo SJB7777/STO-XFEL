@@ -5,6 +5,18 @@ from scipy.optimize import curve_fit
 from scipy.io import loadmat
 from utils.file_util import load_palxfel_config
 
+from sklearn.linear_model import RANSACRegressor
+
+def RANSAC_regression(y: np.ndarray, x: np.ndarray) -> np.ndarray:
+    """
+    Random sample consensus (RANSAC) regression is a non-deterministic algorithm 
+    that tries to separate the training data into inliers (which may be subject to noise) and outliers.
+    """
+    X = x[:, np.newaxis]
+    ransac = RANSACRegressor().fit(X, y)
+    inlier_mask = ransac.inlier_mask_
+    return inlier_mask, ransac.estimator_.coef_, ransac.estimator_.intercept_
+
 def get_linear_regression_confidence_lower_upper_bound(
     y: np.ndarray, 
     x: np.ndarray, 
@@ -103,7 +115,28 @@ def subtract_dark(images: np.ndarray) -> np.ndarray:
     return np.maximum(images - dark[np.newaxis, :, :], 0)
 
 if __name__ == "__main__":
-    sample = np.random.randint(0, 255, (10, 514, 1030))
-    result = subtract_dark(sample)
-    print(result.shape)
-    print(result)
+    from sklearn import datasets
+    import matplotlib.pyplot as plt
+    from rocking.rocking_scan import ReadRockingH5
+    file = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\run=177\\scan=001\\p0041.h5"
+
+    rr = ReadRockingH5(file)
+    images = rr.images
+    qbpm = rr.qbpm_sum
+
+    X = qbpm[:, np.newaxis]
+    y = images.sum(axis=(1, 2))
+    plt.scatter(X, y)
+    plt.show()
+    
+    mask, coef, intercept = RANSAC_regression(y, X[:,0])
+    def lin(x):
+        return coef[0] * x + intercept
+    print(coef, intercept)
+    print(len(mask), np.sum(mask), np.sum(~mask))
+    plt.scatter(X[mask], y[mask], color="blue", label="Inliers")
+    plt.scatter(X[~mask], y[~mask], color="red", label="Outliers")
+    plt.plot([X.min(), X.max()], [lin(X.min()), lin(X.max())])
+    plt.title("RANSAC - outliers vs inliers")
+
+    plt.show()

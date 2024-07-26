@@ -35,6 +35,8 @@ class RockingProcessor:
 
     def scan(self, run_num: int):
         self.logger.info(f"Starting scan for run number: {run_num}")
+        self.images_dict.clear()
+
         config = load_palxfel_config("config.ini")
         root_dir = config.path.load_dir
         run_dir = get_run_scan_directory(root_dir, run_num)
@@ -61,7 +63,12 @@ class RockingProcessor:
             hdf5_dir = os.path.join(scan_dir, hdf5_file)
             
             # TEMP
-            rr = ReadRockingH5(hdf5_dir)
+            
+            try:
+                rr = ReadRockingH5(hdf5_dir)
+            except KeyError as e:
+                self.logger.warning(f"{e}")
+                self.logger.warning(f"KeyError happened in {scan_dir}")
             # try:
             #     rr = ReadRockingH5(hdf5_dir)
             # except Exception as e:
@@ -134,36 +141,41 @@ class RockingProcessor:
 
 if __name__ == "__main__":
     from functools import partial
-    from preprocess.preprocess import nomalize_by_qbpm, filter_images_qbpm_by_linear_model, subtract_dark
-    from gui.gui import find_outliers_run_scan_gui
+    from preprocess.preprocess import nomalize_by_qbpm, filter_images_qbpm_by_linear_model, subtract_dark, RANSAC_regression
+    from gui.preprocess_gui import find_outliers_run_scan_gui
 
     import setting
     setting.save()
 
     logger = Logger("RockingProcessor")
-    run_nums = [113, 114, 115, 133, 134, 135, 156, 162, 171, 176, 177]
+    run_nums = [197, 201, 202, 203, 204]
     logger.info(f"run: {run_nums}")
 
-    sigma = find_outliers_run_scan_gui(run_nums[0], 1)
-
-    remove_outlier: Preprocess = partial(filter_images_qbpm_by_linear_model, sigma=sigma)
-    sub_dark: Preprocess = lambda images, qbpm : (subtract_dark(images), qbpm)
-    divide_by_qbpm: Preprocess = lambda images, qbpm : (nomalize_by_qbpm(images, qbpm), qbpm)
-    
-    preprocessing_functions: list[Preprocess] = [
-        sub_dark,
-        divide_by_qbpm,
-        remove_outlier,
-        ]
-    
-    logger.info(f"preprocessing: subtract dark")
-    logger.info(f"preprocessing: divide by qbpm")
-    logger.info(f"preprocessing: remove outlier sigma={sigma}")
-    rocking = RockingProcessor(preprocessing_functions, logger)
-    
     for run_num in run_nums:
+        
+        # Preprocessing functions
+        # sigma = find_outliers_run_scan_gui(run_nums[0], 1)
+        # remove_outlier: Preprocess = partial(filter_images_qbpm_by_linear_model, sigma=sigma)
+        sub_dark: Preprocess = lambda images, qbpm : (subtract_dark(images), qbpm)
+        divide_by_qbpm: Preprocess = lambda images, qbpm : (nomalize_by_qbpm(images, qbpm), qbpm)
+        def remove_by_ransac(images, qbpm):
+            mask = RANSAC_regression(images.sum(axis=(1, 2)), qbpm)[0]
+            return images[mask], qbpm[mask]
+        
+
+        preprocessing_functions: list[Preprocess] = [
+            sub_dark,
+            divide_by_qbpm,
+            remove_by_ransac,
+            ]
+        
+        logger.info(f"preprocessing: subtract dark")
+        logger.info(f"preprocessing: divide by qbpm")
+        # logger.info(f"preprocessing: remove outlier sigma={sigma}")
+        logger.info(f"preprocessing: remove outlier by ransac")
+        rocking = RockingProcessor(preprocessing_functions, logger)
+    
         rocking.scan(run_num)
+        rocking.save_as_mat("")
     
-    rocking.save_as_mat()
-    
-    logger.info("Processing is over")
+        logger.info("Processing is over")

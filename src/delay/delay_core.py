@@ -60,8 +60,12 @@ class DelayProcessor:
         for i, hdf5_file in pbar:
             hdf5_dir = os.path.join(scan_dir, hdf5_file)
             
-            # TEMP
-            rr = ReadDelayH5(hdf5_dir)
+            try:
+                rr = ReadDelayH5(hdf5_dir)
+            except KeyError as e:
+                self.logger.warning(f"{e}")
+                self.logger.warning(f"KeyError happened in {scan_dir}")
+            
             # try:
             #     rr = ReadRockingH5(hdf5_dir)
             # except Exception as e:
@@ -141,7 +145,7 @@ class DelayProcessor:
 if __name__ == "__main__":
     from functools import partial
     from preprocess.preprocess import nomalize_by_qbpm, filter_images_qbpm_by_linear_model, subtract_dark
-    from gui.gui import find_outliers_run_scan_gui
+    from gui.preprocess_gui import find_outliers_run_scan_gui
 
     import setting
     setting.save()
