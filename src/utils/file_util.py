@@ -170,7 +170,6 @@ def save_ooi(mother: str, ooi_rect: RoiRectangle):
         f.write(f"{ooi_rect.x1} {ooi_rect.y1} {ooi_rect.x2} {ooi_rect.y2}")
 
 def save_sigma_factor(mother: str, sig_fac: float):
-    
     with open(os.path.join(mother, f'sigma_factor.txt'), 'w') as f:
         f.write(str(sig_fac))
         

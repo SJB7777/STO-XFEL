@@ -1,6 +1,10 @@
+import os
+
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.io import loadmat
+from utils.file_util import load_palxfel_config
+
 def get_linear_regression_confidence_lower_upper_bound(
     y: np.ndarray, 
     x: np.ndarray, 
@@ -92,10 +96,11 @@ def nomalize_by_qbpm(images, qbpm) -> np.ndarray:
     return images / qbpm[:, np.newaxis, np.newaxis]
 
 def subtract_dark(images: np.ndarray) -> np.ndarray:
-    dark_file = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\DARK\\dark.npy"
+    config = load_palxfel_config("config.ini")
+    dark_file = os.path.join(config.path.save_dir, "DARK\\dark.npy")
     dark_images = np.load(dark_file)
     dark = np.mean(dark_images, axis=0)
-    return np.maximum(images - dark[np.newaxis,:,:], 0)
+    return np.maximum(images - dark[np.newaxis, :, :], 0)
 
 if __name__ == "__main__":
     sample = np.random.randint(0, 255, (10, 514, 1030))
