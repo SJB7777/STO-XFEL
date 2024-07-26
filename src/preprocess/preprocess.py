@@ -9,8 +9,32 @@ from sklearn.linear_model import RANSACRegressor
 
 def RANSAC_regression(y: np.ndarray, x: np.ndarray, min_samples=3) -> np.ndarray:
     """
-    Random sample consensus (RANSAC) regression is a non-deterministic algorithm 
-    that tries to separate the training data into inliers (which may be subject to noise) and outliers.
+    Perform RANSAC (Random Sample Consensus) regression to identify inliers and estimate the regression model.
+
+    RANSAC is an iterative method to estimate parameters of a mathematical model from a set of observed data
+    that contains outliers. This algorithm is non-deterministic and aims to separate the training data into
+    inliers (data points that are subject to noise) and outliers (data points that do not fit the model).
+
+    Parameters:
+    - y (np.ndarray): The target variable array.
+    - x (np.ndarray): The feature variable array.
+    - min_samples (int, optional): The minimum number of samples to fit the model. Default is 3.
+
+    Returns:
+    - inlier_mask (np.ndarray): A boolean array where True indicates an inlier and False indicates an outlier.
+    - coef (float): The coefficient of the linear model.
+    - intercept (float): The intercept of the linear model.
+
+    Example:
+    >>> y = np.array([1, 2, 3, 4, 5])
+    >>> x = np.array([1, 2, 3, 4, 5])
+    >>> inlier_mask, coef, intercept = RANSAC_regression(y, x)
+    >>> print(inlier_mask)
+    [ True  True  True  True  True]
+    >>> print(coef)
+    [1.]
+    >>> print(intercept)
+    0.0
     """
     X = x[:, np.newaxis]
     ransac = RANSACRegressor(min_samples=min_samples).fit(X, y)
