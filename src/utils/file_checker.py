@@ -1,6 +1,31 @@
-import h5py
+import os
 
+import h5py
 from cuptlib_config.palxfel import load_palxfel_config
+
+from utils.file_util import get_file_list, get_folder_list
+
+
+def get_file_status(root: str):
+
+    status = {}
+
+    runs = get_folder_list(root)
+    for run in runs:
+        path = os.path.join(root, run)
+        scans = get_folder_list(path)
+        for scan in scans:
+            path = os.path.join(path, scan)
+            files = get_file_list(path)
+            
+            name = "_".join(path[-2:])[:-2]
+            
+            nums = {int(file[1:-3]) for file in files}
+            max_num = max(nums)
+            missing_nums = set(range(1, max_num + 1)) - nums
+            status[name] = [max_num, missing_nums]
+    
+    return status
 
 def h5_tree(val, pre=''):
     items = len(val)
@@ -44,6 +69,4 @@ if __name__ == "__main__":
     # with h5py.File(file53) as hf:
     #     print(hf)
     #     h5_tree(hf)
-        
-    
     rr = ReadRockingH5(file30)

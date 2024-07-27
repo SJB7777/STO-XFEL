@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from rocking.rocking_scan import ReadRockingH5
 from utils.file_util import get_run_scan_directory, get_folder_list, get_file_list
+from save.saver import SaverStrategy
 from logger import Logger
 
 from typing import Callable, Optional
@@ -32,7 +33,6 @@ class RockingProcessor:
         config = load_palxfel_config("config.ini")
         self.logger.add_metadata(config.to_config_dict())
 
-
     def scan(self, run_num: int):
         self.logger.info(f"Starting scan for run number: {run_num}")
         self.images_dict.clear()
@@ -49,9 +49,9 @@ class RockingProcessor:
             images = self._single_scan(scan_dir)
             
             scan_num = int(scan_folder.split("=")[1])
-            file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"  # example: run=001_scan=001
-            self.images_dict[file_name] = images
-            self.logger.info(f"Completed processing for {file_name}")
+            file_base_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"  # example: run=001_scan=001
+            self.images_dict[file_base_name] = images
+            self.logger.info(f"Completed processing for {file_base_name}")
 
     def _single_scan(self, scan_dir: str):
         self.logger.info(f"Starting single scan for directory: {scan_dir}")
@@ -61,8 +61,6 @@ class RockingProcessor:
         pbar = tqdm(enumerate(hdf5_files), total=len(hdf5_files))
         for i, hdf5_file in pbar:
             hdf5_dir = os.path.join(scan_dir, hdf5_file)
-            
-            # TEMP
             
             try:
                 rr = ReadRockingH5(hdf5_dir)
@@ -138,17 +136,27 @@ class RockingProcessor:
             tifffile.imwrite(tif_file, images)
             self.logger.info(f"Saved TIF file: {tif_file}")
 
+    def save(self, saver: SaverStrategy, comment: str=""):
+        if not self.images_dict:
+            logger.error("Nothing to save")
+            raise Exception("Nothing to save")
+        
+        for file_base_name, images in self.images_dict.items():
+            saver.save(file_base_name, images, comment)
+            self.logger.info(f"Images Shape: {images.shape}")
+            self.logger.info(f"Images Dtype: {images.dtype}")            
+            self.logger.info(f"Saved file '{saver.file}'")
+        
+
 
 if __name__ == "__main__":
     from functools import partial
     from preprocess.preprocess import nomalize_by_qbpm, filter_images_qbpm_by_linear_model, subtract_dark, RANSAC_regression
     from gui.preprocess_gui import find_outliers_run_scan_gui
+    from save.saver import SaverFactory
 
-    import setting
-    setting.save()
-
-    logger = Logger("RockingProcessor")
-    run_nums = [197, 201, 202, 203, 204]
+    logger: Logger = Logger("RockingProcessor")
+    run_nums: list[int] = [1]
     logger.info(f"run: {run_nums}")
 
     for run_num in run_nums:
@@ -173,9 +181,16 @@ if __name__ == "__main__":
         logger.info(f"preprocessing: divide by qbpm")
         # logger.info(f"preprocessing: remove outlier sigma={sigma}")
         logger.info(f"preprocessing: remove outlier by ransac")
-        rocking = RockingProcessor(preprocessing_functions, logger)
-    
+        
+        rocking: RockingProcessor = RockingProcessor(preprocessing_functions, logger)
         rocking.scan(run_num)
-        rocking.save_as_mat("")
-    
+        # rocking.save_as_mat("")
+        
+        mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+        tif_saver: SaverStrategy = SaverFactory.get_saver("tif")
+        npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
+        rocking.save(mat_saver)
+        rocking.save(tif_saver)
+        rocking.save(npz_saver)
+        
         logger.info("Processing is over")

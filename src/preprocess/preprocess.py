@@ -7,7 +7,7 @@ from utils.file_util import load_palxfel_config
 
 from sklearn.linear_model import RANSACRegressor
 
-def RANSAC_regression(y: np.ndarray, x: np.ndarray, min_samples=3) -> np.ndarray:
+def RANSAC_regression(y: np.ndarray, x: np.ndarray, min_samples=3) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Perform RANSAC (Random Sample Consensus) regression to identify inliers and estimate the regression model.
 
@@ -141,23 +141,96 @@ def subtract_dark(images: np.ndarray) -> np.ndarray:
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from rocking.rocking_scan import ReadRockingH5
-    file = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\run=177\\scan=001\\p0041.h5"
+    from sklearn.linear_model import RANSACRegressor
+    from sklearn.metrics import mean_squared_error, r2_score
+    import numpy as np
+    from tqdm import tqdm
+    file = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
 
     rr = ReadRockingH5(file)
     images = rr.images
     qbpm = rr.qbpm_sum
 
-    X = qbpm[:, np.newaxis]
-    y = images.sum(axis=(1, 2))
     
-    mask, coef, intercept = RANSAC_regression(y, X[:,0])
-    def lin(x):
-        return coef[0] * x + intercept
-    print(coef, intercept)
-    print(len(mask), np.sum(mask), np.sum(~mask))
-    plt.scatter(X[mask], y[mask], color="blue", label="Inliers")
-    plt.scatter(X[~mask], y[~mask], color="red", label="Outliers")
-    plt.plot([X.min(), X.max()], [lin(X.min()), lin(X.max())])
-    plt.title("RANSAC - outliers vs inliers")
-
+    intensities = images.sum(axis=(1, 2))
+    intensities = intensities / intensities.mean()
+    images_div_by_intensities = images / intensities[:, np.newaxis, np.newaxis]
+    
+    fig, axs = plt.subplots(2, 2, figsize=(8, 8))
+    axs[0, 0].imshow(np.log1p(images.sum(axis=0)))
+    axs[0, 1].imshow(np.log1p(images_div_by_intensities.sum(axis=0)))
+    axs[1, 0].scatter(qbpm, images.sum(axis=(1, 2)))
+    axs[1, 1].scatter(qbpm, images_div_by_intensities.sum(axis=(1, 2)))
+    
+    axs[1, 0].set_ylim(0, None)
+    axs[1, 1].set_ylim(0, axs[1, 0].get_ylim()[1])
+    plt.tight_layout()
     plt.show()
+
+
+    mask = RANSAC_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
+    good_images = images[mask]
+    good_intensites = good_images.sum(axis=(1, 2))
+    good_intensites = good_intensites / good_intensites.mean()
+    normed_images = good_images / good_intensites[:, np.newaxis, np.newaxis]
+    
+    # plt.imshow(np.log1p(normed_images.sum(axis=0)))
+    plt.scatter(range(len(good_intensites)), good_intensites)
+    plt.show()
+    quit()
+    min_samples_list = range(1, 11)
+    residuals_list = []
+    r2_scores = []
+    rmse_scores = []
+
+    fig, axs = plt.subplots(2, 5, figsize=(18, 9))
+    axs = axs.flatten()
+
+    for i, min_samples in tqdm(enumerate(min_samples_list), total=len(min_samples_list)):
+        ransac = RANSACRegressor(min_samples=min_samples)
+        ransac.fit(X, y)
+        y_pred = ransac.predict(X)
+        mask = ransac.inlier_mask_
+        coef = ransac.estimator_.coef_
+        intercept = ransac.estimator_.intercept_
+
+        def lin(x):
+            return coef[0] * x + intercept
+
+        residuals = y - y_pred
+        residuals_list.append(residuals)
+
+        r2 = r2_score(y[mask], y_pred[mask])
+        r2_scores.append(r2)
+
+        rmse = np.sqrt(mean_squared_error(y[mask], y_pred[mask]))
+        rmse_scores.append(rmse)
+
+        axs[i].scatter(X[mask], y[mask], color="blue", label="Inliers")
+        axs[i].scatter(X[~mask], y[~mask], color="red", label="Outliers")
+        axs[i].plot([X.min(), X.max()], [lin(X.min()), lin(X.max())], color="green")
+        axs[i].set_title(f"RANSAC - minsamples={min_samples}")
+        axs[i].legend()
+
+        # y축과 x축을 0부터 보이게 설정
+        axs[i].set_ylim(0, None)
+        axs[i].set_xlim(0, None)
+
+    plt.tight_layout()
+    plt.show()
+
+    # 결과 출력
+    print("min_samples\tR²\tRMSE")
+    for i, min_samples in enumerate(min_samples_list):
+        print(f"{min_samples}\t{r2_scores[i]:.4f}\t{rmse_scores[i]:.4f}")
+
+    # 잔차 시각화
+    # fig, axs = plt.subplots(2, 5, figsize=(20, 10))
+    # axs = axs.flatten()
+
+    # for i, min_samples in enumerate(min_samples_list):
+    #     axs[i].hist(residuals_list[i][mask], bins=20, color="blue", alpha=0.7)
+    #     axs[i].set_title(f"Residuals - minsamples={min_samples}")
+
+    # plt.tight_layout()
+    # plt.show()

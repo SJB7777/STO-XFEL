@@ -6,10 +6,11 @@ config_dict = {
         # Mother Directory of run files. 
         "load_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
         "save_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
-        "image_dir": "Image",  # relative path based on save_dir
-        "param_dir": "DataParameter",  # relative path based on save_dir
+        # relative path based on save_dir
+        "image_dir": "Image",
+        "param_dir": "DataParameter",
         "mat_dir": "Mat_files2",
-        "npz_dir": "Npz_files",  # npz_files_qbpm
+        "npz_dir": "Npz_files",
         "tif_dir": "Tif_files"
     },
     "param":{

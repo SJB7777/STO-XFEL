@@ -20,6 +20,9 @@ class Logger:
         formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
         
         log_file = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_analysis.log"
+        
+        if not os.path.exists(self.log_dir):
+            os.mkdir(self.log_dir)
         log_dir = os.path.join(self.log_dir, str(datetime.now().date()))
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
