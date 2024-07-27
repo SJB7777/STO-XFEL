@@ -5,12 +5,13 @@ from cuptlib_config.palxfel import load_palxfel_config
 
 from utils.file_util import get_file_list, get_folder_list
 
+from typing import Any
 
-def get_file_status(root: str):
+def get_file_status(root: str) -> dict:
 
-    status = {}
+    status: dict = {}
 
-    runs = get_folder_list(root)
+    runs: list[str] = get_folder_list(root)
     for run in runs:
         path = os.path.join(root, run)
         scans = get_folder_list(path)
@@ -27,11 +28,11 @@ def get_file_status(root: str):
     
     return status
 
-def h5_tree(val, pre=''):
-    items = len(val)
+def h5_tree(val: Any, pre: None ='') -> None:
+    items_cnt = len(val)
     for key, val in val.items():
-        items -= 1
-        if items == 0:
+        items_cnt -= 1
+        if items_cnt == 0:
             # the last item
             if type(val) == h5py._hl.group.Group:
                 print(pre + '└── ' + key)

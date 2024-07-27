@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from delay.delay_scan import ReadDelayH5
 from utils.file_util import get_run_scan_directory, get_folder_list, get_file_list
-from logger import Logger
+from logger import AppLogger
 
 from typing import Callable, Optional
 
@@ -17,14 +17,14 @@ Qbpm = np.ndarray
 Preprocess = Callable[[Images, Qbpm], tuple[Images, Qbpm]]
 
 class DelayProcessor:
-    def __init__(self, preprocessing_functions: Optional[list[Preprocess]] = None, logger: Optional[Logger] = None):
+    def __init__(self, preprocessing_functions: Optional[list[Preprocess]] = None, logger: Optional[AppLogger] = None):
         if preprocessing_functions is None:
             preprocessing_functions = []
         self.preprocessing_functions: list[Preprocess] = preprocessing_functions
         
         self.images_dict: dict[str, np.ndarray] = {}
         if logger is None:
-            self.logger = Logger("RockingProcessor")
+            self.logger = AppLogger("RockingProcessor")
         else:
             self.logger = logger
         
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     import setting
     setting.save()
 
-    logger = Logger("RockingProcessor")
+    logger = AppLogger("RockingProcessor")
     run_nums = [113, 114, 115, 133, 134, 135, 156, 162, 171, 176, 177]
     logger.info(f"run: {run_nums}")
 

@@ -9,24 +9,32 @@ from tqdm import tqdm
 from rocking.rocking_scan import ReadRockingH5
 from utils.file_util import get_run_scan_directory, get_folder_list, get_file_list
 from save.saver import SaverStrategy
-from logger import Logger
+from logger import AppLogger
 
 from typing import Callable, Optional
-
-Images = np.ndarray
-Qbpm = np.ndarray
+import numpy.typing as npt
+Images = npt.NDArray
+Qbpm = npt.NDArray
 Preprocess = Callable[[Images, Qbpm], tuple[Images, Qbpm]]
 
 class RockingProcessor:
     
-    def __init__(self, preprocessing_functions: Optional[list[Preprocess]] = None, logger: Optional[Logger] = None):
+    def __init__(self, preprocessing_functions: Optional[list[Preprocess]] = None, logger: Optional[AppLogger] = None):
+        """
+        Initializes the RockingProcessor instance.
+
+        Parameters:
+        - preprocessing_functions (list[Preprocess], optional): List of preprocessing functions to apply to images.
+        - logger (Logger, optional): Logger instance for logging messages.
+        """
+        
         if preprocessing_functions is None:
             preprocessing_functions = []
         self.preprocessing_functions: list[Preprocess] = preprocessing_functions
         
         self.images_dict: dict[str, np.ndarray] = {}
         if logger is None:
-            self.logger = Logger("RockingProcessor")
+            self.logger = AppLogger("RockingProcessor")
         else:
             self.logger = logger
         
@@ -34,6 +42,12 @@ class RockingProcessor:
         self.logger.add_metadata(config.to_config_dict())
 
     def scan(self, run_num: int):
+        """
+        Scans directories for rocking scan data and processes them.
+
+        Parameters:
+        - run_num (int): Run number to scan.
+        """
         self.logger.info(f"Starting scan for run number: {run_num}")
         self.images_dict.clear()
 
@@ -54,6 +68,15 @@ class RockingProcessor:
             self.logger.info(f"Completed processing for {file_base_name}")
 
     def _single_scan(self, scan_dir: str):
+        """
+        Processes a single scan directory.
+
+        Parameters:
+        - scan_dir (str): Directory path of the scan to process.
+
+        Returns:
+        - np.ndarray: Stacked images from the scan.
+        """
         self.logger.info(f"Starting single scan for directory: {scan_dir}")
         stacked_images = []
         
@@ -137,6 +160,13 @@ class RockingProcessor:
             self.logger.info(f"Saved TIF file: {tif_file}")
 
     def save(self, saver: SaverStrategy, comment: str=""):
+        """
+        Saves processed images using a specified saving strategy.
+
+        Parameters:
+        - saver (SaverStrategy): Saving strategy to use.
+        - comment (str, optional): Comment to append to the file name.
+        """
         if not self.images_dict:
             logger.error("Nothing to save")
             raise Exception("Nothing to save")
@@ -155,7 +185,7 @@ if __name__ == "__main__":
     from gui.preprocess_gui import find_outliers_run_scan_gui
     from save.saver import SaverFactory
 
-    logger: Logger = Logger("RockingProcessor")
+    logger: AppLogger = AppLogger("RockingProcessor")
     run_nums: list[int] = [1]
     logger.info(f"run: {run_nums}")
 
@@ -167,7 +197,7 @@ if __name__ == "__main__":
         sub_dark: Preprocess = lambda images, qbpm : (subtract_dark(images), qbpm)
         divide_by_qbpm: Preprocess = lambda images, qbpm : (nomalize_by_qbpm(images, qbpm), qbpm)
         def remove_by_ransac(images, qbpm):
-            mask = RANSAC_regression(images.sum(axis=(1, 2)), qbpm)[0]
+            mask = RANSAC_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
             return images[mask], qbpm[mask]
         
 

@@ -1,6 +1,8 @@
 import numpy as np
 
-def remove_noise(images, threshold=70, front=5, back=5):
+import numpy.typing as npt
+
+def remove_noise(images: npt.NDArray, threshold: float, front: int=5, back :int=5):
     N = 15
     n_th = N*0.6
 

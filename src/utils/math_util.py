@@ -2,20 +2,23 @@ import numpy as np
 from scipy.integrate import quad, dblquad
 from cuptlib_config.palxfel import load_palxfel_config
 
-FWHM_COEFFICIENT = 2.35482  # FWHM_COEFFICIENT = 2 * np.sqrt(2 * np.log(2))
+from typing import Final
+import numpy.typing as npt
 
-def reverse_axis(array: np.ndarray):
+FWHM_COEFFICIENT: Final[float] = 2.35482  # FWHM_COEFFICIENT = 2 * np.sqrt(2 * np.log(2))
+
+def reverse_axis(array: npt.NDArray):
     return np.transpose(array, axes=range(array.ndim)[::-1])
 
-def gaussian(x, a, mu, sig) -> np.ndarray:
+def gaussian(x: npt.NDArray, a: float, mu: float, sig: float) -> npt.NDArray:
     return a * np.exp(-(x - mu) ** 2 / (2 * sig ** 2))
 
-def integrate_FWHM(a, mu, sig) -> float:
+def integrate_FWHM(a: float, mu: float, sig: float) -> float:
     fwhm = FWHM_COEFFICIENT * np.abs(sig)
     result, _ = quad(gaussian, mu - 0.5*fwhm, mu + 0.5*fwhm, args=(a, mu, sig))
     return result
 
-def gaussian2D(xy, amplitude, x0, y0, sigma_x, sigma_y, theta, offset) -> np.ndarray:
+def gaussian2D(xy, amplitude: float, x0: float, y0: float, sigma_x: float, sigma_y: float, theta: float, offset: float) -> npt.NDArray:
     """
     Calculate the 2D Gaussian distribution at the given coordinates.
 
@@ -39,7 +42,7 @@ def gaussian2D(xy, amplitude, x0, y0, sigma_x, sigma_y, theta, offset) -> np.nda
     g = offset + amplitude * np.exp(-(a * ((x - x0) ** 2) + 2 * b * (x - x0) * (y - y0) + c * ((y - y0) ** 2)))
     return g.ravel()
 
-def integrate_FWHM_2D(amplitude, xo, yo, sigma_x, sigma_y, theta, offset) -> float:
+def integrate_FWHM_2D(amplitude: float, xo: float, yo: float, sigma_x: float, sigma_y: float, theta: float, offset: float) -> float:
     """
     Calculate the integral of a 2D Gaussian with an offset over its FWHM
     """
@@ -63,20 +66,20 @@ def integrate_FWHM_2D(amplitude, xo, yo, sigma_x, sigma_y, theta, offset) -> flo
     result, _ = dblquad(integrand, y_lower, y_upper, lambda x: x_lower, lambda x: x_upper)
     return result
 
-def pixel_to_delQ(pixels: np.ndarray) -> np.ndarray:
+def pixel_to_delQ(pixels: npt.NDArray) -> npt.NDArray:
     config = load_palxfel_config()
     del_pixels = pixels - pixels[0]
     del_two_theta = np.arctan(config.param.dps / config.param.sdd * del_pixels)
     return 4 * np.pi / config.param.wavelength * np.sin(del_two_theta / 2)
 
 
-def pixel_to_Q(pixels: np.ndarray) -> np.ndarray:
+def pixel_to_Q(pixels: npt.NDArray) -> npt.NDArray:
     config = load_palxfel_config()
 
     two_theta = np.arctan(config.param.dps / config.param.sdd * pixels)
     return 4 * np.pi / config.param.wavelength * np.sin(two_theta / 2)
 
-def get_min_max(arr: np.ndarray) -> tuple:
+def get_min_max(arr:npt.NDArray) -> tuple[float, float]:
     
     arr = arr.flatten()
     minimum = maximum = arr[0]
@@ -102,10 +105,10 @@ def get_min_max(arr: np.ndarray) -> tuple:
 
     return minimum, maximum
 
-def chunck(arr: list, size: int):
+def chunck(arr: list, size: int) -> list:
     return [arr[i:i + size] for i in range(0, len(arr), size)]
 
-def get_most_common_element(arr: np.ndarray) -> int:
+def get_most_common_element(arr: npt.NDArray) -> int:
     """
     Get the most common element in a NumPy array along with its count.
 
@@ -122,7 +125,7 @@ def get_most_common_element(arr: np.ndarray) -> int:
     
     return most_common_element
 
-def non_outlier_indices_percentile(arr: np.ndarray, lower_percentile, upper_percentile):
+def non_outlier_indices_percentile(arr: npt.NDArray, lower_percentile: float, upper_percentile: float) -> npt.NDArray[np.bool_]:
     """
     Get the indices of non-outliers in a NumPy array.
 

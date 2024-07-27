@@ -31,7 +31,7 @@ config_dict = {
     }
 }
 
-def save():
+def save() -> None:
     save_palxfel_dict(config_dict, "config.ini")
 
 if __name__ == "__main__":

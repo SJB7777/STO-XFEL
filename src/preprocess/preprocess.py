@@ -3,11 +3,14 @@ import os
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.io import loadmat
-from utils.file_util import load_palxfel_config
-
 from sklearn.linear_model import RANSACRegressor
 
-def RANSAC_regression(y: np.ndarray, x: np.ndarray, min_samples=3) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+from utils.file_util import load_palxfel_config
+
+import numpy.typing as npt
+from typing import Optional
+
+def RANSAC_regression(y: np.ndarray, x: np.ndarray, min_samples: Optional[int] = None) -> tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]:
     """
     Perform RANSAC (Random Sample Consensus) regression to identify inliers and estimate the regression model.
 
@@ -16,12 +19,12 @@ def RANSAC_regression(y: np.ndarray, x: np.ndarray, min_samples=3) -> tuple[np.n
     inliers (data points that are subject to noise) and outliers (data points that do not fit the model).
 
     Parameters:
-    - y (np.ndarray): The target variable array.
-    - x (np.ndarray): The feature variable array.
+    - y (NDArray): The target variable array.
+    - x (NDArray): The feature variable array.
     - min_samples (int, optional): The minimum number of samples to fit the model. Default is 3.
 
     Returns:
-    - inlier_mask (np.ndarray): A boolean array where True indicates an inlier and False indicates an outlier.
+    - inlier_mask (NDArray): A boolean array where True indicates an inlier and False indicates an outlier.
     - coef (float): The coefficient of the linear model.
     - intercept (float): The intercept of the linear model.
 
@@ -42,10 +45,10 @@ def RANSAC_regression(y: np.ndarray, x: np.ndarray, min_samples=3) -> tuple[np.n
     return inlier_mask, ransac.estimator_.coef_, ransac.estimator_.intercept_
 
 def get_linear_regression_confidence_lower_upper_bound(
-    y: np.ndarray, 
-    x: np.ndarray, 
-    sigma: float = 3.0
-) -> np.ndarray:
+    y: npt.NDArray, 
+    x: npt.NDArray, 
+    sigma: float
+) -> npt.NDArray:
     """
     Get lowerbound and upperbound for data points based on their confidence interval in a linear regression model.
 
@@ -59,14 +62,14 @@ def get_linear_regression_confidence_lower_upper_bound(
     where m_err and b_err are the standard errors of m and b respectively.
 
     Parameters:
-    y (np.ndarray): Dependent variable data. Shape: (N,)
-    x (np.ndarray): Independent variable data. Shape: (N,)
+    y (NDArray): Dependent variable data. Shape: (N,)
+    x (NDArray): Independent variable data. Shape: (N,)
     sigma (float): Number of standard deviations for the confidence interval. Default is 3.0.
 
     Returns:
-    lowerbound (np.ndarray): Lower bounds of y
-    upperbound (np.ndarray): Upper bounds of y
-    y_fit (np.ndarray): Fitted y
+    lowerbound (NDArray): Lower bounds of y
+    upperbound (NDArray): Upper bounds of y
+    y_fit (NDArray): Fitted y
 
     Note:
     This method assumes a linear relationship in the data. For strong non-linearities,
@@ -89,8 +92,8 @@ def get_linear_regression_confidence_lower_upper_bound(
     return lower_bound, upper_bound, y_fit
 
 def filter_images_qbpm_by_linear_model(
-    images: np.ndarray, qbpm: np.ndarray, sigma: float
-    ) -> tuple[np.ndarray, ...]:
+    images: npt.NDArray, qbpm: npt.NDArray, sigma: float
+    ) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Filter images based on the confidence interval of their intensities using a linear regression model with QBPM values.
 
@@ -99,14 +102,14 @@ def filter_images_qbpm_by_linear_model(
     fall outside the specified confidence interval.
 
     Parameters:
-    images (np.ndarray): Array of images. Shape: (N, H, W), where N is the number of images, and H and W are the height and width of each image.
-    qbpm (np.ndarray): Array of QBPM (Quadrature Balanced Photodetector Measurements) values. Shape: (N,)
+    images (NDArray): Array of images. Shape: (N, H, W), where N is the number of images, and H and W are the height and width of each image.
+    qbpm (NDArray): Array of QBPM (Quadrature Balanced Photodetector Measurements) values. Shape: (N,)
     sigma (float): Number of standard deviations for the confidence interval.
 
     Returns:
-    tuple[np.ndarray, ...]: Tuple of filtered intensities and QBPM values.
-        - Filtered intensities (np.ndarray): Array of intensities within the confidence interval. Shape: (M,), where M <= N.
-        - Filtered qbpm (np.ndarray): Array of QBPM values corresponding to the filtered intensities. Shape: (M,), where M <= N.
+    tuple[NDArray, NDArray]: Tuple of filtered intensities and QBPM values.
+        - Filtered intensities (NDArray): Array of intensities within the confidence interval. Shape: (M,), where M <= N.
+        - Filtered qbpm (NDArray): Array of QBPM values corresponding to the filtered intensities. Shape: (M,), where M <= N.
     
     Note:
     This method uses the `get_linear_regression_confidence_lower_upper_bound` function to generate the mask based 
@@ -118,20 +121,20 @@ def filter_images_qbpm_by_linear_model(
     
     return images[mask], qbpm[mask]
 
-def nomalize_by_qbpm(images, qbpm) -> np.ndarray:
+def nomalize_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
     """
     Divide images by qbpm.
     
     Parameters:
-    images (np.ndarray): Array of images. Shape: (N, H, W), where N is the number of images, and H and W are the height and width of each image.
-    qbpm (np.ndarray): Array of QBPM (Quadrature Balanced Photodetector Measurements) values. Shape: (N,)
+    images (NDArray): Array of images. Shape: (N, H, W), where N is the number of images, and H and W are the height and width of each image.
+    qbpm (NDArray): Array of QBPM (Quadrature Balanced Photodetector Measurements) values. Shape: (N,)
     
     Returns:
-    np.ndarray: Images that divided by qbpm
+    NDArray: Images that divided by qbpm
     """
     return images / qbpm[:, np.newaxis, np.newaxis]
 
-def subtract_dark(images: np.ndarray) -> np.ndarray:
+def subtract_dark(images: npt.NDArray) -> npt.NDArray:
     config = load_palxfel_config("config.ini")
     dark_file = os.path.join(config.path.save_dir, "DARK\\dark.npy")
     dark_images = np.load(dark_file)
@@ -145,7 +148,8 @@ if __name__ == "__main__":
     from sklearn.metrics import mean_squared_error, r2_score
     import numpy as np
     from tqdm import tqdm
-    file = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
+    
+    file: str = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
 
     rr = ReadRockingH5(file)
     images = rr.images

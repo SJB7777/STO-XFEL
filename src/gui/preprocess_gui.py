@@ -10,7 +10,9 @@ from preprocess.preprocess import get_linear_regression_confidence_lower_upper_b
 from rocking.rocking_scan import ReadRockingH5
 from utils.file_util import get_run_scan_directory, get_file_list
 
-def find_outliers_gui(y, x):
+import numpy.typing as npt
+
+def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:
     fig, ax = plt.subplots(figsize=(10, 6))
     plt.subplots_adjust(left=0.1, bottom=0.25, right=0.9, top=0.9)
 
@@ -37,7 +39,7 @@ def find_outliers_gui(y, x):
     # Add outlier count text
     outlier_count = np.sum(~within_bounds)
     outlier_text = ax.text(0.02, 0.93, f'Outliers: {outlier_count} ({outlier_count/len(y):.1%})', 
-                           transform=ax.transAxes, verticalalignment='top')
+                        transform=ax.transAxes, verticalalignment='top')
 
     axsigma = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor='lightgoldenrodyellow')
     sigma_slider = Slider(axsigma, 'Sigma', 0.1, 20.0, valinit=sigma_init, valstep=0.1)
@@ -73,7 +75,7 @@ def find_outliers_gui(y, x):
 
     return round(sigma_slider.val, 1)
 
-def find_outliers_run_scan_gui(run: int, scan: int):
+def find_outliers_run_scan_gui(run: int, scan: int) -> float:
 
     config = load_palxfel_config("config.ini")
     scan_dir = get_run_scan_directory(config.path.save_dir, run, scan)
@@ -86,7 +88,7 @@ def find_outliers_run_scan_gui(run: int, scan: int):
 
     return find_outliers_gui(images.sum(axis=(1, 2)), qbpm)
 
-def RANSAC_regression_gui(run: int, scan: int):
+def RANSAC_regression_gui(run: int, scan: int) -> None:
     config = load_palxfel_config("config.ini")
     scan_dir = get_run_scan_directory(config.path.save_dir, run, scan)
     files = get_file_list(scan_dir)
