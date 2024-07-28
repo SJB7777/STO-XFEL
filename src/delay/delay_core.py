@@ -144,7 +144,7 @@ class DelayProcessor:
 
 if __name__ == "__main__":
     from functools import partial
-    from preprocess.preprocess import nomalize_by_qbpm, filter_images_qbpm_by_linear_model, subtract_dark
+    from preprocess.preprocessing_functions import nomalize_by_qbpm, filter_images_qbpm_by_linear_model, subtract_dark
     from gui.preprocess_gui import find_outliers_run_scan_gui
 
     import setting

@@ -168,7 +168,7 @@ class RockingProcessor:
         - comment (str, optional): Comment to append to the file name.
         """
         if not self.images_dict:
-            logger.error("Nothing to save")
+            self.logger.error("Nothing to save")
             raise Exception("Nothing to save")
         
         for file_base_name, images in self.images_dict.items():
@@ -181,7 +181,7 @@ class RockingProcessor:
 
 if __name__ == "__main__":
     from functools import partial
-    from preprocess.preprocess import nomalize_by_qbpm, filter_images_qbpm_by_linear_model, subtract_dark, RANSAC_regression
+    from preprocess.preprocessing_functions import nomalize_by_qbpm, filter_images_qbpm_by_linear_model, subtract_dark, RANSAC_regression
     from gui.preprocess_gui import find_outliers_run_scan_gui
     from save.saver import SaverFactory
 
@@ -199,7 +199,6 @@ if __name__ == "__main__":
         def remove_by_ransac(images, qbpm):
             mask = RANSAC_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
             return images[mask], qbpm[mask]
-        
 
         preprocessing_functions: list[Preprocess] = [
             sub_dark,

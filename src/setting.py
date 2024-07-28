@@ -4,8 +4,10 @@ from cuptlib_config.palxfel.enums import Hertz, Hutch, Detector, Xray
 config_dict = {
     "path":{
         # Mother Directory of run files. 
-        "load_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
-        "save_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
+        # "load_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
+        # "save_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
+        "load_dir": "D:\\dev\\p_python\\xrd\\xfel_sample_data",
+        "save_dir": "D:\\dev\\p_python\\xrd\\xfel_sample_data",
         # relative path based on save_dir
         "image_dir": "Image",
         "param_dir": "DataParameter",

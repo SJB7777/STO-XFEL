@@ -8,7 +8,7 @@ from sklearn.linear_model import RANSACRegressor
 from utils.file_util import load_palxfel_config
 
 import numpy.typing as npt
-from typing import Optional
+from typing import Optional, Callable
 
 def RANSAC_regression(y: np.ndarray, x: np.ndarray, min_samples: Optional[int] = None) -> tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]:
     """
@@ -121,7 +121,7 @@ def filter_images_qbpm_by_linear_model(
     
     return images[mask], qbpm[mask]
 
-def nomalize_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
+def normalize_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
     """
     Divide images by qbpm.
     
@@ -140,6 +140,23 @@ def subtract_dark(images: npt.NDArray) -> npt.NDArray:
     dark_images = np.load(dark_file)
     dark = np.mean(dark_images, axis=0)
     return np.maximum(images - dark[np.newaxis, :, :], 0)
+
+def equalize_brightness(images: np.ndarray) -> np.ndarray:
+    """
+    Equalize the brightness of each image in the 3D array while maintaining the overall average brightness.
+
+    Parameters:
+    - images: np.ndarray, 3D array of images (num_images, height, width).
+
+    Returns:
+    - np.ndarray: The brightness-equalized images.
+    """
+    intensites = images.sum(axis=(1, 2))
+    overal_normed_intensites = intensites / intensites.mean()
+    equalized_images = images / overal_normed_intensites[:, np.newaxis, np.newaxis]
+    
+    return equalized_images
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

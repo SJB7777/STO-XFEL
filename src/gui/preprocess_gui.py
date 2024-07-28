@@ -6,7 +6,7 @@ from matplotlib.widgets import Slider
 from scipy.optimize import curve_fit
 
 from cuptlib_config.palxfel import load_palxfel_config
-from preprocess.preprocess import get_linear_regression_confidence_lower_upper_bound, RANSAC_regression
+from preprocess.preprocessing_functions import get_linear_regression_confidence_lower_upper_bound, RANSAC_regression
 from rocking.rocking_scan import ReadRockingH5
 from utils.file_util import get_run_scan_directory, get_file_list
 
