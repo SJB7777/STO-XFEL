@@ -11,7 +11,9 @@ from preprocess.image_qbpm_processors import (
 )
 
 logger: AppLogger = AppLogger("MainProcessor")
+
 run_nums = [1]
+
 logger.info(f"run: {run_nums}")
 for run_num in run_nums:
     
@@ -21,9 +23,9 @@ for run_num in run_nums:
         remove_by_ransac,
     ]
 
-    logger.info(f"preprocessing: subtract dark")
-    logger.info(f"preprocessing: divide by qbpm")
-    logger.info(f"preprocessing: remove outlier by ransac")
+    logger.info(f"preprocessing: subtract_dark_background")
+    logger.info(f"preprocessing: normalize_images_by_qbpm")
+    logger.info(f"preprocessing: remove_by_ransac")
 
     cp = CoreProcesser(HDF5FileLoader, preprocessing_functions, logger)
     cp.scan(run_num)

@@ -7,7 +7,7 @@ from scipy.optimize import curve_fit
 
 from cuptlib_config.palxfel import load_palxfel_config
 from preprocess.preprocessing_functions import get_linear_regression_confidence_lower_upper_bound, RANSAC_regression
-from rocking.rocking_scan import ReadRockingH5
+from core.loading_strategy import HDF5FileLoader
 from utils.file_util import get_run_scan_directory, get_file_list
 
 import numpy.typing as npt
@@ -82,7 +82,7 @@ def find_outliers_run_scan_gui(run: int, scan: int) -> float:
     files = get_file_list(scan_dir)
     file = os.path.join(scan_dir, files[len(files) // 2])
     
-    rr = ReadRockingH5(file)
+    rr = HDF5FileLoader(file)
     images = rr.images
     qbpm = rr.qbpm_sum
 
@@ -94,7 +94,7 @@ def RANSAC_regression_gui(run: int, scan: int) -> None:
     files = get_file_list(scan_dir)
     file = os.path.join(scan_dir, files[len(files) // 2])
     
-    rr = ReadRockingH5(file)
+    rr = HDF5FileLoader(file)
     images = rr.images
     qbpm = rr.qbpm_sum
 
