@@ -9,14 +9,14 @@ from cuptlib_config.palxfel import load_palxfel_config
 
 from utils.file_util import get_run_scan_directory, get_folder_list, get_file_list
 from core.saver import SaverStrategy
-from core.loading_strategy import HDF5LoadingStrategy
+from core.loading_strategy import HDF5LoaderInterface
 from logger import AppLogger
 from preprocess.image_qbpm_processors import ImageQbpmProcessor
 
 
 class CoreProcesser:
     
-    def __init__(self, scan_strategy_class: Type[HDF5LoadingStrategy], preprocessing_functions: Optional[list[ImageQbpmProcessor]] = None, logger: Optional[AppLogger] = None) -> None:
+    def __init__(self, scan_strategy_class: Type[HDF5LoaderInterface], preprocessing_functions: Optional[list[ImageQbpmProcessor]] = None, logger: Optional[AppLogger] = None) -> None:
         self.ScanStrategy = scan_strategy_class
         self.preprocessing_functions = preprocessing_functions if preprocessing_functions is not None else []
         self.logger = logger if logger is not None else AppLogger("MainProcessor")
@@ -69,7 +69,7 @@ class CoreProcesser:
             hdf5_dir = os.path.join(scan_dir, hdf5_file)
             
             try:
-                rr: HDF5LoadingStrategy = self.ScanStrategy(hdf5_dir)
+                rr: HDF5LoaderInterface = self.ScanStrategy(hdf5_dir)
             except KeyError as e:
                 self.logger.warning(f"{e}")
                 self.logger.warning(f"KeyError happened in {scan_dir}")

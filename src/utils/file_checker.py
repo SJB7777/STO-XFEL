@@ -61,10 +61,7 @@ def load_matdata(h5file: str) -> pd.DataFrame:
 if __name__ == "__main__":
 
     file = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
-    # with h5py.File(file53) as hf:
-    #     print(hf)
-    #     h5_tree(hf)
-    # rr = ReadRockingH5(file30)
+    with h5py.File(file) as hf:
+        print(hf)
+        h5_tree(hf)
     
-    metadata = load_matdata(file)
-    metadata.to_csv("metadata.csv")

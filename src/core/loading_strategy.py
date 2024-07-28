@@ -11,7 +11,7 @@ from logger import AppLogger
 from preprocess.image_qbpm_processors import ImageQbpmProcessor
 import numpy.typing as npt
 
-class HDF5LoadingStrategy(ABC):
+class HDF5LoaderInterface(ABC):
     @abstractmethod
     def __init__(self, file: str) -> None:
         pass
@@ -45,7 +45,7 @@ class HDF5LoadingStrategy(ABC):
         pass
 
 
-class HDF5FileLoader(HDF5LoadingStrategy):
+class HDF5FileLoader(HDF5LoaderInterface):
     """
     Initializes the RockingScan object by loading metadata, images, and qbpm data from the given file.
 
