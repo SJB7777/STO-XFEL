@@ -1,7 +1,7 @@
 from logger import AppLogger
-from scan.core_processer import CoreProcesser
-from scan.loading_strategy import HDF5FileLoader
-from scan.saver import SaverFactory, SaverStrategy
+from core.core_processer import CoreProcesser
+from core.loading_strategy import HDF5FileLoader
+from core.saver import SaverFactory, SaverStrategy
 from preprocess.image_qbpm_processors import (
     ImageQbpmProcessor,
     subtract_dark_background,
@@ -10,7 +10,7 @@ from preprocess.image_qbpm_processors import (
     equalize_intensities
 )
 
-logger: AppLogger = AppLogger("RockingProcessor")
+logger: AppLogger = AppLogger("MainProcessor")
 run_nums = [1]
 logger.info(f"run: {run_nums}")
 for run_num in run_nums:
@@ -37,5 +37,5 @@ for run_num in run_nums:
     cp.save(npz_saver)
     
     logger.info(f"Processing run={run_num} is over")
-    
+
 logger.info("Processing is over")

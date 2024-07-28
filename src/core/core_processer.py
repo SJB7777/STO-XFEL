@@ -8,8 +8,8 @@ from tqdm import tqdm
 from cuptlib_config.palxfel import load_palxfel_config
 
 from utils.file_util import get_run_scan_directory, get_folder_list, get_file_list
-from scan.saver import SaverStrategy
-from scan.loading_strategy import HDF5LoadingStrategy
+from core.saver import SaverStrategy
+from core.loading_strategy import HDF5LoadingStrategy
 from logger import AppLogger
 from preprocess.image_qbpm_processors import ImageQbpmProcessor
 
@@ -19,7 +19,7 @@ class CoreProcesser:
     def __init__(self, scan_strategy_class: Type[HDF5LoadingStrategy], preprocessing_functions: Optional[list[ImageQbpmProcessor]] = None, logger: Optional[AppLogger] = None) -> None:
         self.ScanStrategy = scan_strategy_class
         self.preprocessing_functions = preprocessing_functions if preprocessing_functions is not None else []
-        self.logger = logger if logger is not None else AppLogger("RockingProcessor")
+        self.logger = logger if logger is not None else AppLogger("MainProcessor")
         
         self.config = load_palxfel_config("config.ini")
         self.logger.add_metadata(self.config.to_config_dict())
@@ -114,8 +114,8 @@ class CoreProcesser:
 
 if __name__ == "__main__":
     
-    from scan.loading_strategy import HDF5FileLoader
-    from scan.saver import SaverFactory
+    from core.loading_strategy import HDF5FileLoader
+    from core.saver import SaverFactory
     from preprocess.image_qbpm_processors import (
         subtract_dark_background,
         normalize_images_by_qbpm,
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         equalize_intensities
     )
     run_num = 1
-    logger: AppLogger = AppLogger("RockingProcessor")
+    logger: AppLogger = AppLogger("MainProcessor")
     
     preprocessing_functions: list[ImageQbpmProcessor] = [
         subtract_dark_background,

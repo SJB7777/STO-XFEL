@@ -56,7 +56,7 @@ class HDF5FileLoader(HDF5LoadingStrategy):
     def __init__(self, file: str):
         if not os.path.isfile(file):
             raise FileNotFoundError(f"No such file: {file}")
-        self.logger = AppLogger("RockingProcessor")
+        self.logger = AppLogger("MainProcessor")
         config = load_palxfel_config("config.ini")
         
         self.metadata = pd.read_hdf(file, 'metadata')
