@@ -9,14 +9,14 @@ from cuptlib_config.palxfel import load_palxfel_config
 
 from utils.file_util import get_run_scan_directory, get_folder_list, get_file_list
 from scan.saver import SaverStrategy
-from scan.scan_strategy import ScanStrategy
+from scan.loading_strategy import HDF5LoadingStrategy
 from logger import AppLogger
 from preprocess.image_qbpm_processors import ImageQbpmProcessor
 
 
 class CoreProcesser:
     
-    def __init__(self, scan_strategy_class: Type[ScanStrategy], preprocessing_functions: Optional[list[ImageQbpmProcessor]] = None, logger: Optional[AppLogger] = None) -> None:
+    def __init__(self, scan_strategy_class: Type[HDF5LoadingStrategy], preprocessing_functions: Optional[list[ImageQbpmProcessor]] = None, logger: Optional[AppLogger] = None) -> None:
         self.ScanStrategy = scan_strategy_class
         self.preprocessing_functions = preprocessing_functions if preprocessing_functions is not None else []
         self.logger = logger if logger is not None else AppLogger("RockingProcessor")
@@ -69,7 +69,7 @@ class CoreProcesser:
             hdf5_dir = os.path.join(scan_dir, hdf5_file)
             
             try:
-                rr: ScanStrategy = self.ScanStrategy(hdf5_dir)
+                rr: HDF5LoadingStrategy = self.ScanStrategy(hdf5_dir)
             except KeyError as e:
                 self.logger.warning(f"{e}")
                 self.logger.warning(f"KeyError happened in {scan_dir}")
@@ -100,6 +100,8 @@ class CoreProcesser:
         - saver (SaverStrategy): Saving strategy to use.
         - comment (str, optional): Comment to append to the file name.
         """
+        self.logger.info(f"Start to save as {saver.file_type.capitalize()}")
+        
         if not self.data_dict:
             self.logger.error("Nothing to save")
             raise Exception("Nothing to save")
@@ -109,10 +111,10 @@ class CoreProcesser:
             saver.save(file_base_name, data_dict, comment)
             self.logger.info(f"Data Dict Keys: {data_dict.keys()}")        
             self.logger.info(f"Saved file '{saver.file}'")
-            
+
 if __name__ == "__main__":
     
-    from scan.scan_strategy import RockingScan
+    from scan.loading_strategy import HDF5FileLoader
     from scan.saver import SaverFactory
     from preprocess.image_qbpm_processors import (
         subtract_dark_background,
@@ -133,7 +135,7 @@ if __name__ == "__main__":
     logger.info(f"preprocessing: divide by qbpm")
     logger.info(f"preprocessing: remove outlier by ransac")
     
-    cp = CoreProcesser(RockingScan, preprocessing_functions, logger)
+    cp = CoreProcesser(HDF5FileLoader, preprocessing_functions, logger)
     cp.scan(run_num)
     
     mat_saver: SaverStrategy = SaverFactory.get_saver("mat")

@@ -6,12 +6,12 @@ import pandas as pd
 import h5py
 import hdf5plugin
 from cuptlib_config.palxfel import load_palxfel_config
+from logger import AppLogger
 
 from preprocess.image_qbpm_processors import ImageQbpmProcessor
 import numpy.typing as npt
 
-
-class ScanStrategy(ABC):
+class HDF5LoadingStrategy(ABC):
     @abstractmethod
     def __init__(self, file: str) -> None:
         pass
@@ -45,7 +45,7 @@ class ScanStrategy(ABC):
         pass
 
 
-class RockingScan(ScanStrategy):
+class HDF5FileLoader(HDF5LoadingStrategy):
     """
     Initializes the RockingScan object by loading metadata, images, and qbpm data from the given file.
 
@@ -56,19 +56,25 @@ class RockingScan(ScanStrategy):
     def __init__(self, file: str):
         if not os.path.isfile(file):
             raise FileNotFoundError(f"No such file: {file}")
-
+        self.logger = AppLogger("RockingProcessor")
         config = load_palxfel_config("config.ini")
-
+        
         self.metadata = pd.read_hdf(file, 'metadata')
-        # self.theta = self.metadata['th_value']
+        
+        if "th_value" in self.metadata:
+            self.delay = np.asarray(self.metadata['th_value'])[0]
+        elif "delay_value" in self.metadata:
+            self.delay = np.asarray(self.metadata['delay_value'])[0]
+        else:
+            self.logger.warning("'th_value' and 'delay_value' are not excisting in metadata.")
+            self.delay = np.nan
+            
         with h5py.File(file) as hf:
             if "detector" not in hf:
                 raise KeyError(f"Key 'detector' not found in the HDF5 file")
             self.images = np.asarray(hf[f'detector/{config.param.hutch}/{config.param.detector}/image/block0_values'])
             self.images_ts = np.asarray(hf[f'detector/{config.param.hutch}/{config.param.detector}/image/block0_items'])
             
-            # FIXME: KeyError: 'th_value'
-            # self.theta = np.asarray(self.metadata['th_value'])[0]
             qbpm = hf[f'qbpm/{config.param.hutch}/qbpm1']
             self.qbpm_ts = qbpm[f'waveforms.ch1/axis1'][()]
             self.qbpm_sum = np.sum([qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)], axis=0).sum(axis=1)
@@ -77,15 +83,19 @@ class RockingScan(ScanStrategy):
 
         self.images = self.merged_df['image']
         self.qbpm_sum = self.merged_df['qbpm']
+        
         self.images = np.stack(self.images.values)
         self.qbpm_sum = np.stack(self.qbpm_sum.values)
         self.pump_status = self.merged_df[f'timestamp_info.RATE_{config.param.xray}_{config.param.pump_setting}'].astype(bool)
+        
+        # Remove below zero.
+        self.images = np.maximum(0, self.images)
+        
         self.pon_images = self.images[self.pump_status]
         self.poff_images = self.images[~self.pump_status]
         # roi_coord = np.array(self.metadata[f'detector_{config.param.hutch}_{config.param.detector}_parameters.ROI'].iloc[0][0])
 
-        # Remove below zero.
-        self.images = np.maximum(0, self.images)
+        
         # roi_coord = np.array(self.metadata[f'detector_{self.hutch}_{self.detector}_parameters.ROI'].iloc[0][0])
         # self.roi_rect = np.array([roi_coord[self.x1], roi_coord[self.x2], roi_coord[self.y1], roi_coord[self.y2]], dtype=np.dtype(int))
         
@@ -125,6 +135,8 @@ class RockingScan(ScanStrategy):
 
     def get_data(self) -> dict[str, npt.NDArray]:
         data = {}
+        
+        data["delay"] = self.delay
         
         if self.pon_images.size > 0:
             data["pon"] = self.pon_images.mean(axis=0)

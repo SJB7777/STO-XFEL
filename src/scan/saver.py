@@ -16,31 +16,35 @@ class SaverStrategy(ABC):
     @abstractmethod
     def file(self) -> str:
         pass
+    
+    @property
+    @abstractmethod
+    def file_type(self) -> str:
+        pass
+
 
 class MatSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
         config = load_palxfel_config("config.ini")
         mat_dir = config.path.mat_dir
-        mat_file = os.path.join(mat_dir, file_base_name + comment + ".mat")
         
-        mat_dict: dict[str, npt.NDArray] = {}
         for key, val in data_dict.items():
             if val.ndim == 3:
-                
                 mat_format_images = val.swapaxes(0, 2)
+                mat_format_images = mat_format_images.swapaxes(0, 1) # TEMP
                 
-                # TEMP
-                mat_format_images = mat_format_images.swapaxes(0, 1)
-                mat_dict[key] = mat_format_images
-            else:
-                mat_dict[key] = val
-
-            savemat(mat_file, mat_dict)
+                mat_file = os.path.join(mat_dir, f"{file_base_name}_{key}{comment}.tif")
+                
+                savemat(mat_file, {"data": mat_format_images})
         self._file_name = mat_file
     
     @property
     def file(self) -> str:
         return self._file_name
+    @property
+    def file_type(self) -> str:
+        return "mat"
+
 
 class NpzSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
@@ -54,8 +58,11 @@ class NpzSaverStrategy(SaverStrategy):
     @property
     def file(self) -> str:
         return self._file_name
+    @property
+    def file_type(self) -> str:
+        return "npz"
 
-    
+
 class TifSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
         config = load_palxfel_config("config.ini")
@@ -71,6 +78,9 @@ class TifSaverStrategy(SaverStrategy):
     @property
     def file(self) -> str:
         return self._file_name
+    @property
+    def file_type(self) -> str:
+        return "tif"
 
 class SaverFactory:
     @staticmethod
