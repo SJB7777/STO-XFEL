@@ -30,14 +30,14 @@ if __name__ == "__main__":
     from roi_rectangle import RoiRectangle
 
     from cuptlib_config.palxfel import load_palxfel_config
-    from rocking.rocking_scan import ReadRockingH5
+    from core.core_processer import HDF5FileLoader
 
     file = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\run=177\\scan=001\\p0041.h5"
     # images = loadmat("Y:\\240608_FXS\\raw_data\\h5\\type=raw\\mat_files\\run=0186_scan=0001.mat")["data"]
     # images = images.swapaxes(0, 2)
     # images = images.swapaxes(1, 2)
     # image = images.mean(axis=0)
-    rr = ReadRockingH5(file)
+    rr = HDF5FileLoader(file)
     images = rr.images
     qbpm = rr.qbpm_sum
     # images = images / qbpm[:, np.newaxis, np.newaxis]

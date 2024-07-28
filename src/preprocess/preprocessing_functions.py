@@ -160,7 +160,7 @@ def equalize_brightness(images: np.ndarray) -> np.ndarray:
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    from rocking.rocking_scan import ReadRockingH5
+    from core.loading_strategy import HDF5FileLoader
     from sklearn.linear_model import RANSACRegressor
     from sklearn.metrics import mean_squared_error, r2_score
     import numpy as np
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     
     file: str = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
 
-    rr = ReadRockingH5(file)
+    rr = HDF5FileLoader(file)
     images = rr.images
     qbpm = rr.qbpm_sum
 
