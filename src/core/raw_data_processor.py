@@ -9,15 +9,15 @@ from cuptlib_config.palxfel import load_palxfel_config
 
 from utils.file_util import get_run_scan_directory, get_folder_list, get_file_list
 from core.saver import SaverStrategy
-from core.loading_strategy import HDF5LoaderInterface
+from core.loader_strategy import HDF5LoaderInterface
 from logger import AppLogger
 from preprocess.image_qbpm_processors import ImageQbpmProcessor
 
 
-class CoreProcesser:
+class RawDataProcessor:
     
-    def __init__(self, scan_strategy_class: Type[HDF5LoaderInterface], preprocessing_functions: Optional[list[ImageQbpmProcessor]] = None, logger: Optional[AppLogger] = None) -> None:
-        self.ScanStrategy = scan_strategy_class
+    def __init__(self, loader_strategy_class: Type[HDF5LoaderInterface], preprocessing_functions: Optional[list[ImageQbpmProcessor]] = None, logger: Optional[AppLogger] = None) -> None:
+        self.LoaderStrategy = loader_strategy_class
         self.preprocessing_functions = preprocessing_functions if preprocessing_functions is not None else []
         self.logger = logger if logger is not None else AppLogger("MainProcessor")
         
@@ -69,7 +69,7 @@ class CoreProcesser:
             hdf5_dir = os.path.join(scan_dir, hdf5_file)
             
             try:
-                rr: HDF5LoaderInterface = self.ScanStrategy(hdf5_dir)
+                loader: HDF5LoaderInterface = self.LoaderStrategy(hdf5_dir)
             except KeyError as e:
                 self.logger.warning(f"{e}")
                 self.logger.warning(f"KeyError happened in {scan_dir}")
@@ -81,9 +81,9 @@ class CoreProcesser:
             #     traceback.print_exc()
             #     continue
 
-            rr.apply_preprocessing_functions(self.preprocessing_functions)
+            loader.apply_preprocessing_functions(self.preprocessing_functions)
             
-            data_list_dict_temp = rr.get_data()
+            data_list_dict_temp = loader.get_data()
             for key, val in data_list_dict_temp.items():
                 data_list_dict[key].append(val)
         
@@ -114,7 +114,7 @@ class CoreProcesser:
 
 if __name__ == "__main__":
     
-    from core.loading_strategy import HDF5FileLoader
+    from core.loader_strategy import HDF5FileLoader
     from core.saver import SaverFactory
     from preprocess.image_qbpm_processors import (
         subtract_dark_background,
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     logger.info(f"preprocessing: divide by qbpm")
     logger.info(f"preprocessing: remove outlier by ransac")
     
-    cp = CoreProcesser(HDF5FileLoader, preprocessing_functions, logger)
+    cp = RawDataProcessor(HDF5FileLoader, preprocessing_functions, logger)
     cp.scan(run_num)
     
     mat_saver: SaverStrategy = SaverFactory.get_saver("mat")

@@ -160,7 +160,7 @@ def equalize_brightness(images: np.ndarray) -> np.ndarray:
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    from core.loading_strategy import HDF5FileLoader
+    from core.loader_strategy import HDF5FileLoader
     from sklearn.linear_model import RANSACRegressor
     from sklearn.metrics import mean_squared_error, r2_score
     import numpy as np

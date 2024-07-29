@@ -7,7 +7,7 @@ from scipy.optimize import curve_fit
 
 from cuptlib_config.palxfel import load_palxfel_config
 from preprocess.preprocessing_functions import get_linear_regression_confidence_lower_upper_bound, RANSAC_regression
-from core.loading_strategy import HDF5FileLoader
+from core.loader_strategy import HDF5FileLoader
 from utils.file_util import get_run_scan_directory, get_file_list
 
 import numpy.typing as npt
