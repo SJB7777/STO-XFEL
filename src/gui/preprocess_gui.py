@@ -107,15 +107,18 @@ def RANSAC_regression_gui(run: int, scan: int) -> None:
     plt.show()
 
 if __name__ == "__main__":
-    # # Example data
-    # np.random.seed(0)  # For reproducibility
-    # x = np.random.normal(10, 5, 100)
-    # x.sort()
-    # y = 2.5 * x + np.random.normal(0, 2, 100)
-    # y[0] += 10  # Add an outlier
-    # y[-1] -= 10  # Add another outlier
+    # Example data
+    np.random.seed(0)  # For reproducibility
+    x = np.random.normal(10, 5, 100)
+    x.sort()
+    y = 2.5 * x + np.random.normal(0, 2, 100)
+    y[0] += 10  # Add an outlier
+    y[-1] -= 10  # Add another outlier
 
-    # final_sigma = find_outliers_gui(y, x)
-    # print(f"Final Sigma: {final_sigma}")
+    mask, coef, intercept = RANSAC_regression(y, x)
+    plt.scatter(x[mask], y[mask], color="blue", label="Inliers")
+    plt.scatter(x[~mask], y[~mask], color="red", label="Outliers")
+    plt.plot([x.min(), x.max()], [coef * x.min() + intercept, coef * x.max() + intercept])
+    plt.title("RANSAC - outliers vs inliers")
 
-    RANSAC_regression_gui(197, 1)
+    plt.show()

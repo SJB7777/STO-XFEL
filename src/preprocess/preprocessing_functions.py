@@ -166,13 +166,24 @@ if __name__ == "__main__":
     import numpy as np
     from tqdm import tqdm
     
-    file: str = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
+    file: str = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\run=176\\scan=001\\p0044.h5"
 
     rr = HDF5FileLoader(file)
     images = rr.images
     qbpm = rr.qbpm_sum
+    fig, axs = plt.subplots(2, 1, figsize=(6, 8))
+    intensities = images.sum(axis=(1, 2))
+    sorted_indices = np.argsort(qbpm)
+    axs[0].scatter(qbpm[sorted_indices], intensities[sorted_indices])
+    axs[1].scatter(qbpm[sorted_indices], (intensities / qbpm)[sorted_indices])
 
-    
+    axs[0].set_xlim(0, None)
+    axs[0].set_ylim(0, None)
+    axs[1].set_xlim(0, None)
+    axs[1].set_ylim(0, None)
+    plt.show()
+ 
+
     intensities = images.sum(axis=(1, 2))
     intensities = intensities / intensities.mean()
     images_div_by_intensities = images / intensities[:, np.newaxis, np.newaxis]

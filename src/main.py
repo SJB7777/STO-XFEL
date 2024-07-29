@@ -1,3 +1,5 @@
+from roi_rectangle import RoiRectangle
+
 from logger import AppLogger
 from core.core_processer import CoreProcesser
 from core.loading_strategy import HDF5FileLoader
@@ -7,26 +9,30 @@ from preprocess.image_qbpm_processors import (
     subtract_dark_background,
     normalize_images_by_qbpm,
     remove_by_ransac,
-    equalize_intensities
+    equalize_intensities,
+    create_remove_by_ransac_roi
 )
+from gui.roi import select_roi
 
 logger: AppLogger = AppLogger("MainProcessor")
 
-run_nums = [1]
-
+run_nums = [176]
 logger.info(f"run: {run_nums}")
 for run_num in run_nums:
-    
+    roi_rect = RoiRectangle(*select_roi())
+    remove_by_ransac_roi: ImageQbpmProcessor = create_remove_by_ransac_roi(roi_rect)
+
     preprocessing_functions: list[ImageQbpmProcessor] = [
         subtract_dark_background,
+        remove_by_ransac_roi,
         normalize_images_by_qbpm,
-        remove_by_ransac,
+        
     ]
 
     logger.info(f"preprocessing: subtract_dark_background")
+    logger.info(f"preprocessing: remove_by_ransac_roi {roi_rect.get_coordinate()}")
     logger.info(f"preprocessing: normalize_images_by_qbpm")
-    logger.info(f"preprocessing: remove_by_ransac")
-
+    
     cp = CoreProcesser(HDF5FileLoader, preprocessing_functions, logger)
     cp.scan(run_num)
 

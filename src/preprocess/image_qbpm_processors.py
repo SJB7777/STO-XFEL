@@ -1,5 +1,6 @@
 from functools import partial
 
+from roi_rectangle import RoiRectangle
 import numpy.typing as npt
 from typing import Callable, Tuple
 
@@ -54,6 +55,13 @@ def remove_by_ransac(images: Images, qbpm: Qbpm) -> Tuple[Images, Qbpm]:
     """
     mask = RANSAC_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
     return images[mask], qbpm[mask]
+
+def create_remove_by_ransac_roi(roi_rect: RoiRectangle) -> ImageQbpmProcessor:
+    def remove_by_ransac_roi(images: Images, qbpm: Qbpm) -> Tuple[Images, Qbpm]:
+        roi_image = roi_rect.slice(images)
+        mask = RANSAC_regression(roi_image.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
+        return images[mask], qbpm[mask]
+    return remove_by_ransac_roi
 
 def equalize_intensities(images: Images, qbpm: Qbpm) -> Tuple[Images, Qbpm]:
     """
