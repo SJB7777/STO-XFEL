@@ -2,11 +2,13 @@ from roi_rectangle import RoiRectangle
 import numpy as np
 import pandas as pd
 
+from scipy.ndimage import rotate
+
 import numpy.typing as npt
 
 
 class MeanDataProcessor:
-    def __init__(self, file: str) -> None:
+    def __init__(self, file: str, angle: int = 0) -> None:
         try:
             data = np.load(file)
             if "delay" not in data or "pon" not in data or "poff" not in data:
@@ -14,10 +16,24 @@ class MeanDataProcessor:
         except FileNotFoundError:
             raise FileNotFoundError(f"The file {file} was not found.")
 
-        self.delay = data["delay"]
-        self.poff_images = data["poff"]
-        self.pon_images = data["pon"]
+        self.delay: npt.NDArray = data["delay"]
+        self.poff_images: npt.NDArray = data["poff"]
+        self.pon_images: npt.NDArray = data["pon"]
         
+        if angle:
+            self.poff_images = rotate(self.poff_images, 45, axes=(1, 2), reshape=False)
+            self.pon_images = rotate(self.pon_images, 45, axes=(1, 2), reshape=False)
+            
+    def get_summed_image(self) -> tuple[npt.NDArray, npt.NDArray]:
+        """
+        return: 
+            pump off image, pump on image
+        """
+        return self.poff_images.sum(axis=0), self.pon_images.sum(axis=0)
+    
+    def pon_subtract_by_poff(self):
+        return np.maximum(self.pon_images - self.poff_images, 0)
+    
     def _roi_center_of_masses(self, roi_rect: RoiRectangle, images: npt.NDArray):
         roi_images = roi_rect.slice(images)
         num_images, height, width = roi_images.shape
@@ -35,7 +51,7 @@ class MeanDataProcessor:
 
         return roi_images.mean(axis=(1, 2))
 
-    def analysis_by_rois(self, named_roi_rects: list[str, RoiRectangle]) -> pd.DataFrame:
+    def analyze_by_rois(self, named_roi_rects: list[str, RoiRectangle]) -> pd.DataFrame:
         data_frames = []
 
         for name, roi_rect in named_roi_rects:
@@ -68,14 +84,17 @@ class MeanDataProcessor:
 if __name__ == "__main__":
     # file = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\Npz_files\\run=0001_scan=0001.npz"
     file = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\Npz_files\\run=062\\scan=001\\run=062, scan=001.npz"
-    rd = MeanDataProcessor(file)
+    mdp = MeanDataProcessor(file, -45)
     roi_rects = [RoiRectangle(0, 0, None, None), RoiRectangle(100, 200, 500, 600)]
     names = ["total", "center"]
     named_roi_rects = zip(names, roi_rects)
-    data_df = rd.analysis_by_rois(named_roi_rects)
+    data_df = mdp.analyze_by_rois(named_roi_rects)
     
     import matplotlib.pyplot as plt
-    name = 'center'
-    plt.plot(data_df.index, data_df[name]["poff_intensity"])
-    plt.plot(data_df.index, data_df[name]["pon_intensity"])
-    plt.show()
+    name = 'total'
+    
+    poff_images = mdp.poff_images
+    poff_image, pon_image = mdp.get_summed_image()
+    
+    pon_sub_poff = mdp.pon_subtract_by_poff()
+    
