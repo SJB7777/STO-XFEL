@@ -11,7 +11,7 @@ class AppLogger:
     def __init__(self, name: str, log_dir: str = "logs"):
         self.log_dir = log_dir
         self.logger = self._setup_logger(name)
-        self.logger.info("Starting analysis")
+        # self.logger.info("Starting analysis")
         self.results = {}
 
     def _setup_logger(self, name: str) -> logging.Logger:

@@ -25,6 +25,7 @@ class SaverStrategy(ABC):
 
 class MatSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
+        comment = "_" + comment if comment else ""
         config = load_palxfel_config("config.ini")
         mat_dir = config.path.mat_dir
         
@@ -33,7 +34,7 @@ class MatSaverStrategy(SaverStrategy):
                 mat_format_images = val.swapaxes(0, 2)
                 mat_format_images = mat_format_images.swapaxes(0, 1) # TEMP
                 
-                mat_file = os.path.join(mat_dir, f"{file_base_name}_{key}{comment}.tif")
+                mat_file = os.path.join(mat_dir, f"{file_base_name}_{key}{comment}.mat")
                 
                 savemat(mat_file, {"data": mat_format_images})
         self._file_name = mat_file
@@ -48,6 +49,7 @@ class MatSaverStrategy(SaverStrategy):
 
 class NpzSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
+        comment = "_" + comment if comment else ""
         config = load_palxfel_config("config.ini")
         npz_dir = config.path.npz_dir
         npz_file = os.path.join(npz_dir, file_base_name + comment + ".npz")
@@ -65,11 +67,13 @@ class NpzSaverStrategy(SaverStrategy):
 
 class TifSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
+        comment = "_" + comment if comment else ""
         config = load_palxfel_config("config.ini")
         tif_dir = config.path.tif_dir
         
         for key, val in data_dict.items():
             if val.ndim == 3:
+                
                 tif_file = os.path.join(tif_dir, f"{file_base_name}_{key}{comment}.tif")
                 tifffile.imwrite(tif_file, val.astype(np.float32))
 

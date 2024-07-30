@@ -18,21 +18,22 @@ from roi_rectangle import RoiRectangle
 
 logger: AppLogger = AppLogger("MainProcessor")
 
-run_nums = [1]
+run_nums = [176]
 logger.info(f"run: {run_nums}")
 for run_num in run_nums:
     roi_rect: RoiRectangle = select_roi_by_run_scan(run_num, 1)
+    logger.info(f"roi rectangle: {roi_rect.get_coordinate()}")
     remove_by_ransac_roi: ImageQbpmProcessor = create_remove_by_ransac_roi(roi_rect)
 
     preprocessing_functions: list[ImageQbpmProcessor] = [
         subtract_dark_background,
         remove_by_ransac_roi,
-        normalize_images_by_qbpm,
+        # equalize_intensities,
     ]
 
     logger.info(f"preprocessing: subtract_dark_background")
     logger.info(f"preprocessing: remove_by_ransac_roi {roi_rect.get_coordinate()}")
-    logger.info(f"preprocessing: normalize_images_by_qbpm")
+    # logger.info(f"preprocessing: equalize_intensities")
     
     cp = RawDataProcessor(HDF5FileLoader, preprocessing_functions, logger)
     cp.scan(run_num)
@@ -41,9 +42,9 @@ for run_num in run_nums:
     tif_saver: SaverStrategy = SaverFactory.get_saver("tif")
     npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
 
-    cp.save(mat_saver)
-    cp.save(tif_saver)
-    cp.save(npz_saver)
+    cp.save(mat_saver, "no_normalizing")
+    # cp.save(tif_saver)
+    # cp.save(npz_saver)
     
     logger.info(f"Processing run={run_num} is over")
 
