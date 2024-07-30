@@ -31,6 +31,11 @@ def get_file_status(root: str) -> dict:
     return status
 
 def h5_tree(val: Any, pre: None ='') -> None:
+    """
+    with h5py.File(file) as hf:
+        print(hf)
+        h5_tree(hf)
+    """
     items_cnt = len(val)
     for key, val in val.items():
         items_cnt -= 1
@@ -60,8 +65,19 @@ def load_matdata(h5file: str) -> pd.DataFrame:
 
 if __name__ == "__main__":
 
-    file = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
+    from cuptlib_config.palxfel import load_palxfel_config
+    from utils.file_util import get_run_scan_directory
+    config = load_palxfel_config("config.ini")
+    load_dir = config.path.load_dir
+    
+    file = get_run_scan_directory(load_dir, 1, 1, 110)
+    
+    # metadata = load_matdata(file)
+    
+    # metadata.to_csv("metadata.csv")
+    
     with h5py.File(file) as hf:
         print(hf)
         h5_tree(hf)
+    
     
