@@ -7,12 +7,19 @@ def format_run_scan_number(run_scan_list):
     return ', '.join([f'({x}, {y})' for x, y in run_scan_list])
 
 class AppLogger:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(AppLogger, cls).__new__(cls)
+        return cls._instance
 
     def __init__(self, name: str, log_dir: str = "logs"):
-        self.log_dir = log_dir
-        self.logger = self._setup_logger(name)
-        # self.logger.info("Starting analysis")
-        self.results = {}
+        if not hasattr(self, 'logger'):  # Ensure initialization only happens once
+            self.log_dir = log_dir
+            self.logger = self._setup_logger(name)
+            self.logger.info("Start Logging")  # Log info message on first creation
+            self.results = {}
 
     def _setup_logger(self, name: str) -> logging.Logger:
         logger = logging.getLogger(name)
@@ -55,7 +62,6 @@ class AppLogger:
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
         self.logger.info(f"Record saved to {filename}")
-        
         
     def info(self, message: str) -> None:
         self.logger.info(message)

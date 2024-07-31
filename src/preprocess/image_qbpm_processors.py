@@ -14,7 +14,7 @@ from preprocess.preprocessing_functions import (
 
 Images = npt.NDArray
 Qbpm = npt.NDArray
-ImageQbpmProcessor = Callable[[Images, Qbpm], Tuple[Images, Qbpm]]
+ImagesQbpmProcessor = Callable[[Images, Qbpm], Tuple[Images, Qbpm]]
 
 def subtract_dark_background(images: Images, qbpm: Qbpm) -> Tuple[Images, Qbpm]:
     """
@@ -56,7 +56,7 @@ def remove_by_ransac(images: Images, qbpm: Qbpm) -> Tuple[Images, Qbpm]:
     mask = RANSAC_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
     return images[mask], qbpm[mask]
 
-def create_remove_by_ransac_roi(roi_rect: RoiRectangle) -> ImageQbpmProcessor:
+def create_remove_by_ransac_roi(roi_rect: RoiRectangle) -> ImagesQbpmProcessor:
     def remove_by_ransac_roi(images: Images, qbpm: Qbpm) -> Tuple[Images, Qbpm]:
         roi_image = roi_rect.slice(images)
         mask = RANSAC_regression(roi_image.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
@@ -76,7 +76,7 @@ def equalize_intensities(images: Images, qbpm: Qbpm) -> Tuple[Images, Qbpm]:
     """
     return equalize_brightness(images), qbpm
 
-def create_outlier_remover(sigma) -> ImageQbpmProcessor:
+def create_outlier_remover(sigma) -> ImagesQbpmProcessor:
     """
     Create a function to remove outliers using a linear model with a given sigma.
 
@@ -86,6 +86,6 @@ def create_outlier_remover(sigma) -> ImageQbpmProcessor:
     Returns:
     - ImageQbpmProcessor: A function that takes images and Qbpm values and returns the filtered images and Qbpm values.
     """
-    remove_outlier: ImageQbpmProcessor = partial(filter_images_qbpm_by_linear_model, sigma=sigma)
+    remove_outlier: ImagesQbpmProcessor = partial(filter_images_qbpm_by_linear_model, sigma=sigma)
     return remove_outlier
 

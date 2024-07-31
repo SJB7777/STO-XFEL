@@ -5,10 +5,10 @@ import numpy as np
 import pandas as pd
 import h5py
 import hdf5plugin
-from cuptlib_config.palxfel import load_palxfel_config
+from cuptlib_config.palxfel import load_palxfel_config, Hertz
 from logger import AppLogger
 
-from preprocess.image_qbpm_processors import ImageQbpmProcessor
+from preprocess.image_qbpm_processors import ImagesQbpmProcessor
 import numpy.typing as npt
 
 class HDF5LoaderInterface(ABC):
@@ -31,17 +31,7 @@ class HDF5LoaderInterface(ABC):
         pass
     
     @abstractmethod
-    def apply_preprocessing_functions(self, preprocessing_functions: list[ImageQbpmProcessor]):
-        """
-        Applies a list of preprocessing functions to the images and Qbpm sum.
-
-        Parameters:
-        - preprocessing_functions (List[ImageQbpmProcessor]): List of preprocessing functions to apply.
-        """
-        pass
-    
-    @abstractmethod
-    def get_data(self) -> dict[str, npt.NDArray]:
+    def get_images_dict(self) -> dict[str, npt.NDArray]:
         pass
 
 
@@ -86,13 +76,19 @@ class HDF5FileLoader(HDF5LoaderInterface):
         
         self.images = np.stack(self.images.values)
         self.qbpm_sum = np.stack(self.qbpm_sum.values)
-        self.pump_status = self.merged_df[f'timestamp_info.RATE_{config.param.xray}_{config.param.pump_setting}'].astype(bool)
-        
+
+        # FIXME: config.param.pump_setting should be Hertz(Enum) but it is str now.
+        if config.param.pump_setting == str(Hertz.ZERO):
+            self.pump_status = np.zeros_like(self.qbpm_sum, dtype=np.bool_)
+        else:
+            self.pump_status = self.merged_df[f'timestamp_info.RATE_{config.param.xray}_{config.param.pump_setting}'].astype(bool)
+
         # Remove below zero.
         self.images = np.maximum(0, self.images)
-        
+
         self.pon_images = self.images[self.pump_status]
         self.poff_images = self.images[~self.pump_status]
+
         # roi_coord = np.array(self.metadata[f'detector_{config.param.hutch}_{config.param.detector}_parameters.ROI'].iloc[0][0])
 
         
@@ -128,19 +124,12 @@ class HDF5FileLoader(HDF5LoaderInterface):
 
         return pd.merge(self.metadata, merged_df, left_index=True, right_index=True, how='inner')
     
-    def apply_preprocessing_functions(self, preprocessing_functions: list[ImageQbpmProcessor]):
-        
-        for function in preprocessing_functions:
-            self.images, self.qbpm_sum = function(self.images, self.qbpm_sum)
-
-    def get_data(self) -> dict[str, npt.NDArray]:
+    def get_images_dict(self) -> dict[str, npt.NDArray]:
         data = {}
-        
-        data["delay"] = self.delay
-        
+
         if self.pon_images.size > 0:
-            data["pon"] = self.pon_images.mean(axis=0)
+            data["pon"] = self.pon_images
         if self.poff_images.size > 0:
-            data["poff"] = self.poff_images.mean(axis=0)
-        
+            data["poff"] = self.poff_images
+            
         return data

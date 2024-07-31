@@ -70,14 +70,13 @@ if __name__ == "__main__":
     config = load_palxfel_config("config.ini")
     load_dir = config.path.load_dir
     
-    file = get_run_scan_directory(load_dir, 1, 1, 110)
+    file = get_run_scan_directory(load_dir, 122, 1, 30)
     
-    # metadata = load_matdata(file)
+    metadata = load_matdata(file)
+    metadata.to_csv("metadata122.csv")
     
-    # metadata.to_csv("metadata.csv")
-    
-    with h5py.File(file) as hf:
-        print(hf)
-        h5_tree(hf)
+    # with h5py.File(file) as hf:
+    #     print(hf)
+    #     h5_tree(hf)
     
     
