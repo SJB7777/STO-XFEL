@@ -36,6 +36,8 @@ class AppLogger:
         log_path = os.path.join(log_dir, log_file)
         file_handler = logging.FileHandler(log_path)
 
+        self.log_path = log_path
+        
         file_handler.setFormatter(formatter)
         
         console_handler = logging.StreamHandler()

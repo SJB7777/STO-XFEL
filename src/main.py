@@ -32,7 +32,8 @@ def processing(run_num: int, scan_num: int) -> None:
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
 
-    roi_rect: RoiRectangle = select_roi_by_run_scan(run_num, scan_num)
+    # roi_rect: RoiRectangle = select_roi_by_run_scan(run_num, scan_num)
+    roi_rect = RoiRectangle(126, 60, 161, 99)
     logger.info(f"roi rectangle: {roi_rect.get_coordinate()}")
     remove_by_ransac_roi: ImagesQbpmProcessor = create_remove_by_ransac_roi(roi_rect)
 
@@ -42,53 +43,45 @@ def processing(run_num: int, scan_num: int) -> None:
         remove_by_ransac_roi,
         normalize_images_by_qbpm,
     ]
-    logger.info(f"Pipeline: normalize_images_by_qbpm")
+    logger.info(f"PipeLine: normalize_images_by_qbpm")
     logger.info(f"preprocessing: subtract_dark_background")
     logger.info(f"preprocessing: remove_by_ransac_roi")
     logger.info(f"preprocessing: normalize_images_by_qbpm")
     
-    # Pipeline 2
-    pipeline_equalize_intensities: list[ImagesQbpmProcessor] = [
-        subtract_dark_background,
-        remove_by_ransac_roi,
-        equalize_intensities,
-    ]
-    logger.info(f"Pipeline: normalize_images_by_qbpm")
-    logger.info(f"preprocessing: subtract_dark_background")
-    logger.info(f"preprocessing: remove_by_ransac_roi")
-    logger.info(f"preprocessing: equalize_intensities")
-
-    # Pipeline 3
-    pipeline_no_normalize: list[ImagesQbpmProcessor] = [
-        subtract_dark_background,
-        remove_by_ransac_roi,
-    ]
-    logger.info(f"Pipeline: no_normalize")
-    logger.info(f"preprocessing: subtract_dark_background")
-    logger.info(f"preprocessing: remove_by_ransac_roi")
+    # # Pipeline 2
+    # pipeline_no_normalize: list[ImagesQbpmProcessor] = [
+    #     subtract_dark_background,
+    #     remove_by_ransac_roi,
+    # ]
+    # logger.info(f"PipeLine: no_normalize")
+    # logger.info(f"preprocessing: subtract_dark_background")
+    # logger.info(f"preprocessing: remove_by_ransac_roi")
 
     pipelines: dict[str, list[ImagesQbpmProcessor]] = {
-        "normalize_images_by_qbpm" : pipeline_normalize_images_by_qbpm,
-        "equalize_intensities": pipeline_equalize_intensities,
-        "no_normalize" : pipeline_no_normalize
+        "normalize_images_by_qbpm_2" : pipeline_normalize_images_by_qbpm,
+        # "no_normalize" : pipeline_no_normalize
     }
 
-    cp = RawDataProcessor(HDF5FileLoader, pipelines, logger)
-    cp.scan(scan_dir)
+    rdp = RawDataProcessor(HDF5FileLoader, pipelines, logger)
+    rdp.scan(scan_dir)
     mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
 
-    file_name = f"{run_num:0>4}_{scan_num:0>4}"
-    cp.save(mat_saver, file_name)
+    file_name = f"run={run_num:0>4}_scan={scan_num:0>4}"
+    rdp.save(mat_saver, file_name)
     
     logger.info(f"Processing run={run_num} is over")
 
+def main():
 
-run_nums: list[int] = [176]
-logger.info(f"run: {run_nums}")
+    run_nums: list[int] = [176]
+    logger.info(f"run: {run_nums}")
 
-for run_num in run_nums:
-    scan_nums: list[int] = get_scan_nums(run_num)
-    for scan_num in scan_nums:
-        processing(run_num, scan_num)
+    for run_num in run_nums:
+        scan_nums: list[int] = get_scan_nums(run_num)
+        for scan_num in scan_nums:
+            processing(run_num, scan_num)
 
-logger.info("Processing is over")
+    logger.info("Processing is over")
+
+if __name__ == "__main__":
+    main()

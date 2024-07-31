@@ -132,14 +132,15 @@ def normalize_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
     Returns:
     NDArray: Images that divided by qbpm
     """
-    return images / qbpm[:, np.newaxis, np.newaxis]
+    return images * qbpm.mean() / qbpm[:, np.newaxis, np.newaxis]
 
 def subtract_dark(images: npt.NDArray) -> npt.NDArray:
     config = load_palxfel_config("config.ini")
     dark_file = os.path.join(config.path.save_dir, "DARK\\dark.npy")
     dark_images = np.load(dark_file)
     dark = np.mean(dark_images, axis=0)
-    return np.maximum(images - dark[np.newaxis, :, :], 0)
+    # return np.maximum(images - dark[np.newaxis, :, :], 0)
+    return images - dark[np.newaxis, :, :]
 
 def equalize_brightness(images: np.ndarray) -> np.ndarray:
     """

@@ -37,10 +37,10 @@ class RawDataProcessor:
         scan_dir = scan_dir
         self.logger.info(f"Starting scan: {scan_dir}")
 
-        self.result: dict[str, DefaultDict[str, npt.NDArray]] = self._single_scan(scan_dir)
+        self.result: dict[str, DefaultDict[str, npt.NDArray]] = self.process_scan_directory(scan_dir)
         self.logger.info(f"Completed processing: {scan_dir}")
             
-    def _single_scan(self, scan_dir: str) -> dict[str, DefaultDict[str, npt.NDArray]]:
+    def process_scan_directory(self, scan_dir: str) -> dict[str, DefaultDict[str, npt.NDArray]]:
         """
         Processes a single scan directory.
 
@@ -55,53 +55,72 @@ class RawDataProcessor:
         hdf5_files = get_file_list(scan_dir)
         pbar = tqdm(hdf5_files, total=len(hdf5_files))
 
-        pipeline_data_dict: dict[str, DefaultDict[str, list]] = {pipline_name : defaultdict(list) for pipline_name in  self.pipelines}
+        self.pipeline_data_dict: dict[str, DefaultDict[str, list]] = {pipline_name : defaultdict(list) for pipline_name in self.pipelines}
 
         for hdf5_file in pbar:
-            hdf5_dir = os.path.join(scan_dir, hdf5_file)
-            
-            try:
-                loader: HDF5LoaderInterface = self.LoaderStrategy(hdf5_dir)
-            except KeyError as e:
-                self.logger.warning(f"{e}")
-                self.logger.warning(f"KeyError happened in {scan_dir}")
-                continue
-            # except Exception as e:
-            #     self.logger.error(f"Failed to load frame {i}: {type(e)}: {str(e)}")
 
-            #     import traceback
-            #     traceback.print_exc()
-            #     continue
+            loader_strategy = self.get_loader_strategy(scan_dir, hdf5_file)
+            if loader_strategy is not None:
+                self.add_processed_data_to_dict(loader_strategy)
 
-            pipeline_data:dict[str, dict[str, Any]] = {}
-            for pipline_name, pipeline in self.pipelines.items():
-                data = {}
-
-                for image_name, images in loader.get_images_dict().items():
-                    applied_images: npt.NDArray = self._apply_pipline(pipeline, images, loader.qbpm_sum)
-                    data[image_name] = applied_images.mean(axis=0)
-
-                data["delay"] = loader.delay
-                pipeline_data[pipline_name] = data
-            
-            for pipline_name, data in pipeline_data.items():
-                for data_name, data_value in data.items():
-                    pipeline_data_dict[pipline_name][data_name].append(data_value)
-
-        self.logger.info(f"Completed single scan for directory: {scan_dir}")
-        
-        pipeline_data_dict_result: dict[str, DefaultDict[str, npt.NDArray]] = {}
-        for pipline_name, data in pipeline_data_dict.items():
-            pipeline_data_dict_result[pipline_name] = {data_name: np.stack(data_list) for data_name, data_list in data.items()}
-
-        return pipeline_data_dict_result
+        return self.stack_processed_data(self.pipeline_data_dict)
     
-    def _apply_pipline(self, pipeline: list[ImagesQbpmProcessor], images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
+    def get_loader_strategy(self, scan_dir: str, hdf5_file: str) -> Optional[HDF5LoaderInterface]:
+        hdf5_dir = os.path.join(scan_dir, hdf5_file)
+        try:
+
+            return self.LoaderStrategy(hdf5_dir)
+        
+        except KeyError as e:
+            self.logger.warning(f"{e}")
+            self.logger.warning(f"KeyError happened in {scan_dir}")
+            return None
+        
+        except FileNotFoundError as e:
+            self.logger.warning(f"{e}")
+            self.logger.warning(f"FileNotFoundError happened in {scan_dir}")
+            return None
+        
+        # except Exception as e:
+        #     self.logger.error(f"Failed to load: {type(e)}: {str(e)}")
+
+        #     import traceback
+        #     traceback.print_exc()
+
+        #     return None
+
+
+    def _apply_pipeline(self, pipeline: list[ImagesQbpmProcessor], images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
         
         for function in pipeline:
             images, qbpm = function(images, qbpm)
         
         return images
+    
+    def add_processed_data_to_dict(self, loader_strategy: HDF5LoaderInterface) -> dict[str, DefaultDict[str, list]]:
+
+        pipeline_data:dict[str, dict[str, Any]] = {}
+        for pipeline_name, pipeline in self.pipelines.items():
+            data: dict[str, Any] = {}
+
+            for image_name, images in loader_strategy.get_images_dict().items():
+                applied_images: npt.NDArray = self._apply_pipeline(pipeline, images, loader_strategy.qbpm_sum)
+                data[image_name] = applied_images.mean(axis=0)
+
+            data["delay"] = loader_strategy.delay
+            pipeline_data[pipeline_name] = data
+        
+        for pipeline_name, data in pipeline_data.items():
+            for data_name, data_value in data.items():
+                self.pipeline_data_dict[pipeline_name][data_name].append(data_value)
+
+    def stack_processed_data(self, pipeline_data_dict: dict[str, DefaultDict[str, list]]) -> dict[str, DefaultDict[str, npt.NDArray]]:
+        pipeline_data_dict_result: dict[str, DefaultDict[str, npt.NDArray]] = {}
+        for pipeline_name, data in pipeline_data_dict.items():
+            pipeline_data_dict_result[pipeline_name] = {data_name: np.stack(data_list) for data_name, data_list in data.items()}
+
+        return pipeline_data_dict_result
+    
 
     def save(self, saver: SaverStrategy, file_name: str):
         """
@@ -173,7 +192,7 @@ if __name__ == "__main__":
         "equalize_intensities": pipeline_equalize_intensities,
         "no_normalize" : pipeline_no_normalize
     }
-    print(pipelines)
+
     cp = RawDataProcessor(HDF5FileLoader, pipelines, logger)
     cp.scan(run_num)
     
