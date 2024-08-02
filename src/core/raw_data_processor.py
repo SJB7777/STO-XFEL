@@ -89,8 +89,7 @@ class RawDataProcessor:
 
         #     return None
 
-
-    def _apply_pipeline(self, pipeline: list[ImagesQbpmProcessor], images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
+    def apply_pipeline(self, pipeline: list[ImagesQbpmProcessor], images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
         
         for function in pipeline:
             images, qbpm = function(images, qbpm)
@@ -103,10 +102,17 @@ class RawDataProcessor:
         for pipeline_name, pipeline in self.pipelines.items():
             data: dict[str, Any] = {}
 
-            for image_name, images in loader_strategy.get_images_dict().items():
-                applied_images: npt.NDArray = self._apply_pipeline(pipeline, images, loader_strategy.qbpm_sum)
-                data[image_name] = applied_images.mean(axis=0)
-
+            # for image_name, images in loader_strategy.get_images_dict().items():
+            #     applied_images: npt.NDArray = self.apply_pipeline(pipeline, images, loader_strategy.qbpm_sum)
+            #     data[image_name] = applied_images.mean(axis=0)
+            images_dict = loader_strategy.get_images_dict()
+            if "pon" in images_dict:
+                applied_images: npt.NDArray = self.apply_pipeline(pipeline, images_dict['pon'], images_dict['pon_qbpm'])
+                data['pon'] = applied_images.mean(axis=0)
+            if 'poff' in images_dict:
+                applied_images: npt.NDArray = self.apply_pipeline(pipeline, images_dict['poff'], images_dict['poff_qbpm'])
+                data['poff'] = applied_images.mean(axis=0)
+                
             data["delay"] = loader_strategy.delay
             pipeline_data[pipeline_name] = data
         
@@ -137,7 +143,7 @@ class RawDataProcessor:
             raise Exception("Nothing to save")
         
         for pipline_name, data_dict in self.result.items():
-            file_base_name = f"{file_name}_{pipline_name}"
+            file_base_name = f"{file_name}"
             saver.save(file_base_name, data_dict)
             self.logger.info(f"Finished Pipeline: {pipline_name}")
             self.logger.info(f"Data Dict Keys: {data_dict.keys()}")        

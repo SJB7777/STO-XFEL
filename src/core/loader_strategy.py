@@ -78,6 +78,7 @@ class HDF5FileLoader(HDF5LoaderInterface):
         self.qbpm_sum = np.stack(self.qbpm_sum.values)
 
         # FIXME: config.param.pump_setting should be Hertz(Enum) but it is str now.
+        # if config.param.pump_setting is Hertz.ZERO:
         if config.param.pump_setting == str(Hertz.ZERO):
             self.pump_status = np.zeros_like(self.qbpm_sum, dtype=np.bool_)
         else:
@@ -126,10 +127,12 @@ class HDF5FileLoader(HDF5LoaderInterface):
     
     def get_images_dict(self) -> dict[str, npt.NDArray]:
         data = {}
-
+        
         if self.pon_images.size > 0:
             data["pon"] = self.pon_images
+            data["pon_qbpm"] = self.qbpm_sum[self.pump_status]
         if self.poff_images.size > 0:
             data["poff"] = self.poff_images
+            data["poff_qbpm"] = self.qbpm_sum[~self.pump_status]
             
         return data

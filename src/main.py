@@ -18,6 +18,7 @@ from utils.file_util import get_folder_list, get_run_scan_directory
 from roi_rectangle import RoiRectangle
 from cuptlib_config.palxfel import load_palxfel_config
 
+
 logger: AppLogger = AppLogger("MainProcessor")
 
 def get_scan_nums(run_num: int) -> list[tuple[int, int]]:
@@ -32,35 +33,26 @@ def processing(run_num: int, scan_num: int) -> None:
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
 
-    # roi_rect: RoiRectangle = select_roi_by_run_scan(run_num, scan_num)
-    roi_rect = RoiRectangle(126, 60, 161, 99)
+    roi_rect: RoiRectangle = select_roi_by_run_scan(run_num, scan_num)
+    # roi_rect = RoiRectangle(126, 60, 161, 99)
     logger.info(f"roi rectangle: {roi_rect.get_coordinate()}")
     remove_by_ransac_roi: ImagesQbpmProcessor = create_remove_by_ransac_roi(roi_rect)
 
     # Pipeline 1
-    pipeline_normalize_images_by_qbpm: list[ImagesQbpmProcessor] = [
+    pipeline_sub_dark: list[ImagesQbpmProcessor] = [
         subtract_dark_background,
         remove_by_ransac_roi,
         normalize_images_by_qbpm,
     ]
-    logger.info(f"PipeLine: normalize_images_by_qbpm")
-    logger.info(f"preprocessing: subtract_dark_background")
-    logger.info(f"preprocessing: remove_by_ransac_roi")
-    logger.info(f"preprocessing: normalize_images_by_qbpm")
     
-    # # Pipeline 2
-    # pipeline_no_normalize: list[ImagesQbpmProcessor] = [
-    #     subtract_dark_background,
-    #     remove_by_ransac_roi,
-    # ]
-    # logger.info(f"PipeLine: no_normalize")
-    # logger.info(f"preprocessing: subtract_dark_background")
-    # logger.info(f"preprocessing: remove_by_ransac_roi")
-
     pipelines: dict[str, list[ImagesQbpmProcessor]] = {
-        "normalize_images_by_qbpm_2" : pipeline_normalize_images_by_qbpm,
-        # "no_normalize" : pipeline_no_normalize
+        "sub_dark_qbpm" : pipeline_sub_dark,
     }
+
+    for pipeline_name, pipeline in pipelines.items():
+        logger.info(f"PipeLine: {pipeline_name}")
+        for function in pipeline:
+            logger.info(f"preprocess: {function.__name__}")
 
     rdp = RawDataProcessor(HDF5FileLoader, pipelines, logger)
     rdp.scan(scan_dir)
@@ -73,7 +65,7 @@ def processing(run_num: int, scan_num: int) -> None:
 
 def main():
 
-    run_nums: list[int] = [176]
+    run_nums: list[int] = [123]
     logger.info(f"run: {run_nums}")
 
     for run_num in run_nums:
@@ -82,6 +74,7 @@ def main():
             processing(run_num, scan_num)
 
     logger.info("Processing is over")
+
 
 if __name__ == "__main__":
     main()

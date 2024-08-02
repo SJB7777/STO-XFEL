@@ -72,11 +72,11 @@ if __name__ == "__main__":
     
     file = get_run_scan_directory(load_dir, 122, 1, 30)
     
-    metadata = load_matdata(file)
-    metadata.to_csv("metadata122.csv")
+    # metadata = load_matdata(file)
+    # metadata.to_csv("metadata122.csv")
     
-    # with h5py.File(file) as hf:
-    #     print(hf)
-    #     h5_tree(hf)
+    with h5py.File(file) as hf:
+        print(hf)
+        h5_tree(hf)
     
     
