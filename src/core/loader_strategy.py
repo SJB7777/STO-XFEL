@@ -33,7 +33,11 @@ class HDF5LoaderInterface(ABC):
     @abstractmethod
     def get_images_dict(self) -> dict[str, npt.NDArray]:
         pass
-
+    
+    @property
+    @abstractmethod
+    def delay(self) -> npt.NDArray:
+        pass
 
 class HDF5FileLoader(HDF5LoaderInterface):
     """
@@ -52,12 +56,12 @@ class HDF5FileLoader(HDF5LoaderInterface):
         self.metadata = pd.read_hdf(file, 'metadata')
         
         if "th_value" in self.metadata:
-            self.delay = np.asarray(self.metadata['th_value'])[0]
+            self._delay = np.asarray(self.metadata['th_value'])[0]
         elif "delay_value" in self.metadata:
-            self.delay = np.asarray(self.metadata['delay_value'])[0]
+            self._delay = np.asarray(self.metadata['delay_value'])[0]
         else:
             self.logger.warning("'th_value' and 'delay_value' are not excisting in metadata.")
-            self.delay = np.nan
+            self._delay = np.nan
             
         with h5py.File(file) as hf:
             if "detector" not in hf:
@@ -91,9 +95,6 @@ class HDF5FileLoader(HDF5LoaderInterface):
         self.poff_images = self.images[~self.pump_status]
 
         # roi_coord = np.array(self.metadata[f'detector_{config.param.hutch}_{config.param.detector}_parameters.ROI'].iloc[0][0])
-
-        
-        # roi_coord = np.array(self.metadata[f'detector_{self.hutch}_{self.detector}_parameters.ROI'].iloc[0][0])
         # self.roi_rect = np.array([roi_coord[self.x1], roi_coord[self.x2], roi_coord[self.y1], roi_coord[self.y2]], dtype=np.dtype(int))
         
     def _get_merged_df(self) -> pd.DataFrame:
@@ -136,3 +137,7 @@ class HDF5FileLoader(HDF5LoaderInterface):
             data["poff_qbpm"] = self.qbpm_sum[~self.pump_status]
             
         return data
+    
+    @property
+    def delay(self) -> npt.NDArray:
+        return self._delay

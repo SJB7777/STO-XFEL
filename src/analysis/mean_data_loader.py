@@ -8,7 +8,6 @@ class MatLoader:
         images = mat_images.swapaxes(0, 2)
         self.images = images.swapaxes(1, 2)
 
-
 if __name__ == "__main__":
     from core.saver import TifSaverStrategy
     from preprocess.remove_continuous_noise import remove_noise

@@ -39,14 +39,14 @@ def processing(run_num: int, scan_num: int) -> None:
     remove_by_ransac_roi: ImagesQbpmProcessor = create_remove_by_ransac_roi(roi_rect)
 
     # Pipeline 1
-    pipeline_sub_dark: list[ImagesQbpmProcessor] = [
+    pipeline_standard: list[ImagesQbpmProcessor] = [
         subtract_dark_background,
         remove_by_ransac_roi,
         normalize_images_by_qbpm,
     ]
     
     pipelines: dict[str, list[ImagesQbpmProcessor]] = {
-        "sub_dark_qbpm" : pipeline_sub_dark,
+        "standard" : pipeline_standard,
     }
 
     for pipeline_name, pipeline in pipelines.items():

@@ -7,7 +7,7 @@ import numpy.typing as npt
 from tqdm import tqdm
 from cuptlib_config.palxfel import load_palxfel_config
 
-from utils.file_util import get_run_scan_directory, get_folder_list, get_file_list
+from utils.file_util import get_file_list
 from core.saver import SaverStrategy
 from core.loader_strategy import HDF5LoaderInterface
 from logger import AppLogger
@@ -68,25 +68,19 @@ class RawDataProcessor:
     def get_loader_strategy(self, scan_dir: str, hdf5_file: str) -> Optional[HDF5LoaderInterface]:
         hdf5_dir = os.path.join(scan_dir, hdf5_file)
         try:
-
             return self.LoaderStrategy(hdf5_dir)
-        
         except KeyError as e:
             self.logger.warning(f"{e}")
             self.logger.warning(f"KeyError happened in {scan_dir}")
             return None
-        
         except FileNotFoundError as e:
             self.logger.warning(f"{e}")
             self.logger.warning(f"FileNotFoundError happened in {scan_dir}")
             return None
-        
         # except Exception as e:
         #     self.logger.error(f"Failed to load: {type(e)}: {str(e)}")
-
         #     import traceback
         #     traceback.print_exc()
-
         #     return None
 
     def apply_pipeline(self, pipeline: list[ImagesQbpmProcessor], images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
@@ -102,9 +96,6 @@ class RawDataProcessor:
         for pipeline_name, pipeline in self.pipelines.items():
             data: dict[str, Any] = {}
 
-            # for image_name, images in loader_strategy.get_images_dict().items():
-            #     applied_images: npt.NDArray = self.apply_pipeline(pipeline, images, loader_strategy.qbpm_sum)
-            #     data[image_name] = applied_images.mean(axis=0)
             images_dict = loader_strategy.get_images_dict()
             if "pon" in images_dict:
                 applied_images: npt.NDArray = self.apply_pipeline(pipeline, images_dict['pon'], images_dict['pon_qbpm'])
@@ -126,7 +117,6 @@ class RawDataProcessor:
             pipeline_data_dict_result[pipeline_name] = {data_name: np.stack(data_list) for data_name, data_list in data.items()}
 
         return pipeline_data_dict_result
-    
 
     def save(self, saver: SaverStrategy, file_name: str):
         """
