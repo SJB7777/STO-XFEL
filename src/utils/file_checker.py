@@ -2,12 +2,10 @@ import os
 
 import pandas as pd
 import h5py
-from cuptlib_config.palxfel import load_palxfel_config
 
 from utils.file_util import get_file_list, get_folder_list
 
 from typing import Any
-
 
 def get_file_status(root: str) -> dict:
 
@@ -65,9 +63,10 @@ def load_matdata(h5file: str) -> pd.DataFrame:
 
 if __name__ == "__main__":
 
-    from cuptlib_config.palxfel import load_palxfel_config
     from utils.file_util import get_run_scan_directory
-    config = load_palxfel_config("config.ini")
+    from config import load_config
+    
+    config = load_config()
     load_dir = config.path.load_dir
     
     file = get_run_scan_directory(load_dir, 122, 1, 30)

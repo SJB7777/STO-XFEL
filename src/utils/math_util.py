@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.integrate import quad, dblquad
-from cuptlib_config.palxfel import load_palxfel_config
+
+from config import load_config
 
 from typing import Final
 import numpy.typing as npt
@@ -67,14 +68,14 @@ def integrate_FWHM_2D(amplitude: float, xo: float, yo: float, sigma_x: float, si
     return result
 
 def pixel_to_delQ(pixels: npt.NDArray) -> npt.NDArray:
-    config = load_palxfel_config()
+    config = load_config()
     del_pixels = pixels - pixels[0]
     del_two_theta = np.arctan(config.param.dps / config.param.sdd * del_pixels)
     return 4 * np.pi / config.param.wavelength * np.sin(del_two_theta / 2)
 
 
 def pixel_to_Q(pixels: npt.NDArray) -> npt.NDArray:
-    config = load_palxfel_config()
+    config = load_config()
 
     two_theta = np.arctan(config.param.dps / config.param.sdd * pixels)
     return 4 * np.pi / config.param.wavelength * np.sin(two_theta / 2)

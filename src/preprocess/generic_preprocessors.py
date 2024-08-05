@@ -5,52 +5,35 @@ from scipy.optimize import curve_fit
 from scipy.io import loadmat
 from sklearn.linear_model import RANSACRegressor
 
-from utils.file_util import load_palxfel_config
+from config import load_config
 
 import numpy.typing as npt
 from typing import Optional, Callable
 
-def RANSAC_regression(y: np.ndarray, x: np.ndarray, min_samples: Optional[int] = None) -> tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]:
+def ransac_regression(y: np.ndarray, x: np.ndarray, min_samples: Optional[int] = None) -> tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]:
     """
     Perform RANSAC (Random Sample Consensus) regression to identify inliers and estimate the regression model.
 
-    RANSAC is an iterative method to estimate parameters of a mathematical model from a set of observed data
-    that contains outliers. This algorithm is non-deterministic and aims to separate the training data into
-    inliers (data points that are subject to noise) and outliers (data points that do not fit the model).
-
     Parameters:
-    - y (NDArray): The target variable array.
-    - x (NDArray): The feature variable array.
+    - y (np.ndarray): The target variable array.
+    - x (np.ndarray): The feature variable array.
     - min_samples (int, optional): The minimum number of samples to fit the model. Default is 3.
 
     Returns:
-    - inlier_mask (NDArray): A boolean array where True indicates an inlier and False indicates an outlier.
-    - coef (float): The coefficient of the linear model.
-    - intercept (float): The intercept of the linear model.
-
-    Example:
-    >>> y = np.array([1, 2, 3, 4, 5])
-    >>> x = np.array([1, 2, 3, 4, 5])
-    >>> inlier_mask, coef, intercept = RANSAC_regression(y, x)
-    >>> print(inlier_mask)
-    [ True  True  True  True  True]
-    >>> print(coef)
-    [1.]
-    >>> print(intercept)
-    0.0
+    - tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]: A tuple containing the inlier mask, coefficient, and intercept of the linear model.
     """
     X = x[:, np.newaxis]
     ransac = RANSACRegressor(min_samples=min_samples).fit(X, y)
     inlier_mask = ransac.inlier_mask_
     return inlier_mask, ransac.estimator_.coef_, ransac.estimator_.intercept_
 
-def get_linear_regression_confidence_lower_upper_bound(
+def get_linear_regression_confidence_bounds(
     y: npt.NDArray, 
     x: npt.NDArray, 
     sigma: float
 ) -> npt.NDArray:
     """
-    Get lowerbound and upperbound for data points based on their confidence interval in a linear regression model.
+    Get lower and upper bounds for data points based on their confidence interval in a linear regression model.
 
     Statistical Explanation:
     This function applies the principle of propagation of uncertainty. It fits a linear 
@@ -116,12 +99,12 @@ def filter_images_qbpm_by_linear_model(
     on the linear regression model and confidence interval.
     """
     intensites = images.sum(axis=(1, 2))
-    lower_bound, upper_bound, _ = get_linear_regression_confidence_lower_upper_bound(intensites, qbpm, sigma)
+    lower_bound, upper_bound, _ = get_linear_regression_confidence_bounds(intensites, qbpm, sigma)
     mask = np.logical_and(intensites >= lower_bound, intensites <= upper_bound)
     
     return images[mask], qbpm[mask]
 
-def normalize_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
+def normalize_images_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
     """
     Divide images by qbpm.
     
@@ -135,12 +118,20 @@ def normalize_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
     return images * qbpm.mean() / qbpm[:, np.newaxis, np.newaxis]
 
 def subtract_dark(images: npt.NDArray) -> npt.NDArray:
-    config = load_palxfel_config("config.ini")
+    config = load_config()
     dark_file = os.path.join(config.path.save_dir, "DARK\\dark.npy")
+    
+    if os.path.exists(dark_file):
+        raise FileNotFoundError(f"No such file or directory: {dark_file}")
+    
     dark_images = np.load(dark_file)
     dark = np.mean(dark_images, axis=0)
-    # return np.maximum(images - dark[np.newaxis, :, :], 0)
-    return images - dark[np.newaxis, :, :]
+    return np.maximum(images - dark[np.newaxis, :, :], 0)
+    # return images - dark[np.newaxis, :, :]
+
+def add_bias(images: npt.NDArray):
+    bias = np.min(images)
+    return images - bias
 
 def equalize_brightness(images: np.ndarray) -> np.ndarray:
     """
@@ -201,7 +192,7 @@ if __name__ == "__main__":
     plt.show()
 
 
-    mask = RANSAC_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
+    mask = ransac_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
     good_images = images[mask]
     good_intensites = good_images.sum(axis=(1, 2))
     good_intensites = good_intensites / good_intensites.mean()

@@ -5,7 +5,7 @@ import numpy.typing as npt
 import numpy as np
 from scipy.io import savemat
 import tifffile
-from cuptlib_config.palxfel import load_palxfel_config
+from config import load_config
 
 class SaverStrategy(ABC):
     @abstractmethod
@@ -26,7 +26,7 @@ class SaverStrategy(ABC):
 class MatSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
         comment = "_" + comment if comment else ""
-        config = load_palxfel_config("config.ini")
+        config = load_config()
         mat_dir = config.path.mat_dir
         
         for key, val in data_dict.items():
@@ -50,7 +50,7 @@ class MatSaverStrategy(SaverStrategy):
 class NpzSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
         comment = "_" + comment if comment else ""
-        config = load_palxfel_config("config.ini")
+        config = load_config()
         npz_dir = config.path.npz_dir
         npz_file = os.path.join(npz_dir, file_base_name + comment + ".npz")
         
@@ -68,7 +68,7 @@ class NpzSaverStrategy(SaverStrategy):
 class TifSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
         comment = "_" + comment if comment else ""
-        config = load_palxfel_config("config.ini")
+        config = load_config()
         tif_dir = config.path.tif_dir
         
         for key, val in data_dict.items():
