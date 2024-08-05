@@ -82,7 +82,7 @@ def processing(run_num: int, scan_num: int) -> None:
 
 def main() -> None:
 
-    run_nums: list[int] = [1]
+    run_nums: list[int] = [164]
     logger.info(f"run: {run_nums}")
 
     for run_num in run_nums:

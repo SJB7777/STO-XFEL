@@ -134,9 +134,9 @@ if __name__ == "__main__":
     import os
     from gui.roi import select_roi_by_run_scan
     from utils.file_util import create_run_scan_directory
-    from cuptlib_config.palxfel import load_palxfel_config
+    from config import load_config
     from typing import Optional
-    config = load_palxfel_config("config.ini")
+    config = load_config()
 
     run_num: int = 1
     scan_num: int = 1

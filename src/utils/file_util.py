@@ -3,7 +3,7 @@ import json
 
 import numpy as np
 import scipy.io
-from cuptlib_config.palxfel import load_palxfel_config
+from config import load_config
 from roi_rectangle import RoiRectangle
 
 from typing import Optional
@@ -177,7 +177,7 @@ def save_sigma_factor(mother: str, sig_fac: float) -> None:
         f.write(str(sig_fac))
 
 def mat_to_ndarray(run: int, scan: int) -> npt.NDArray:
-    config = load_palxfel_config()
+    config = load_config()
     path = os.path.join(config.path.mat_dir, f'run={run:0>3d}_scan={scan}.mat')
     mat_data = scipy.io.loadmat(path)
     images = mat_data["data"]
