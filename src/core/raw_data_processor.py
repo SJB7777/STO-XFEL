@@ -5,15 +5,15 @@ from typing import Optional, DefaultDict, Type, Tuple
 import numpy as np
 import numpy.typing as npt
 from tqdm import tqdm
-from cuptlib_config.palxfel import load_palxfel_config
 
 from utils.file_util import get_file_list
 from core.saver import SaverStrategy
 from core.loader_strategy import HDF5LoaderInterface
 from logger import AppLogger
+from config import load_config
 
 from typing import Any
-from preprocess.image_qbpm_processors import ImagesQbpmProcessor
+from preprocess.image_qbpm_pipeline import ImagesQbpmProcessor, apply_pipeline
 
 
 class RawDataProcessor:
@@ -24,7 +24,7 @@ class RawDataProcessor:
         self.pipelines = pipelines if pipelines is not None else {"no_processing" : []}
 
         self.logger = logger if logger is not None else AppLogger("MainProcessor")
-        self.config = load_palxfel_config("config.ini")
+        self.config = load_config()
         self.logger.add_metadata(self.config.to_config_dict())
 
     def scan(self, scan_dir: str):
@@ -80,16 +80,10 @@ class RawDataProcessor:
         # except Exception as e:
         #     self.logger.error(f"Failed to load: {type(e)}: {str(e)}")
         #     import traceback
-        #     traceback.print_exc()
+        #     error_message = traceback.format_exc()
+        #     self.logger.error(error_message)
         #     return None
 
-    def apply_pipeline(self, pipeline: list[ImagesQbpmProcessor], images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
-        
-        for function in pipeline:
-            images, qbpm = function(images, qbpm)
-        
-        return images
-    
     def add_processed_data_to_dict(self, loader_strategy: HDF5LoaderInterface) -> dict[str, DefaultDict[str, list]]:
 
         pipeline_data:dict[str, dict[str, Any]] = {}
@@ -98,10 +92,10 @@ class RawDataProcessor:
 
             images_dict = loader_strategy.get_images_dict()
             if "pon" in images_dict:
-                applied_images: npt.NDArray = self.apply_pipeline(pipeline, images_dict['pon'], images_dict['pon_qbpm'])
+                applied_images: npt.NDArray = apply_pipeline(pipeline, images_dict['pon'], images_dict['pon_qbpm'])[0]
                 data['pon'] = applied_images.mean(axis=0)
             if 'poff' in images_dict:
-                applied_images: npt.NDArray = self.apply_pipeline(pipeline, images_dict['poff'], images_dict['poff_qbpm'])
+                applied_images: npt.NDArray = apply_pipeline(pipeline, images_dict['poff'], images_dict['poff_qbpm'])[0]
                 data['poff'] = applied_images.mean(axis=0)
                 
             data["delay"] = loader_strategy.delay
@@ -133,7 +127,8 @@ class RawDataProcessor:
             raise Exception("Nothing to save")
         
         for pipline_name, data_dict in self.result.items():
-            file_base_name = f"{file_name}"
+            file_base_name = f"{file_name}_{pipline_name}"
+            
             saver.save(file_base_name, data_dict)
             self.logger.info(f"Finished Pipeline: {pipline_name}")
             self.logger.info(f"Data Dict Keys: {data_dict.keys()}")        
@@ -143,10 +138,10 @@ if __name__ == "__main__":
     
     from core.loader_strategy import HDF5FileLoader
     from core.saver import SaverFactory
-    from preprocess.image_qbpm_processors import (
+    from preprocess.image_qbpm_pipeline import (
         subtract_dark_background,
         normalize_images_by_qbpm,
-        remove_by_ransac,
+        remove_outliers_using_ransac,
         equalize_intensities
     )
     run_num = 1
@@ -155,7 +150,7 @@ if __name__ == "__main__":
     # Pipeline 1
     pipeline_normalize_images_by_qbpm: list[ImagesQbpmProcessor] = [
         subtract_dark_background,
-        remove_by_ransac,
+        remove_outliers_using_ransac,
         normalize_images_by_qbpm,
     ]
     logger.info(f"Pipeline: normalize_images_by_qbpm")
@@ -166,7 +161,7 @@ if __name__ == "__main__":
     # Pipeline 2
     pipeline_equalize_intensities: list[ImagesQbpmProcessor] = [
         subtract_dark_background,
-        remove_by_ransac,
+        remove_outliers_using_ransac,
         equalize_intensities,
     ]
     logger.info(f"Pipeline: normalize_images_by_qbpm")
@@ -177,7 +172,7 @@ if __name__ == "__main__":
     # Pipeline 3
     pipeline_no_normalize: list[ImagesQbpmProcessor] = [
         subtract_dark_background,
-        remove_by_ransac,
+        remove_outliers_using_ransac,
     ]
     logger.info(f"Pipeline: no_normalize")
     logger.info(f"preprocessing: subtract_dark_background")

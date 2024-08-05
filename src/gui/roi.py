@@ -5,10 +5,11 @@ import matplotlib.patches as patches
 import numpy as np
 
 from core.loader_strategy import HDF5FileLoader
-from cuptlib_config.palxfel import load_palxfel_config
 from roi_rectangle import RoiRectangle
 from utils.file_util import get_run_scan_directory, get_file_list
+from config import load_config
 
+from typing import Optional
 
 drawing = False
 ix, iy = -1, -1
@@ -72,8 +73,8 @@ def select_roi(image):
         x2, y2 = max(ix, fx), max(iy, fy)
         return (x1, y1, x2, y2)
 
-def select_roi_by_run_scan(run: int, scan: int) -> RoiRectangle:
-    config = load_palxfel_config("config.ini")
+def select_roi_by_run_scan(run: int, scan: int) -> Optional[RoiRectangle]:
+    config = load_config()
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run, scan)
     files = get_file_list(scan_dir)
@@ -82,6 +83,8 @@ def select_roi_by_run_scan(run: int, scan: int) -> RoiRectangle:
     image = np.log1p(hfl.images.sum(axis=0))
     
     roi_tuple = select_roi(image)
+    if roi_tuple is None:
+        return None
     return RoiRectangle(*roi_tuple)
 
 if __name__ == "__main__":

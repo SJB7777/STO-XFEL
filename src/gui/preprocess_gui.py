@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 from scipy.optimize import curve_fit
 
-from cuptlib_config.palxfel import load_palxfel_config
-from preprocess.preprocessing_functions import get_linear_regression_confidence_lower_upper_bound, RANSAC_regression
+from preprocess.generic_preprocessors import get_linear_regression_confidence_bounds, ransac_regression
 from core.loader_strategy import HDF5FileLoader
 from utils.file_util import get_run_scan_directory, get_file_list
 
+from config import load_config
 import numpy.typing as npt
 
 def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:
@@ -18,7 +18,7 @@ def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:
 
     # Initial plot
     sigma_init = 3.0
-    lb, ub, yf = get_linear_regression_confidence_lower_upper_bound(y, x, sigma_init)
+    lb, ub, yf = get_linear_regression_confidence_bounds(y, x, sigma_init)
     within_bounds = (y >= lb) & (y <= ub)
     
     normal_points, = ax.plot(x[within_bounds], y[within_bounds], 'o', color='blue', markersize=3, label='Normal Points')
@@ -46,7 +46,7 @@ def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:
 
     def update(val):
         sigma = sigma_slider.val
-        lb, ub, yf = get_linear_regression_confidence_lower_upper_bound(y, x, sigma)
+        lb, ub, yf = get_linear_regression_confidence_bounds(y, x, sigma)
         line_fit.set_ydata(yf)
         
         # Clear previous fill_between collection
@@ -77,7 +77,7 @@ def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:
 
 def find_outliers_run_scan_gui(run: int, scan: int) -> float:
 
-    config = load_palxfel_config("config.ini")
+    config = load_config()
     scan_dir = get_run_scan_directory(config.path.save_dir, run, scan)
     files = get_file_list(scan_dir)
     file = os.path.join(scan_dir, files[len(files) // 2])
@@ -89,7 +89,7 @@ def find_outliers_run_scan_gui(run: int, scan: int) -> float:
     return find_outliers_gui(images.sum(axis=(1, 2)), qbpm)
 
 def RANSAC_regression_gui(run: int, scan: int) -> None:
-    config = load_palxfel_config("config.ini")
+    config = load_config()
     scan_dir = get_run_scan_directory(config.path.save_dir, run, scan)
     files = get_file_list(scan_dir)
     file = os.path.join(scan_dir, files[len(files) // 2])
@@ -99,7 +99,7 @@ def RANSAC_regression_gui(run: int, scan: int) -> None:
     qbpm = rr.qbpm_sum
 
     intensities = images.sum(axis=(1, 2))
-    mask, coef, intercept = RANSAC_regression(intensities, qbpm)
+    mask, coef, intercept = ransac_regression(intensities, qbpm)
     plt.scatter(qbpm[mask], intensities[mask], color="blue", label="Inliers")
     plt.scatter(qbpm[~mask], intensities[~mask], color="red", label="Outliers")
     plt.title("RANSAC - outliers vs inliers")
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     y[0] += 10  # Add an outlier
     y[-1] -= 10  # Add another outlier
 
-    mask, coef, intercept = RANSAC_regression(y, x)
+    mask, coef, intercept = ransac_regression(y, x)
     plt.scatter(x[mask], y[mask], color="blue", label="Inliers")
     plt.scatter(x[~mask], y[~mask], color="red", label="Outliers")
     plt.plot([x.min(), x.max()], [coef * x.min() + intercept, coef * x.max() + intercept])

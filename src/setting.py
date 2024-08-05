@@ -1,5 +1,5 @@
-from cuptlib_config.palxfel import save_palxfel_dict
 from cuptlib_config.palxfel.enums import Hertz, Hutch, Detector, Xray
+from config import save_config
 
 config_dict = {
     "path":{
@@ -34,7 +34,8 @@ config_dict = {
 }
 
 def save() -> None:
-    save_palxfel_dict(config_dict, "config.ini")
+    save_config(config_dict)
 
 if __name__ == "__main__":
     save()
+    

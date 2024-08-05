@@ -5,10 +5,11 @@ import numpy as np
 import pandas as pd
 import h5py
 import hdf5plugin
-from cuptlib_config.palxfel import load_palxfel_config, Hertz
+from cuptlib_config.palxfel import Hertz
 from logger import AppLogger
+from config import load_config
 
-from preprocess.image_qbpm_processors import ImagesQbpmProcessor
+from preprocess.image_qbpm_pipeline import ImagesQbpmProcessor
 import numpy.typing as npt
 
 class HDF5LoaderInterface(ABC):
@@ -51,7 +52,7 @@ class HDF5FileLoader(HDF5LoaderInterface):
         if not os.path.isfile(file):
             raise FileNotFoundError(f"No such file: {file}")
         self.logger = AppLogger("MainProcessor")
-        config = load_palxfel_config("config.ini")
+        config = load_config()
         
         self.metadata = pd.read_hdf(file, 'metadata')
         

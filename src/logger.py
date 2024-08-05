@@ -75,15 +75,3 @@ class AppLogger:
         self.logger.error(message)
 
 
-def run_analysis(name: str):
-    record = AppLogger(name)
-
-    # 분석 로직을 여기에 추가
-    record.logger.info("Analysis logic executed")
-    record.add_result("analysis_status", "completed")
-
-    record.save_to_json("analysis_record.json")
-    record.logger.info("Analysis completed")
-
-    return record
-
