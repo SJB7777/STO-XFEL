@@ -1,4 +1,6 @@
 import os
+import time
+import datetime
 
 from logger import AppLogger
 from core.raw_data_processor import RawDataProcessor
@@ -63,16 +65,21 @@ def processing(run_num: int, scan_num: int) -> None:
     
     logger.info(f"Processing run={run_num} is over")
 
+
 def main():
 
-    run_nums: list[int] = [123]
+    run_nums: list[int] = [164]
     logger.info(f"run: {run_nums}")
 
     for run_num in run_nums:
         scan_nums: list[int] = get_scan_nums(run_num)
         for scan_num in scan_nums:
+            start = time.time()
             processing(run_num, scan_num)
-
+            end = time.time()
+            sec = (end - start)
+            sec_datatime = datetime.timedelta(seconds=sec)
+            logger.info(f"Single Scan took: {sec_datatime}")
     logger.info("Processing is over")
 
 
