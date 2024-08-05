@@ -121,7 +121,7 @@ def subtract_dark(images: npt.NDArray) -> npt.NDArray:
     config = load_config()
     dark_file = os.path.join(config.path.save_dir, "DARK\\dark.npy")
     
-    if os.path.exists(dark_file):
+    if not os.path.exists(dark_file):
         raise FileNotFoundError(f"No such file or directory: {dark_file}")
     
     dark_images = np.load(dark_file)
