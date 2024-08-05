@@ -5,7 +5,7 @@ import numpy.typing as npt
 from typing import Callable
 
 from preprocess.generic_preprocessors import (
-    normalize_images_by_qbpm, 
+    div_images_by_qbpm, 
     filter_images_qbpm_by_linear_model,
     subtract_dark, 
     ransac_regression,
@@ -58,7 +58,7 @@ def normalize_images_by_qbpm(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
     Returns:
     - tuple[Images, Qbpm]: The normalized images and the original Qbpm values.
     """
-    return normalize_images_by_qbpm(images, qbpm), qbpm
+    return div_images_by_qbpm(images, qbpm), qbpm
 
 def remove_outliers_using_ransac(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
     """

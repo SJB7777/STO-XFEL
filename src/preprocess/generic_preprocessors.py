@@ -104,7 +104,7 @@ def filter_images_qbpm_by_linear_model(
     
     return images[mask], qbpm[mask]
 
-def normalize_images_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
+def div_images_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
     """
     Divide images by qbpm.
     
