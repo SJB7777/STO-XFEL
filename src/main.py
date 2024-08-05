@@ -46,24 +46,9 @@ def processing(run_num: int, scan_num: int) -> None:
         normalize_images_by_qbpm,
     ]
     
-    # No Dark
-    no_dark_pipeline: list[ImagesQbpmProcessor] = [
-        remove_by_ransac_roi,
-        normalize_images_by_qbpm,
-    ]
-    
-    # No Dark
-    add_bias_pipeline: list[ImagesQbpmProcessor] = [
-        shift_to_positive
-    ]
-    
-    # Empty Pipeline
-    empty_pipeline: list[ImagesQbpmProcessor] = []
-    
     # Dict of Pipelines
     pipelines: dict[str, list[ImagesQbpmProcessor]] = {
-        "empty" : empty_pipeline,
-        "add bias" : add_bias_pipeline,
+        "standard" : standard_pipeline,
     }
 
     for pipeline_name, pipeline in pipelines.items():

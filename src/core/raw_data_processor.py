@@ -127,7 +127,7 @@ class RawDataProcessor:
             raise Exception("Nothing to save")
         
         for pipline_name, data_dict in self.result.items():
-            file_base_name = f"{file_name}_{pipline_name}"
+            file_base_name = f"{file_name}"
             
             saver.save(file_base_name, data_dict)
             self.logger.info(f"Finished Pipeline: {pipline_name}")
