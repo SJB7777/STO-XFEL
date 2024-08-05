@@ -7,7 +7,6 @@ from preprocess.image_qbpm_pipeline import (
     subtract_dark_background,
     normalize_images_by_qbpm,
     create_ransac_roi_outlier_remover,
-    shift_to_positive
 )
 from gui.roi import select_roi_by_run_scan
 from utils.file_util import get_folder_list, get_run_scan_directory
@@ -67,7 +66,7 @@ def processing(run_num: int, scan_num: int) -> None:
 
 def main() -> None:
 
-    run_nums: list[int] = [164]
+    run_nums: list[int] = [1]
     logger.info(f"run: {run_nums}")
 
     for run_num in run_nums:

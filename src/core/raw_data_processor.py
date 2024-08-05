@@ -90,7 +90,7 @@ class RawDataProcessor:
         for pipeline_name, pipeline in self.pipelines.items():
             data: dict[str, Any] = {}
 
-            images_dict = loader_strategy.get_images_dict()
+            images_dict = loader_strategy.get_data()
             if "pon" in images_dict:
                 applied_images: npt.NDArray = apply_pipeline(pipeline, images_dict['pon'], images_dict['pon_qbpm'])[0]
                 data['pon'] = applied_images.mean(axis=0)

@@ -7,10 +7,10 @@ import h5py
 import hdf5plugin
 from cuptlib_config.palxfel import Hertz
 from logger import AppLogger
-from config import load_config
+from config import load_config, ExperimentConfiguration
 
-from preprocess.image_qbpm_pipeline import ImagesQbpmProcessor
 import numpy.typing as npt
+from typing import Union
 
 class HDF5LoaderInterface(ABC):
     @abstractmethod
@@ -18,127 +18,132 @@ class HDF5LoaderInterface(ABC):
         pass
     
     @abstractmethod
-    def _get_merged_df(self) -> pd.DataFrame:
-        """
-        Merges image and qbpm data with metadata, removing rows with missing data.
-
-        This method combines the image and qbpm data with metadata based on timestamp,
-        removes rows with missing data, and updates the class attributes `images`, 
-        `qbpm_sum`, and `pump_status` accordingly.
-
-        Returns:
-            DataFrame
-        """
-        pass
-    
-    @abstractmethod
-    def get_images_dict(self) -> dict[str, npt.NDArray]:
-        pass
-    
-    @property
-    @abstractmethod
-    def delay(self) -> npt.NDArray:
+    def get_data(self) -> dict[str, npt.NDArray]:
         pass
 
 class HDF5FileLoader(HDF5LoaderInterface):
-    """
-    Initializes the RockingScan object by loading metadata, images, and qbpm data from the given file.
-
-    Parameters:
-    - file (str): Path to the HDF5 file.
-    """
 
     def __init__(self, file: str):
+        """
+        Initializes the HDF5FileLoader by loading metadata, images, and qbpm data from the given file.
+
+        Parameters:
+        - file (str): Path to the HDF5 file.
+        """
         if not os.path.isfile(file):
             raise FileNotFoundError(f"No such file: {file}")
-        self.logger = AppLogger("MainProcessor")
-        config = load_config()
         
-        self.metadata = pd.read_hdf(file, 'metadata')
+        self.file: str = file
+        self.logger: AppLogger = AppLogger("MainProcessor")
+        self.config: ExperimentConfiguration = load_config()
         
-        if "th_value" in self.metadata:
-            self._delay = np.asarray(self.metadata['th_value'])[0]
-        elif "delay_value" in self.metadata:
-            self._delay = np.asarray(self.metadata['delay_value'])[0]
-        else:
-            self.logger.warning("'th_value' and 'delay_value' are not excisting in metadata.")
-            self._delay = np.nan
-            
-        with h5py.File(file) as hf:
-            if "detector" not in hf:
-                raise KeyError(f"Key 'detector' not found in the HDF5 file")
-            self.images = np.asarray(hf[f'detector/{config.param.hutch}/{config.param.detector}/image/block0_values'])
-            self.images_ts = np.asarray(hf[f'detector/{config.param.hutch}/{config.param.detector}/image/block0_items'])
-            
-            qbpm = hf[f'qbpm/{config.param.hutch}/qbpm1']
-            self.qbpm_ts = qbpm[f'waveforms.ch1/axis1'][()]
-            self.qbpm_sum = np.sum([qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)], axis=0).sum(axis=1)
+        metadata: pd.DataFrame = pd.read_hdf(self.file, key='metadata')
+        merged_df: pd.DataFrame = self.get_merged_df(metadata)
         
-        self.merged_df = self._get_merged_df()
-
-        self.images = self.merged_df['image']
-        self.qbpm_sum = self.merged_df['qbpm']
+        self.images: npt.NDArray[np.float32] = np.maximum(0, np.stack(merged_df['image'].values))  # Fill Negative Values to Zero
+        self.qbpm: npt.NDArray[np.float32] = np.stack(merged_df['qbpm'].values)
+        self.pump_status: npt.NDArray[np.bool_] = self.get_pump_mask(merged_df)
+        self.delay: Union[np.float32, float] = self.get_delay(metadata)
         
-        self.images = np.stack(self.images.values)
-        self.qbpm_sum = np.stack(self.qbpm_sum.values)
+        # roi_coord = np.array(self.metadata[f'detector_{self.config.param.hutch}_{self.config.param.detector}_parameters.ROI'].iloc[0][0])
+        # self.roi_rect = np.array([roi_coord[self.config.param.x1], roi_coord[self.config.param.x2], roi_coord[self.config.param.y1], roi_coord[self.config.param.y2]], dtype=np.int_)
 
-        # FIXME: config.param.pump_setting should be Hertz(Enum) but it is str now.
-        # if config.param.pump_setting is Hertz.ZERO:
-        if config.param.pump_setting == str(Hertz.ZERO):
-            self.pump_status = np.zeros_like(self.qbpm_sum, dtype=np.bool_)
-        else:
-            self.pump_status = self.merged_df[f'timestamp_info.RATE_{config.param.xray}_{config.param.pump_setting}'].astype(bool)
-
-        # Remove below zero.
-        self.images = np.maximum(0, self.images)
-
-        self.pon_images = self.images[self.pump_status]
-        self.poff_images = self.images[~self.pump_status]
-
-        # roi_coord = np.array(self.metadata[f'detector_{config.param.hutch}_{config.param.detector}_parameters.ROI'].iloc[0][0])
-        # self.roi_rect = np.array([roi_coord[self.x1], roi_coord[self.x2], roi_coord[self.y1], roi_coord[self.y2]], dtype=np.dtype(int))
-        
-    def _get_merged_df(self) -> pd.DataFrame:
+    def get_merged_df(self, metadata: pd.DataFrame) -> pd.DataFrame:
         """
-        Merges image and qbpm data with metadata, removing rows with missing data.
+        Merges image and qbpm data with metadata based on timestamps.
 
-        This method combines the image and qbpm data with metadata based on timestamp,
-        removes rows with missing data, and updates the class attributes `images`, 
-        `qbpm_sum`, and `pump_status` accordingly.
+        Parameters:
+        - metadata (pd.DataFrame): Metadata DataFrame.
 
         Returns:
-            DataFrame
+        - pd.DataFrame: Merged DataFrame containing metadata, images, and qbpm data.
         """
+        with h5py.File(self.file, "r") as hf:
+            if "detector" not in hf:
+                raise KeyError(f"Key 'detector' not found in the HDF5 file")
+            
+            images = np.asarray(hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_values'], dtype=np.float32)
+            images_ts = np.asarray(hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_items'], dtype=np.int64)
+            qbpm = hf[f'qbpm/{self.config.param.hutch}/qbpm1']
+            qbpm_ts = qbpm[f'waveforms.ch1/axis1'][()]
+            qbpm_sum = np.sum([qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)], axis=0, dtype=np.float32).sum(axis=1)
+        
         image_df = pd.DataFrame(
             {
-                "timestamp": self.images_ts,
-                "image": list(self.images)
+                "timestamp": images_ts,
+                "image": list(images)
             }
         ).set_index('timestamp')
 
         qbpm_df = pd.DataFrame(
             {
-                "timestamp": self.qbpm_ts,
-                "qbpm": list(self.qbpm_sum)
+                "timestamp": qbpm_ts,
+                "qbpm": list(qbpm_sum)
             }
         ).set_index('timestamp')
-        
-        merged_df = pd.merge(image_df, qbpm_df, left_index=True, right_index=True, how='inner')
 
-        return pd.merge(self.metadata, merged_df, left_index=True, right_index=True, how='inner')
+        merged_df = pd.merge(image_df, qbpm_df, left_index=True, right_index=True, how='inner')
+        return pd.merge(metadata, merged_df, left_index=True, right_index=True, how='inner')
     
-    def get_images_dict(self) -> dict[str, npt.NDArray]:
+    def get_delay(self, metadata: pd.DataFrame) -> Union[np.float32, float]:
+        """
+        Retrieves the delay value from the metadata.
+
+        Parameters:
+        - metadata (pd.DataFrame): Metadata DataFrame.
+
+        Returns:
+        - Union[np.float32, float]: Delay value or NaN if not found.
+        """
+        if "th_value" in metadata:
+            return np.asarray(metadata['th_value'], dtype=np.float32)[0]
+        if "delay_value" in metadata:
+            return np.asarray(metadata['delay_value'], dtype=np.float32)[0]
+        else:
+            self.logger.warning("'th_value' and 'delay_value' are not excisting in metadata. return NaN")
+            return np.nan
+    
+    def get_pump_mask(self, merged_df: pd.DataFrame) -> npt.NDArray[np.bool_]:
+        """
+        Generates a pump status mask based on the configuration settings.
+
+        Parameters:
+        - merged_df (pd.DataFrame): Merged DataFrame.
+
+        Returns:
+        - npt.NDArray[np.bool_]: Pump status mask.
+        """
+        # FIXME: config.param.pump_setting should be Hertz(Enum) but it is str now.
+        # if config.param.pump_setting is Hertz.ZERO:
+        if self.config.param.pump_setting == str(Hertz.ZERO):
+            return np.zeros(merged_df.shape[0], dtype=np.bool_)
+        return merged_df[f'timestamp_info.RATE_{self.config.param.xray}_{self.config.param.pump_setting}'].astype(bool)
+
+    def get_data(self) -> dict[str, npt.NDArray]:
+        """
+        Retrieves data based on pump status.
+
+        Returns:
+        - dict[str, npt.NDArray]: Dictionary containing images and qbpm data for both pump-on and pump-off states.
+        """
         data = {}
         
-        if self.pon_images.size > 0:
-            data["pon"] = self.pon_images
-            data["pon_qbpm"] = self.qbpm_sum[self.pump_status]
-        if self.poff_images.size > 0:
-            data["poff"] = self.poff_images
-            data["poff_qbpm"] = self.qbpm_sum[~self.pump_status]
-            
+        pon_images = self.images[self.pump_status]
+        pon_qbpm = self.qbpm[self.pump_status]
+        poff_images = self.images[~self.pump_status]
+        poff_qbpm = self.qbpm[~self.pump_status]
+        
+        if pon_images.size > 0:
+            data["pon"] = pon_images
+            data["pon_qbpm"] = pon_qbpm
+        if poff_images.size > 0:
+            data["poff"] = poff_images
+            data["poff_qbpm"] = poff_qbpm
+
         return data
-    
-    @property
-    def delay(self) -> npt.NDArray:
-        return self._delay
+
+if __name__ == "__main__":
+    file: str = "D:\\dev\\xfel_sample_data\\run=001\scan=001\p0110.h5"
+    loader = HDF5FileLoader(file)
+    data = loader.get_data()
+    print(loader.delay)

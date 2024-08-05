@@ -38,7 +38,7 @@ class MeanDataProcessor:
     
     def _roi_center_of_masses(self, roi_rect: RoiRectangle, images: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
         roi_images = roi_rect.slice(images)
-        num_images, height, width = roi_images.shape
+        height, width = roi_rect.height, roi_rect.width
 
         y_coords, x_coords = np.mgrid[:height, :width]
 
@@ -50,26 +50,36 @@ class MeanDataProcessor:
     
     def _roi_gaussian(self, roi_rect: RoiRectangle, images: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
         roi_images = roi_rect.slice(images)
-        num_images, height, width = roi_images.shape
-        
+        height, width = roi_rect.height, roi_rect.width
+
         intensities = []
         com_xs = []
         com_ys = []
 
         for image in roi_images:
             max_y, max_x = np.unravel_index(np.argmax(image), image.shape)
+            # max_y, max_x = height // 2, width // 2
             
-            x: npt.NDArray = np.arange(0, width + 1)
-            y: npt.NDArray = np.arange(0, height + 1)
+            x: npt.NDArray = np.arange(0, width)
+            y: npt.NDArray = np.arange(0, height)
 
             x_data = image.sum(axis=0)
             y_data = image.sum(axis=1)
 
-            initial_guess_x = [x_data.max(), max_x, (np.max(x_data) - np.min(x_data)) / 6]
-            params_x, covar_x = curve_fit(gaussian, x, x_data, p0=initial_guess_x)
+            
+            initial_guess_x = [x_data[max_x], max_x, (np.max(x_data) - np.min(x_data)) / 4]
+            try:
+                params_x = curve_fit(gaussian, x, x_data, p0=initial_guess_x)[0]
+            except RuntimeError as e:
+                print(e, ": x")
+                params_x = [np.nan, np.nan, np.nan]    
 
-            initial_guess_y = [y_data.max(), max_y, (np.max(y_data) - np.min(y_data)) / 6]
-            params_y, covar_y = curve_fit(gaussian, y, y_data, p0=initial_guess_y)
+            initial_guess_y = [y_data[max_y], max_y, (np.max(y_data) - np.min(y_data)) / 4]
+            try:
+                params_y = curve_fit(gaussian, y, y_data, p0=initial_guess_y)[0]
+            except RuntimeError as e:
+                print(e, ": y")
+                params_y = [np.nan, np.nan, np.nan]
 
             gaussian_a_x, gaussain_com_x, gaussian_sig_x = params_x
             gaussian_a_y, gaussain_com_y, gaussian_sig_y = params_y
@@ -103,19 +113,20 @@ class MeanDataProcessor:
             roi_df = pd.DataFrame(data={
                 "poff_com_x": poff_com_x,
                 "poff_com_y": poff_com_y,
-                "poff_intensity": poff_intensity,
+                "poff_intensity": poff_intensity / poff_intensity[0],
 
-                "poff_guassain_intensity": poff_guassain_intensity,
                 "poff_gussian_com_x": poff_gussian_com_x,
                 "poff_gussian_com_y": poff_gussian_com_y,
+                "poff_guassain_intensity": poff_guassain_intensity / poff_guassain_intensity[0],
 
                 "pon_com_x": pon_com_x,
                 "pon_com_y": pon_com_y,
-                "pon_intensity": pon_intensity,
+                "pon_intensity": pon_intensity / pon_intensity[0],
 
-                "pon_guassain_intensity": pon_guassain_intensity,
                 "pon_gussian_com_x": pon_gussian_com_x,
                 "pon_gussian_com_y": pon_gussian_com_y,
+                "pon_guassain_intensity": pon_guassain_intensity / [0],
+
             })
             
             roi_df = roi_df.transpose()
@@ -161,6 +172,6 @@ if __name__ == "__main__":
     image_dir = config.path.image_dir
     data_dir = create_run_scan_directory(image_dir, run_num, scan_num)
     data_file = os.path.join(data_dir, "data.csv")
-    data_df.to_csv()
+    data_df.to_csv(data_file)
     
     
