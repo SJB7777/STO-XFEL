@@ -2,12 +2,11 @@ import cProfile
 import pstats
 import io
 import logging
-import main  # Import the other file as a module
+
+import main
 from core.loader_strategy import HDF5FileLoader
 
 file = "D:\\dev\\xfel_sample_data\\run=001\scan=001\p0110.h5"
-def read_hdf5(file: str):
-    return HDF5FileLoader(file)
 
 logging_file = 'logs\\profiling\\profiling.log'
 # 로깅 설정
@@ -21,7 +20,7 @@ profiler.enable()
 
 # Run the main function from the other file
 # main.main()
-read_hdf5(file)
+HDF5FileLoader(file)
 
 # Disable the profiler
 profiler.disable()
