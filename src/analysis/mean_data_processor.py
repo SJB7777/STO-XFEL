@@ -3,11 +3,15 @@ import numpy as np
 import pandas as pd
 from scipy.ndimage import rotate
 from scipy.optimize import curve_fit
+import matplotlib.pyplot as plt
 
-from utils.math_util import gaussian
+from utils.math_util import gaussian, mul_deltaQ
 
 import numpy.typing as npt
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 class MeanDataProcessor:
     def __init__(self, file: str, angle: int = 0) -> None:
@@ -104,52 +108,45 @@ class MeanDataProcessor:
 
             poff_com_x, poff_com_y = self._roi_center_of_masses(roi_rect, self.poff_images)
             poff_intensity = self._roi_intensities(roi_rect, self.poff_images)
-            poff_guassain_intensity, poff_gussian_com_x, poff_gussian_com_y = self._roi_gaussian(roi_rect, self.poff_images)
-
             pon_com_x, pon_com_y = self._roi_center_of_masses(roi_rect, self.pon_images)
             pon_intensity = self._roi_intensities(roi_rect, self.pon_images)
-            pon_guassain_intensity, pon_gussian_com_x, pon_gussian_com_y = self._roi_gaussian(roi_rect, self.pon_images)
+
+            # poff_guassain_intensity, poff_gussian_com_x, poff_gussian_com_y = self._roi_gaussian(roi_rect, self.poff_images)
+            # pon_guassain_intensity, pon_gussian_com_x, pon_gussian_com_y = self._roi_gaussian(roi_rect, self.pon_images)
 
             roi_df = pd.DataFrame(data={
-                "poff_com_x": poff_com_x,
-                "poff_com_y": poff_com_y,
+                "poff_com_x": mul_deltaQ(poff_com_x),
+                "poff_com_y": mul_deltaQ(poff_com_y),
                 "poff_intensity": poff_intensity / poff_intensity[0],
-
-                "poff_gussian_com_x": poff_gussian_com_x,
-                "poff_gussian_com_y": poff_gussian_com_y,
-                "poff_guassain_intensity": poff_guassain_intensity / poff_guassain_intensity[0],
-
-                "pon_com_x": pon_com_x,
-                "pon_com_y": pon_com_y,
+                "pon_com_x": mul_deltaQ(pon_com_x),
+                "pon_com_y": mul_deltaQ(pon_com_y),
                 "pon_intensity": pon_intensity / pon_intensity[0],
 
-                "pon_gussian_com_x": pon_gussian_com_x,
-                "pon_gussian_com_y": pon_gussian_com_y,
-                "pon_guassain_intensity": pon_guassain_intensity / [0],
+                # "poff_gussian_com_x": poff_gussian_com_x,
+                # "poff_gussian_com_y": poff_gussian_com_y,
+                # "poff_guassain_intensity": poff_guassain_intensity / poff_guassain_intensity[0],
+
+                # "pon_gussian_com_x": pon_gussian_com_x,
+                # "pon_gussian_com_y": pon_gussian_com_y,
+                # "pon_guassain_intensity": pon_guassain_intensity / pon_guassain_intensity[0],
 
             })
             
-            roi_df = roi_df.transpose()
-
-            roi_df.index=[[name]*len(roi_df.index), roi_df.index]
-            
+            roi_df = roi_df.set_index(self.delay)
             data_frames.append(roi_df)
-            
-        data_df = pd.concat(data_frames)
-        data_df = data_df.transpose()
-        data_df.index = self.delay
-        
-        return data_df
-    
+        return data_frames
+
 if __name__ == "__main__":
     import os
     from gui.roi import select_roi_by_run_scan
     from utils.file_util import create_run_scan_directory
     from config import load_config
     from typing import Optional
+
+    from analysis.draw_figure import draw_com_figure, draw_intensity_figure, draw_intensity_diff_figure, draw_com_diff_figure
     config = load_config()
 
-    run_num: int = 1
+    run_num: int = 151
     scan_num: int = 1
     comment: Optional[str] = None
 
@@ -160,18 +157,37 @@ if __name__ == "__main__":
         file_name += comment
 
     npz_file = os.path.join(npz_dir, file_name + ".npz")
-    mdp = MeanDataProcessor(npz_file, -45)
+    processor = MeanDataProcessor(npz_file, 0)
 
-    roi_rect = select_roi_by_run_scan(run_num, scan_num)
+    roi_rect = select_roi_by_run_scan(run_num, scan_num, 0)
 
     roi_rects = [roi_rect]
     names = ["center"]
     named_roi_rects = zip(names, roi_rects)
-    data_df = mdp.analyze_by_rois(named_roi_rects)
+    data_df = processor.analyze_by_rois(named_roi_rects)[0]
+
+    ##########################################################
+    # Save Data
+    ###########################################################
 
     image_dir = config.path.image_dir
     data_dir = create_run_scan_directory(image_dir, run_num, scan_num)
     data_file = os.path.join(data_dir, "data.csv")
     data_df.to_csv(data_file)
+
+    intensity_fig = draw_intensity_figure(data_df)
+    intensity_diff_fig = draw_intensity_diff_figure(data_df)
+    com_fig = draw_com_figure(data_df)
+    com_diff_fig = draw_com_diff_figure(data_df)
+    
+    intensity_fig.savefig(os.path.join(data_dir, "delay-intensity.png"))
+    intensity_diff_fig.savefig(os.path.join(data_dir, "delay-intensity_diff.png"))
+    com_fig.savefig(os.path.join(data_dir, "delay-com.png"))
+    com_diff_fig.savefig(os.path.join(data_dir, "delay-com_diff.png"))
+
+    # pon_images = processor.pon_images.sum(axis=0)
+    # poff_images = processor.poff_images.sum(axis=0)
+
+
     
     

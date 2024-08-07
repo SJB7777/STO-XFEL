@@ -9,7 +9,7 @@ from roi_rectangle import RoiRectangle
 from utils.file_util import get_run_scan_directory, get_file_list
 from config import load_config
 
-from typing import Optional
+from typing import Optional, Union
 
 drawing = False
 ix, iy = -1, -1
@@ -73,14 +73,26 @@ def select_roi(image):
         x2, y2 = max(ix, fx), max(iy, fy)
         return (x1, y1, x2, y2)
 
-def select_roi_by_run_scan(run: int, scan: int) -> Optional[RoiRectangle]:
+def select_roi_by_run_scan(run: int, scan: int, index_mode: Union[int, str]="auto") -> Optional[RoiRectangle]:
     config = load_config()
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run, scan)
     files = get_file_list(scan_dir)
-    file = os.path.join(scan_dir, files[len(files) // 2])
+
+    if index_mode == "auto":
+        index = len(files) // 2
+    elif isinstance(index_mode, int):
+        index = index_mode
+
+    file = os.path.join(scan_dir, files[index])
     hfl = HDF5FileLoader(file)
-    image = np.log1p(hfl.images.sum(axis=0))
+    data = hfl.get_data()
+    images = data.get("poff", None)
+    if images is None:
+        images = data.get("pon", None)
+        print("no off data")
+
+    image = np.log1p(images.sum(axis=0))
     
     roi_tuple = select_roi(image)
     if roi_tuple is None:

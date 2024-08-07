@@ -68,15 +68,36 @@ def integrate_FWHM_2D(amplitude: float, xo: float, yo: float, sigma_x: float, si
     return result
 
 def pixel_to_delQ(pixels: npt.NDArray) -> npt.NDArray:
+
     config = load_config()
     del_pixels = pixels - pixels[0]
-    del_two_theta = np.arctan(config.param.dps / config.param.sdd * del_pixels)
+    del_two_theta = np.arctan2(config.param.dps, config.param.sdd * del_pixels)
     return 4 * np.pi / config.param.wavelength * np.sin(del_two_theta / 2)
 
+def mul_deltaQ(pixels: npt.NDArray) -> npt.NDArray:
+    config = load_config()
+    two_theta = np.arctan2(config.param.dps, config.param.sdd)
+    deltaQ = (4 * np.pi / config.param.wavelength) * (two_theta)
+    return pixels * deltaQ
+
+'''
+sdd = 1.3 # m
+dps = 75e-06 # um
+beam_energy = 9.7 # keV
+wavelength [A]
+'''
+
 def pixel_to_Q(pixels: npt.NDArray) -> npt.NDArray:
+    """
+    two_theta = arctan(dps * pixels / sdd)
+    Q = (4 * pi / wavelength) * sin(two_theta / 2)
+      = (4 * pi / wavelength) * two_theta / 2
+      = (4 * pi / wavelength) * arctan(dps * pixels / sdd) / 2
+      = pixels * (4 * pi / wavelength) * arctan(dps / sdd) / 2
+    """
     config = load_config()
 
-    two_theta = np.arctan(config.param.dps / config.param.sdd * pixels)
+    two_theta = np.arctan2(config.param.dps, config.param.sdd * pixels)
     return 4 * np.pi / config.param.wavelength * np.sin(two_theta / 2)
 
 def get_min_max(arr:npt.NDArray) -> tuple[float, float]:

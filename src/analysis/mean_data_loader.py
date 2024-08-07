@@ -10,18 +10,22 @@ class MatLoader:
 
 if __name__ == "__main__":
     import os
-    from core.saver import TifSaverStrategy
+    from core.saver import NpzSaverStrategy
     from config import load_config
     config = load_config()
     mat_dir = config.path.mat_dir
-    file_name = "run=0001_scan=0001_empty_poff"
+    file_name = "run=0143_scan=0001_poff"
     mat_file = os.path.join(mat_dir, file_name + ".mat")
     mat_loader = MatLoader(mat_file)
-    images = mat_loader.images
+    off_images = mat_loader.images
 
+    file_name = "run=0143_scan=0001_pon"
+    mat_file = os.path.join(mat_dir, file_name + ".mat")
+    mat_loader = MatLoader(mat_file)
+    on_images = mat_loader.images
 
-    tif_dir = config.path.tif_dir
-    tif_file = os.path.join(tif_dir, file_name + ".tif")
+    npz_dir = config.path.npz_dir
+    npz_file = os.path.join(npz_dir, file_name + ".npz")
 
-    tif_saver = TifSaverStrategy()
-    tif_saver.save(file_name, {"data": images})
+    # npz_saver = NpzSaverStrategy()
+    # npz_saver.save(file_name, {"pon": images})

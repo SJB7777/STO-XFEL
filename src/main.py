@@ -29,8 +29,7 @@ def processing(run_num: int, scan_num: int) -> None:
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
 
-    roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
-    # roi_rect = RoiRectangle(126, 60, 161, 99)
+    roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num, 0)
     
     if roi_rect is None:
         raise Exception(f"No Roi Rectangle Setted: roi_rect is None")
@@ -55,18 +54,20 @@ def processing(run_num: int, scan_num: int) -> None:
         for function in pipeline:
             logger.info(f"preprocess: {function.__name__}")
 
-    rdp = RawDataProcessor(HDF5FileLoader, pipelines, logger)
-    rdp.scan(scan_dir)
-    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    processor: RawDataProcessor = RawDataProcessor(HDF5FileLoader, pipelines, logger)
+    processor.scan(scan_dir)
 
-    file_name = f"run={run_num:0>4}_scan={scan_num:0>4}"
-    rdp.save(mat_saver, file_name)
+    # mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
+
+    file_name:str = f"run={run_num:0>4}_scan={scan_num:0>4}"
+    processor.save(npz_saver, file_name)
     
     logger.info(f"Processing run={run_num} is over")
 
 def main() -> None:
 
-    run_nums: list[int] = [1]
+    run_nums: list[int] = [152]
     logger.info(f"run: {run_nums}")
 
     for run_num in run_nums:

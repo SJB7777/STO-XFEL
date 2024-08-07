@@ -127,18 +127,19 @@ class HDF5FileLoader(HDF5LoaderInterface):
         - dict[str, npt.NDArray]: Dictionary containing images and qbpm data for both pump-on and pump-off states.
         """
         data = {}
-        
-        pon_images = self.images[self.pump_status]
-        pon_qbpm = self.qbpm[self.pump_status]
+
         poff_images = self.images[~self.pump_status]
         poff_qbpm = self.qbpm[~self.pump_status]
-        
-        if pon_images.size > 0:
-            data["pon"] = pon_images
-            data["pon_qbpm"] = pon_qbpm
+        pon_images = self.images[self.pump_status]
+        pon_qbpm = self.qbpm[self.pump_status]
+
         if poff_images.size > 0:
             data["poff"] = poff_images
             data["poff_qbpm"] = poff_qbpm
+        if pon_images.size > 0:
+            data["pon"] = pon_images
+            data["pon_qbpm"] = pon_qbpm
+
 
         return data
 
