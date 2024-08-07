@@ -36,7 +36,7 @@ class RawDataProcessor:
         """
         scan_dir = scan_dir
         self.logger.info(f"Starting scan: {scan_dir}")
-
+        
         self.result: dict[str, DefaultDict[str, npt.NDArray]] = self.process_scan_directory(scan_dir)
         self.logger.info(f"Completed processing: {scan_dir}")
             

@@ -73,7 +73,6 @@ def pixel_to_delQ(pixels: npt.NDArray) -> npt.NDArray:
     del_two_theta = np.arctan(config.param.dps / config.param.sdd * del_pixels)
     return 4 * np.pi / config.param.wavelength * np.sin(del_two_theta / 2)
 
-
 def pixel_to_Q(pixels: npt.NDArray) -> npt.NDArray:
     config = load_config()
 
