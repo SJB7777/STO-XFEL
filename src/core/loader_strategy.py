@@ -34,7 +34,7 @@ class HDF5FileLoader(HDF5LoaderInterface):
             raise FileNotFoundError(f"No such file: {file}")
         
         self.file: str = file
-        self.logger: AppLogger = AppLogger("MainProcessor")
+        # self.logger: AppLogger = AppLogger("MainProcessor")
         self.config: ExperimentConfiguration = load_config()
         
         metadata: pd.DataFrame = pd.read_hdf(self.file, key='metadata')
@@ -100,7 +100,6 @@ class HDF5FileLoader(HDF5LoaderInterface):
         if "delay_value" in metadata:
             return np.asarray(metadata['delay_value'], dtype=np.float32)[0]
         else:
-            self.logger.warning("'th_value' and 'delay_value' are not excisting in metadata. return NaN")
             return np.nan
     
     def get_pump_mask(self, merged_df: pd.DataFrame) -> npt.NDArray[np.bool_]:
@@ -139,7 +138,6 @@ class HDF5FileLoader(HDF5LoaderInterface):
         if pon_images.size > 0:
             data["pon"] = pon_images
             data["pon_qbpm"] = pon_qbpm
-
 
         return data
 

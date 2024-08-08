@@ -3,7 +3,6 @@ import ast
 import radon.complexity as rc
 import radon.raw as rr
 from radon.complexity import cc_rank
-from radon.cli.tools import iter_filenames
 
 from collections import defaultdict
 

@@ -115,11 +115,11 @@ class MeanDataProcessor:
             # pon_guassain_intensity, pon_gussian_com_x, pon_gussian_com_y = self._roi_gaussian(roi_rect, self.pon_images)
 
             roi_df = pd.DataFrame(data={
-                "poff_com_x": mul_deltaQ(poff_com_x),
-                "poff_com_y": mul_deltaQ(poff_com_y),
+                "poff_com_x": mul_deltaQ(poff_com_x - poff_com_x[0]),
+                "poff_com_y": mul_deltaQ(poff_com_y - poff_com_y[0]),
                 "poff_intensity": poff_intensity / poff_intensity[0],
-                "pon_com_x": mul_deltaQ(pon_com_x),
-                "pon_com_y": mul_deltaQ(pon_com_y),
+                "pon_com_x": mul_deltaQ(pon_com_x - pon_com_x[0]),
+                "pon_com_y": mul_deltaQ(pon_com_y - pon_com_y[0]),
                 "pon_intensity": pon_intensity / pon_intensity[0],
 
                 # "poff_gussian_com_x": poff_gussian_com_x,
@@ -138,15 +138,31 @@ class MeanDataProcessor:
 
 if __name__ == "__main__":
     import os
+    import tifffile
+
     from gui.roi import select_roi_by_run_scan
     from utils.file_util import create_run_scan_directory
     from config import load_config
+    from analysis.draw_figure import (
+        patch_rectangle, 
+        draw_com_figure, 
+        draw_intensity_figure, 
+        draw_intensity_diff_figure, 
+        draw_com_diff_figure
+        )
+    
+
     from typing import Optional
 
-    from analysis.draw_figure import draw_com_figure, draw_intensity_figure, draw_intensity_diff_figure, draw_com_diff_figure
+    ##########################################################
+    # Run MeanDataProcessor
+    ##########################################################
+    '''
+    scan : 143, 144, 145, 148, 149, 150 , 151, 152, 153, 154, 155, 160, 161, 
+    206, 207, 208, 209, 210, 211
+    '''
     config = load_config()
-
-    run_num: int = 151
+    run_num: int = 144
     scan_num: int = 1
     comment: Optional[str] = None
 
@@ -168,25 +184,43 @@ if __name__ == "__main__":
 
     ##########################################################
     # Save Data
-    ###########################################################
+    ##########################################################
 
     image_dir = config.path.image_dir
-    data_dir = create_run_scan_directory(image_dir, run_num, scan_num)
-    data_file = os.path.join(data_dir, "data.csv")
+    save_dir = create_run_scan_directory(image_dir, run_num, scan_num)
+
+    poff_images = processor.poff_images
+    pon_images = processor.pon_images
+
+    roi_poff_images = roi_rect.slice(poff_images)
+    roi_pon_images = roi_rect.slice(pon_images)
+
+    # Save Tif
+    tifffile.imwrite(os.path.join(save_dir, "poff.tif"), poff_images.astype(np.float32))
+    tifffile.imwrite(os.path.join(save_dir, "pon.tif"), pon_images.astype(np.float32))
+    tifffile.imwrite(os.path.join(save_dir, "roi_poff.tif"), roi_poff_images.astype(np.float32))
+    tifffile.imwrite(os.path.join(save_dir, "roi_pon.tif"), roi_pon_images.astype(np.float32))
+
+    # Save Data to CSV
+    data_file = os.path.join(save_dir, "data.csv")
     data_df.to_csv(data_file)
 
+    # Make Figure
+    image_fig = patch_rectangle(np.log1p(processor.poff_images.sum(axis=0)), *roi_rect.get_coordinate())
     intensity_fig = draw_intensity_figure(data_df)
     intensity_diff_fig = draw_intensity_diff_figure(data_df)
     com_fig = draw_com_figure(data_df)
     com_diff_fig = draw_com_diff_figure(data_df)
-    
-    intensity_fig.savefig(os.path.join(data_dir, "delay-intensity.png"))
-    intensity_diff_fig.savefig(os.path.join(data_dir, "delay-intensity_diff.png"))
-    com_fig.savefig(os.path.join(data_dir, "delay-com.png"))
-    com_diff_fig.savefig(os.path.join(data_dir, "delay-com_diff.png"))
 
-    # pon_images = processor.pon_images.sum(axis=0)
-    # poff_images = processor.poff_images.sum(axis=0)
+    # Save Figure
+    image_fig.savefig(os.path.join(save_dir, "log_image.png"))
+    intensity_fig.savefig(os.path.join(save_dir, "delay-intensity.png"))
+    intensity_diff_fig.savefig(os.path.join(save_dir, "delay-intensity_diff.png"))
+    com_fig.savefig(os.path.join(save_dir, "delay-com.png"))
+    com_diff_fig.savefig(os.path.join(save_dir, "delay-com_diff.png"))
+
+    print("Mean Data Proccesing is Done.")
+
 
 
     

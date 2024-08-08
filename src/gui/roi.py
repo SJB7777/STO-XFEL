@@ -10,68 +10,66 @@ from utils.file_util import get_run_scan_directory, get_file_list
 from config import load_config
 
 from typing import Optional, Union
+import numpy.typing as npt
 
-drawing = False
-ix, iy = -1, -1
-fx, fy = -1, -1
-rect = None
-ax = None
+class RoiSelector:
+    def __init__(self):
+        self.drawing = False
+        self.ix, self.iy = -1, -1
+        self.fx, self.fy = -1, -1
+        self.rect = None
+        self.ax = None
 
-def on_mouse_press(event):
-    global ix, iy, fx, fy, drawing, rect, ax
+    def on_mouse_press(self, event):
 
-    if event.inaxes is not None:
-        if event.button == 1:
-            drawing = True
-            ix, iy = int(event.xdata), int(event.ydata)
-            fx, fy = ix, iy
-            if rect is not None:
-                rect.remove()
-            rect = patches.Rectangle((ix, iy), 1, 1, linewidth=1, edgecolor='r', facecolor='none')
-            ax.add_patch(rect)
-            plt.draw()
+        if event.inaxes is not None:
+            if event.button == 1:
+                self.drawing = True
+                self.ix, self.iy = int(event.xdata), int(event.ydata)
+                self.fx, self.fy = self.ix, self.iy
+                if self.rect is not None:
+                    self.rect.remove()
+                self.rect = patches.Rectangle((self.ix, self.iy), 1, 1, linewidth=1, edgecolor='r', facecolor='none')
+                self.ax.add_patch(self.rect)
+                plt.draw()
 
-def on_mouse_release(event):
-    global fx, fy, drawing, rect
+    def on_mouse_release(self, event):
 
-    if event.inaxes is not None and drawing:
-        drawing = False
-        fx, fy = int(event.xdata), int(event.ydata)
-        if rect is not None:
-            rect.set_width(fx - ix)
-            rect.set_height(fy - iy)
-            plt.draw()
+        if event.inaxes is not None and self.drawing:
+            self.drawing = False
+            self.fx, self.fy = int(event.xdata), int(event.ydata)
+            if self.rect is not None:
+                self.rect.set_width(self.fx - self.ix)
+                self.rect.set_height(self.fy - self.iy)
+                plt.draw()
 
-def on_mouse_move(event):
-    global fx, fy, drawing, rect
+    def on_mouse_move(self, event):
 
-    if event.inaxes is not None and drawing:
-        fx, fy = int(event.xdata), int(event.ydata)
-        if rect is not None:
-            rect.set_width(fx - ix)
-            rect.set_height(fy - iy)
-            plt.draw()
+        if event.inaxes is not None and self.drawing:
+            self.fx, self.fy = int(event.xdata), int(event.ydata)
+            if self.rect is not None:
+                self.rect.set_width(self.fx - self.ix)
+                self.rect.set_height(self.fy - self.iy)
+                plt.draw()
 
-def select_roi(image):
-    global ix, iy, fx, fy, rect, ax
+    def select_roi(self, image: npt.NDArray):
 
-    img = image.copy()
+        fig, self.ax = plt.subplots()
+        self.ax.imshow(image)
 
-    fig, ax = plt.subplots()
-    ax.imshow(img)
+        fig.canvas.mpl_connect('button_press_event', self.on_mouse_press)
+        fig.canvas.mpl_connect('button_release_event', self.on_mouse_release)
+        fig.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
 
-    fig.canvas.mpl_connect('button_press_event', on_mouse_press)
-    fig.canvas.mpl_connect('button_release_event', on_mouse_release)
-    fig.canvas.mpl_connect('motion_notify_event', on_mouse_move)
+        plt.show()
 
-    plt.show()
+        if self.ix == -1 or self.iy == -1 or self.fx == -1 or self.fy == -1:
+            return None
+        else:
+            x1, y1 = min(self.ix, self.fx), min(self.iy, self.fy)
+            x2, y2 = max(self.ix, self.fx), max(self.iy, self.fy)
+            return (x1, y1, x2, y2)
 
-    if ix == -1 or iy == -1 or fx == -1 or fy == -1:
-        return None
-    else:
-        x1, y1 = min(ix, fx), min(iy, fy)
-        x2, y2 = max(ix, fx), max(iy, fy)
-        return (x1, y1, x2, y2)
 
 def select_roi_by_run_scan(run: int, scan: int, index_mode: Union[int, str]="auto") -> Optional[RoiRectangle]:
     config = load_config()
@@ -94,21 +92,22 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Union[int, str]="aut
 
     image = np.log1p(images.sum(axis=0))
     
-    roi_tuple = select_roi(image)
+    roi_tuple = RoiSelector().select_roi(image)
     if roi_tuple is None:
         return None
     return RoiRectangle(*roi_tuple)
 
+
 if __name__ == "__main__":
+    from config import load_config
+    from utils.file_util import get_run_scan_directory
+
+    config = load_config()
+    load_dir = config.path.load_dir
+    file = get_run_scan_directory(load_dir, 154, 1, 1)
+    loader = HDF5FileLoader(file)
+
+    image = np.log1p(loader.images.sum(axis=0))
+    roi = RoiSelector().select_roi(image)
     
-    file: str = "D:\\dev\\p_python\\xrd\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
-    hfl = HDF5FileLoader(file)
-    image = np.log1p(hfl.images.sum(axis=0))
-    if image is None:
-        print("이미지를 불러올 수 없습니다.")
-    else:
-        roi_coords = select_roi(image)
-        if roi_coords is not None:
-            print(f"선택된 ROI 좌표: {roi_coords}")
-        else:
-            print("ROI가 선택되지 않았습니다.")
+    print(roi)
