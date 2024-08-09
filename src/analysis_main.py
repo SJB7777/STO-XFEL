@@ -6,6 +6,7 @@ from roi_rectangle import RoiRectangle
 from gui.roi import RoiSelector
 from utils.file_util import create_run_scan_directory
 from config import load_config
+from logger import AppLogger
 from analyzer.draw_figure import (
     patch_rectangle, 
     draw_com_figure, 
@@ -24,13 +25,14 @@ if TYPE_CHECKING:
 
 def main() -> None:
     config: ExperimentConfiguration = load_config()
-    
+    logger: AppLogger = AppLogger("MainProcessor")
+
     # Define run and scan numbers
     run_num: int = 150
     scan_num: int = 1
     comment: Optional[str] = None
     
-    print(f"Run MeanDataProcessor run={run_num:0>3}")
+    logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3}")
     
     # Define file paths and names
     npz_dir: str = config.path.npz_dir
@@ -47,7 +49,11 @@ def main() -> None:
     pon_images: npt.NDArray = processor.pon_images
     
     # Select ROI using GUI
-    roi: tuple[int, int, int, int] = RoiSelector().select_roi(np.log1p(poff_images.sum(axis=0)))
+    roi: Optional[tuple[int, int, int, int]] = RoiSelector().select_roi(np.log1p(poff_images.sum(axis=0)))
+    if roi is None:
+        logger.error(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+        raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+    logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
     roi_rect: RoiRectangle = RoiRectangle.from_tuple(roi)
     
     # Analyze data within the selected ROI
@@ -63,13 +69,21 @@ def main() -> None:
     
     # Save images as TIFF files
     tifffile.imwrite(os.path.join(save_dir, "poff.tif"), poff_images.astype(np.float32))
+    logger.info(f"Saved TIF '{os.path.join(save_dir, "poff.tif")}'")
+
     tifffile.imwrite(os.path.join(save_dir, "pon.tif"), pon_images.astype(np.float32))
+    logger.info(f"Saved TIF '{os.path.join(save_dir, "pon.tif")}'")
+
     tifffile.imwrite(os.path.join(save_dir, "roi_poff.tif"), roi_poff_images.astype(np.float32))
+    logger.info(f"Saved TIF '{os.path.join(save_dir, "roi_poff.tif")}'")
+
     tifffile.imwrite(os.path.join(save_dir, "roi_pon.tif"), roi_pon_images.astype(np.float32))
+    logger.info(f"Saved TIF '{os.path.join(save_dir, "roi_pon.tif")}'")
     
     # Save data as CSV
     data_file: str = os.path.join(save_dir, "data.csv")
     data_df.to_csv(data_file)
+    logger.info(f"Saved CSV '{data_file}'")
     
     # Create figures
     image_fig: Figure = patch_rectangle(np.log1p(processor.poff_images.sum(axis=0)), *roi_rect.get_coordinate())
@@ -80,12 +94,22 @@ def main() -> None:
     
     # Save figures as PNG files
     image_fig.savefig(os.path.join(save_dir, "log_image.png"))
-    intensity_fig.savefig(os.path.join(save_dir, "delay-intensity.png"))
-    intensity_diff_fig.savefig(os.path.join(save_dir, "delay-intensity_diff.png"))
-    com_fig.savefig(os.path.join(save_dir, "delay-com.png"))
-    com_diff_fig.savefig(os.path.join(save_dir, "delay-com_diff.png"))
-    
-    print("Mean Data Processing is Done.")
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "log_image.png")}'")
 
+    intensity_fig.savefig(os.path.join(save_dir, "delay-intensity.png"))
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "delay-intensity.png")}'")
+
+    intensity_diff_fig.savefig(os.path.join(save_dir, "delay-intensity_diff.png"))
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "delay-intensity_diff.png")}'")
+
+    com_fig.savefig(os.path.join(save_dir, "delay-com.png"))
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "delay-com.png")}'")
+
+    com_diff_fig.savefig(os.path.join(save_dir, "delay-com_diff.png"))
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "delay-com_diff.png")}'")
+    
+    logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3} is Done.")
+
+    
 if __name__ == "__main__":
     main()

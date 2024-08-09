@@ -62,8 +62,15 @@ def process_scan(run_num: int, scan_num: int, config: ExperimentConfiguration) -
     logger.info(f"Processing run={run_num}, scan={scan_num} is complete")
 
 def main() -> None:
+    """
+    60 Hz laser:
+    197, 201, 202, 203, 204, 212, 213, 214, 217, 218, 
+    219, 220, 221, 222, 223, 228, 229, 230, 231, 234, 235, 236, 237, 238, 241, 242, 243, 244, 246, 251,
+    252, 253, 254, 255, 256, 259, 260, 261, 262, 263
+    """
+
     config = load_config()
-    run_nums: list[int] = [196]
+    run_nums: list[int] = [197]
     logger.info(f"Runs to process: {run_nums}")
 
     for run_num in run_nums:

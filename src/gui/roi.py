@@ -52,7 +52,7 @@ class RoiSelector:
                 self.rect.set_height(self.fy - self.iy)
                 plt.draw()
 
-    def select_roi(self, image: npt.NDArray) -> tuple[int, int, int, int]:
+    def select_roi(self, image: npt.NDArray) -> Optional[tuple[int, int, int, int]]:
         if image.ndim != 2:
             raise TypeError(f"Invalid shape {image.shape} for image data")
         fig, self.ax = plt.subplots()
@@ -89,7 +89,6 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None
     images = data.get("poff", None)
     if images is None:
         images = data.get("pon", None)
-        print("no off data")
 
     image = np.log1p(images.sum(axis=0))
     
