@@ -2,15 +2,16 @@ from scipy.io import loadmat
 
 import numpy.typing as npt
 
+
 class MatLoader:
     def __init__(self, file):
-        mat_images:npt.NDArray = loadmat(file)["data"]
+        mat_images: npt.NDArray = loadmat(file)["data"]
         images = mat_images.swapaxes(0, 2)
         self.images = images.swapaxes(1, 2)
 
+
 if __name__ == "__main__":
     import os
-    from processor.saver import NpzSaverStrategy
     from config import load_config
     config = load_config()
     mat_dir = config.path.mat_dir

@@ -18,10 +18,12 @@ from typing import Optional
 
 logger: AppLogger = AppLogger("MainProcessor")
 
+
 def get_scan_nums(run_num: int, config: ExperimentConfiguration) -> list[int]:
     run_dir: str = get_run_scan_directory(config.path.load_dir, run_num)
     scan_folders: list[str] = get_folder_list(run_dir)
     return [int(scan_dir.split("=")[1]) for scan_dir in scan_folders]
+
 
 def setup_pipelines(roi_rect: RoiRectangle) -> dict[str, list[ImagesQbpmProcessor]]:
     remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
@@ -33,9 +35,10 @@ def setup_pipelines(roi_rect: RoiRectangle) -> dict[str, list[ImagesQbpmProcesso
     ]
 
     return {
-        "standard" : standard_pipeline,
+        "standard": standard_pipeline,
     }
-    
+
+
 def process_scan(run_num: int, scan_num: int, config: ExperimentConfiguration) -> None:
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
@@ -61,10 +64,11 @@ def process_scan(run_num: int, scan_num: int, config: ExperimentConfiguration) -
 
     logger.info(f"Processing run={run_num}, scan={scan_num} is complete")
 
+
 def main() -> None:
     """
     60 Hz laser:
-    197, 201, 202, 203, 204, 212, 213, 214, 217, 218, 
+    197, 201, 202, 203, 204, 212, 213, 214, 217, 218,
     219, 220, 221, 222, 223, 228, 229, 230, 231, 234, 235, 236, 237, 238, 241, 242, 243, 244, 246, 251,
     252, 253, 254, 255, 256, 259, 260, 261, 262, 263
     """
@@ -85,6 +89,7 @@ def main() -> None:
                 logger.error("\n" + error_message)
 
     logger.info("All processing is complete")
+
 
 if __name__ == "__main__":
     main()

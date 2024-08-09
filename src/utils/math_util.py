@@ -6,18 +6,23 @@ from config import load_config
 from typing import Final
 import numpy.typing as npt
 
+
 FWHM_COEFFICIENT: Final[float] = 2.35482  # FWHM_COEFFICIENT = 2 * np.sqrt(2 * np.log(2))
+
 
 def reverse_axis(array: npt.NDArray):
     return np.transpose(array, axes=range(array.ndim)[::-1])
 
+
 def gaussian(x: npt.NDArray, a: float, mu: float, sig: float) -> npt.NDArray:
     return a * np.exp(-(x - mu) ** 2 / (2 * sig ** 2))
+
 
 def integrate_FWHM(a: float, mu: float, sig: float) -> float:
     fwhm = FWHM_COEFFICIENT * np.abs(sig)
     result, _ = quad(gaussian, mu - 0.5*fwhm, mu + 0.5*fwhm, args=(a, mu, sig))
     return result
+
 
 def gaussian2D(xy, amplitude: float, x0: float, y0: float, sigma_x: float, sigma_y: float, theta: float, offset: float) -> npt.NDArray:
     """
@@ -43,6 +48,7 @@ def gaussian2D(xy, amplitude: float, x0: float, y0: float, sigma_x: float, sigma
     g = offset + amplitude * np.exp(-(a * ((x - x0) ** 2) + 2 * b * (x - x0) * (y - y0) + c * ((y - y0) ** 2)))
     return g.ravel()
 
+
 def integrate_FWHM_2D(amplitude: float, xo: float, yo: float, sigma_x: float, sigma_y: float, theta: float, offset: float) -> float:
     """
     Calculate the integral of a 2D Gaussian with an offset over its FWHM
@@ -67,6 +73,7 @@ def integrate_FWHM_2D(amplitude: float, xo: float, yo: float, sigma_x: float, si
     result, _ = dblquad(integrand, y_lower, y_upper, lambda x: x_lower, lambda x: x_upper)
     return result
 
+
 def pixel_to_delQ(pixels: npt.NDArray) -> npt.NDArray:
 
     config = load_config()
@@ -74,11 +81,13 @@ def pixel_to_delQ(pixels: npt.NDArray) -> npt.NDArray:
     del_two_theta = np.arctan2(config.param.dps, config.param.sdd * del_pixels)
     return 4 * np.pi / config.param.wavelength * np.sin(del_two_theta / 2)
 
+
 def mul_deltaQ(pixels: npt.NDArray) -> npt.NDArray:
     config = load_config()
     two_theta = np.arctan2(config.param.dps, config.param.sdd)
     deltaQ = (4 * np.pi / config.param.wavelength) * (two_theta)
     return pixels * deltaQ
+
 
 '''
 sdd = 1.3 # m
@@ -86,6 +95,7 @@ dps = 75e-06 # um
 beam_energy = 9.7 # keV
 wavelength [A]
 '''
+
 
 def pixel_to_Q(pixels: npt.NDArray) -> npt.NDArray:
     """
@@ -100,8 +110,9 @@ def pixel_to_Q(pixels: npt.NDArray) -> npt.NDArray:
     two_theta = np.arctan2(config.param.dps, config.param.sdd * pixels)
     return 4 * np.pi / config.param.wavelength * np.sin(two_theta / 2)
 
-def get_min_max(arr:npt.NDArray) -> tuple[float, float]:
-    
+
+def get_min_max(arr: npt.NDArray) -> tuple[float, float]:
+
     arr = arr.flatten()
     minimum = maximum = arr[0]
     n = len(arr)
@@ -126,8 +137,10 @@ def get_min_max(arr:npt.NDArray) -> tuple[float, float]:
 
     return minimum, maximum
 
+
 def chunck(arr: list, size: int) -> list:
     return [arr[i:i + size] for i in range(0, len(arr), size)]
+
 
 def get_most_common_element(arr: npt.NDArray) -> int:
     """
@@ -143,8 +156,9 @@ def get_most_common_element(arr: npt.NDArray) -> int:
     max_val = int(np.max(arr))
     counts, bins = np.histogram(arr, bins=max_val + 1, range=(0, max_val + 1))
     most_common_element = np.argmax(counts)
-    
+
     return most_common_element
+
 
 def non_outlier_indices_percentile(arr: npt.NDArray, lower_percentile: float, upper_percentile: float) -> npt.NDArray[np.bool_]:
     """
@@ -156,19 +170,19 @@ def non_outlier_indices_percentile(arr: npt.NDArray, lower_percentile: float, up
     Returns:
     np.ndarray: Boolean array with the same shape as 'arr' where True indicates non-outlier data points.
     """
-    
+
     # Calculate the first quartile (Q1) and third quartile (Q3)
     q1 = np.percentile(arr, lower_percentile)
     q3 = np.percentile(arr, upper_percentile)
 
     # Calculate the Interquartile Range (IQR)
     iqr = q3 - q1
-    
+
     # Define the lower and upper bounds for outliers
     lower_bound = q1 - 1.5 * iqr
     upper_bound = q3 + 1.5 * iqr
 
     # Create a boolean array to identify non-outliers
     conditions = np.logical_and(arr > lower_bound, arr < upper_bound)
-    
+
     return conditions

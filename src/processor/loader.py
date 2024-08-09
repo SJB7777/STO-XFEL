@@ -11,14 +11,16 @@ from config import load_config, ExperimentConfiguration
 import numpy.typing as npt
 from typing import Union
 
+
 class RawDataLoader(ABC):
     @abstractmethod
     def __init__(self, file: str) -> None:
         pass
-    
+
     @abstractmethod
     def get_data(self) -> dict[str, npt.NDArray]:
         pass
+
 
 class HDF5FileLoader(RawDataLoader):
 
@@ -31,19 +33,19 @@ class HDF5FileLoader(RawDataLoader):
         """
         if not os.path.isfile(file):
             raise FileNotFoundError(f"No such file: {file}")
-        
+
         self.file: str = file
         # self.logger: AppLogger = AppLogger("MainProcessor")
         self.config: ExperimentConfiguration = load_config()
-        
+
         metadata: pd.DataFrame = pd.read_hdf(self.file, key='metadata')
         merged_df: pd.DataFrame = self.get_merged_df(metadata)
-        
+
         self.images: npt.NDArray[np.float32] = np.maximum(0, np.stack(merged_df['image'].values))  # Fill Negative Values to Zero
         self.qbpm: npt.NDArray[np.float32] = np.stack(merged_df['qbpm'].values)
         self.pump_status: npt.NDArray[np.bool_] = self.get_pump_mask(merged_df)
         self.delay: Union[np.float32, float] = self.get_delay(metadata)
-        
+
         # roi_coord = np.array(self.metadata[f'detector_{self.config.param.hutch}_{self.config.param.detector}_parameters.ROI'].iloc[0][0])
         # self.roi_rect = np.array([roi_coord[self.config.param.x1], roi_coord[self.config.param.x2], roi_coord[self.config.param.y1], roi_coord[self.config.param.y2]], dtype=np.int_)
 
@@ -59,14 +61,14 @@ class HDF5FileLoader(RawDataLoader):
         """
         with h5py.File(self.file, "r") as hf:
             if "detector" not in hf:
-                raise KeyError(f"Key 'detector' not found in the HDF5 file")
-            
+                raise KeyError("Key 'detector' not found in the HDF5 file")
+
             images = np.asarray(hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_values'], dtype=np.float32)
             images_ts = np.asarray(hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_items'], dtype=np.int64)
             qbpm = hf[f'qbpm/{self.config.param.hutch}/qbpm1']
-            qbpm_ts = qbpm[f'waveforms.ch1/axis1'][()]
+            qbpm_ts = qbpm['waveforms.ch1/axis1'][()]
             qbpm_sum = np.sum([qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)], axis=0, dtype=np.float32).sum(axis=1)
-        
+
         image_df = pd.DataFrame(
             {
                 "timestamp": images_ts,
@@ -83,7 +85,7 @@ class HDF5FileLoader(RawDataLoader):
 
         merged_df = pd.merge(image_df, qbpm_df, left_index=True, right_index=True, how='inner')
         return pd.merge(metadata, merged_df, left_index=True, right_index=True, how='inner')
-    
+
     def get_delay(self, metadata: pd.DataFrame) -> Union[np.float32, float]:
         """
         Retrieves the delay value from the metadata.
@@ -100,7 +102,7 @@ class HDF5FileLoader(RawDataLoader):
             return np.asarray(metadata['delay_value'], dtype=np.float32)[0]
         else:
             return np.nan
-    
+
     def get_pump_mask(self, merged_df: pd.DataFrame) -> npt.NDArray[np.bool_]:
         """
         Generates a pump status mask based on the configuration settings.
@@ -140,8 +142,9 @@ class HDF5FileLoader(RawDataLoader):
 
         return data
 
+
 if __name__ == "__main__":
-    file: str = "D:\\dev\\xfel_sample_data\\run=001\scan=001\p0110.h5"
+    file: str = "D:\\dev\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
     loader = HDF5FileLoader(file)
     data = loader.get_data()
     print(loader.delay)

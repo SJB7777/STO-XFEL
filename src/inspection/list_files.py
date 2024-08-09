@@ -1,5 +1,6 @@
 import os
 
+
 def gather_python_files(directory, output_file):
     total_length = 0
     with open(output_file, 'w', encoding='utf-8') as outfile:
@@ -15,7 +16,8 @@ def gather_python_files(directory, output_file):
                     outfile.write("\n\n")
     print(total_length)
 
+
 if __name__ == "__main__":
-    project_directory = '.'  # 프로젝트 디렉토리 경로를 지정하세요.
-    output_file = 'project_code.txt'  # 출력 파일 이름을 지정하세요.
+    project_directory = '.'
+    output_file = 'project_code.txt'
     gather_python_files(project_directory, output_file)

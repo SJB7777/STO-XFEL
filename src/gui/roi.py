@@ -12,6 +12,7 @@ from config import load_config
 from typing import Optional
 import numpy.typing as npt
 
+
 class RoiSelector:
     def __init__(self):
         self.drawing = False
@@ -91,7 +92,7 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None
         images = data.get("pon", None)
 
     image = np.log1p(images.sum(axis=0))
-    
+
     roi = RoiSelector().select_roi(image)
     if roi is None:
         return None
@@ -99,8 +100,6 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None
 
 
 if __name__ == "__main__":
-    from config import load_config
-    from utils.file_util import get_run_scan_directory
 
     config = load_config()
     load_dir = config.path.load_dir
@@ -109,5 +108,5 @@ if __name__ == "__main__":
 
     image = np.log1p(loader.images.sum(axis=0))
     roi = RoiSelector().select_roi(image)
-    
+
     print(roi)

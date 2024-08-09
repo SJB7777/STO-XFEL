@@ -1,6 +1,6 @@
 import os
 from collections import defaultdict
-from typing import Optional, DefaultDict, Type, Tuple
+from typing import Optional, DefaultDict, Type
 
 import numpy as np
 import numpy.typing as npt
@@ -15,12 +15,13 @@ from config import load_config
 from typing import Any
 from preprocess.image_qbpm_pipeline import ImagesQbpmProcessor, apply_pipeline
 
+
 class CoreProcessor:
-    
+
     def __init__(self, LoaderStrategy: Type[RawDataLoader], pipelines: Optional[dict[str, list[ImagesQbpmProcessor]]] = None, logger: Optional[AppLogger] = None) -> None:
-        
+
         self.LoaderStrategy = LoaderStrategy
-        self.pipelines = pipelines if pipelines is not None else {"no_processing" : []}
+        self.pipelines = pipelines if pipelines is not None else {"no_processing": []}
 
         self.logger = logger if logger is not None else AppLogger("MainProcessor")
         self.config = load_config()
@@ -35,10 +36,10 @@ class CoreProcessor:
         """
         scan_dir = scan_dir
         self.logger.info(f"Starting scan: {scan_dir}")
-        
+
         self.result: dict[str, DefaultDict[str, npt.NDArray]] = self.process_scan_directory(scan_dir)
         self.logger.info(f"Completed processing: {scan_dir}")
-            
+
     def process_scan_directory(self, scan_dir: str) -> dict[str, DefaultDict[str, npt.NDArray]]:
         """
         Processes a single scan directory.
@@ -54,7 +55,7 @@ class CoreProcessor:
         hdf5_files = get_file_list(scan_dir)
         pbar = tqdm(hdf5_files, total=len(hdf5_files))
 
-        self.pipeline_data_dict: dict[str, DefaultDict[str, list]] = {pipline_name : defaultdict(list) for pipline_name in self.pipelines}
+        self.pipeline_data_dict: dict[str, DefaultDict[str, list]] = {pipline_name: defaultdict(list) for pipline_name in self.pipelines}
 
         for hdf5_file in pbar:
 
@@ -63,7 +64,7 @@ class CoreProcessor:
                 self.add_processed_data_to_dict(loader_strategy)
 
         return self.stack_processed_data(self.pipeline_data_dict)
-    
+
     def get_loader_strategy(self, scan_dir: str, hdf5_file: str) -> Optional[RawDataLoader]:
         hdf5_dir = os.path.join(scan_dir, hdf5_file)
         try:
@@ -85,7 +86,7 @@ class CoreProcessor:
 
     def add_processed_data_to_dict(self, loader_strategy: RawDataLoader) -> dict[str, DefaultDict[str, list]]:
 
-        pipeline_data:dict[str, dict[str, Any]] = {}
+        pipeline_data: dict[str, dict[str, Any]] = {}
         for pipeline_name, pipeline in self.pipelines.items():
             data: dict[str, Any] = {}
 
@@ -96,10 +97,10 @@ class CoreProcessor:
             if 'poff' in images_dict:
                 applied_images: npt.NDArray = apply_pipeline(pipeline, images_dict['poff'], images_dict['poff_qbpm'])[0]
                 data['poff'] = applied_images.mean(axis=0)
-                
+
             data["delay"] = loader_strategy.delay
             pipeline_data[pipeline_name] = data
-        
+
         for pipeline_name, data in pipeline_data.items():
             for data_name, data_value in data.items():
                 self.pipeline_data_dict[pipeline_name][data_name].append(data_value)
@@ -120,21 +121,22 @@ class CoreProcessor:
         - comment (str, optional): Comment to append to the file name.
         """
         self.logger.info(f"Start to save as {saver.file_type.capitalize()}")
-        
+
         if not self.result:
             self.logger.error("Nothing to save")
             raise Exception("Nothing to save")
-        
+
         for pipline_name, data_dict in self.result.items():
             file_base_name = f"{file_name}"
-            
+
             saver.save(file_base_name, data_dict)
             self.logger.info(f"Finished Pipeline: {pipline_name}")
-            self.logger.info(f"Data Dict Keys: {data_dict.keys()}")        
+            self.logger.info(f"Data Dict Keys: {data_dict.keys()}")
             self.logger.info(f"Saved file '{saver.file}'")
 
+
 if __name__ == "__main__":
-    
+
     from processor.loader import HDF5FileLoader
     from processor.saver import SaverFactory
     from preprocess.image_qbpm_pipeline import (
@@ -145,52 +147,52 @@ if __name__ == "__main__":
     )
     run_num = 1
     logger: AppLogger = AppLogger("MainProcessor")
-    
+
     # Pipeline 1
     pipeline_normalize_images_by_qbpm: list[ImagesQbpmProcessor] = [
         subtract_dark_background,
         remove_outliers_using_ransac,
         normalize_images_by_qbpm,
     ]
-    logger.info(f"Pipeline: normalize_images_by_qbpm")
-    logger.info(f"preprocessing: subtract_dark_background")
-    logger.info(f"preprocessing: remove_by_ransac")
-    logger.info(f"preprocessing: normalize_images_by_qbpm")
-    
+    logger.info("Pipeline: normalize_images_by_qbpm")
+    logger.info("preprocessing: subtract_dark_background")
+    logger.info("preprocessing: remove_by_ransac")
+    logger.info("preprocessing: normalize_images_by_qbpm")
+
     # Pipeline 2
     pipeline_equalize_intensities: list[ImagesQbpmProcessor] = [
         subtract_dark_background,
         remove_outliers_using_ransac,
         equalize_intensities,
     ]
-    logger.info(f"Pipeline: normalize_images_by_qbpm")
-    logger.info(f"preprocessing: subtract_dark_background")
-    logger.info(f"preprocessing: remove_by_ransac")
-    logger.info(f"preprocessing: equalize_intensities")
+    logger.info("Pipeline: normalize_images_by_qbpm")
+    logger.info("preprocessing: subtract_dark_background")
+    logger.info("preprocessing: remove_by_ransac")
+    logger.info("preprocessing: equalize_intensities")
 
     # Pipeline 3
     pipeline_no_normalize: list[ImagesQbpmProcessor] = [
         subtract_dark_background,
         remove_outliers_using_ransac,
     ]
-    logger.info(f"Pipeline: no_normalize")
-    logger.info(f"preprocessing: subtract_dark_background")
-    logger.info(f"preprocessing: remove_by_ransac")
+    logger.info("Pipeline: no_normalize")
+    logger.info("preprocessing: subtract_dark_background")
+    logger.info("preprocessing: remove_by_ransac")
 
     pipelines: dict[str, list[ImagesQbpmProcessor]] = {
-        "normalize_images_by_qbpm" : pipeline_normalize_images_by_qbpm,
+        "normalize_images_by_qbpm": pipeline_normalize_images_by_qbpm,
         "equalize_intensities": pipeline_equalize_intensities,
-        "no_normalize" : pipeline_no_normalize
+        "no_normalize": pipeline_no_normalize
     }
 
     cp = CoreProcessor(HDF5FileLoader, pipelines, logger)
     cp.scan(run_num)
-    
+
     mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
     # tif_saver: SaverStrategy = SaverFactory.get_saver("tif")
     # npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
     cp.save(mat_saver)
     # cp.save(tif_saver)
     # cp.save(npz_saver)
-    
+
     logger.info("Processing is over")

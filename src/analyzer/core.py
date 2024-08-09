@@ -32,7 +32,7 @@ class DataAnalyzer:
 
     def get_summed_image(self) -> tuple[npt.NDArray, npt.NDArray]:
         """
-        return: 
+        return:
             pump off image, pump on image
         """
         return self.poff_images.sum(axis=0), self.pon_images.sum(axis=0)
@@ -63,7 +63,7 @@ class DataAnalyzer:
         for image in roi_images:
             max_y, max_x = np.unravel_index(np.argmax(image), image.shape)
             # max_y, max_x = height // 2, width // 2
-            
+
             x: npt.NDArray = np.arange(0, width)
             y: npt.NDArray = np.arange(0, height)
 

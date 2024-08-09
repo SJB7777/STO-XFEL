@@ -8,21 +8,22 @@ import numpy.typing as npt
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
+
 def patch_rectangle(image: npt.NDArray, x1: int, y1: int, x2: int, y2: int) -> 'Figure':
     patched_image = np.copy(image)
-    
+
     fig, ax = plt.subplots(figsize=(10, 10))
-    
+
     ax.imshow(patched_image)
-    
+
     rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=1, edgecolor='r', facecolor='none')
-    
+
     ax.add_patch(rect)
-    
+
     ax.set_title('Patched Image')
     ax.set_xlabel('X-axis')
     ax.set_ylabel('Y-axis')
-    
+
     return fig
 
 
@@ -30,16 +31,16 @@ def draw_intensity_figure(data_df: pd.DataFrame) -> 'Figure':
     delay = data_df.index
     poff_intensity = data_df["poff_intensity"]
     pon_intensity = data_df["pon_intensity"]
-    
+
     fig, ax = plt.subplots()
     ax.plot(delay, poff_intensity, label="poff_intensity", marker='o')
     ax.plot(delay, pon_intensity, label="pon_intensity", marker='x')
-    
+
     ax.set_xlabel("Delay [ps]")
     ax.set_ylabel("Intensity [a.u.]")
     ax.set_title("Intensity vs Delay")
     ax.legend()
-    
+
     plt.tight_layout()
 
     return fig
@@ -78,7 +79,7 @@ def draw_intensity_diff_figure(data_df: pd.DataFrame) -> 'Figure':
     delay = data_df.index
     poff_intensity = data_df["poff_intensity"]
     pon_intensity = data_df["pon_intensity"]
-    
+
     # Calculate the difference between pon_intensity and poff_intensity
     intensity_difference = pon_intensity - poff_intensity
 
@@ -89,10 +90,11 @@ def draw_intensity_diff_figure(data_df: pd.DataFrame) -> 'Figure':
     ax.set_ylabel("Intensity Difference [a.u.]")
     ax.set_title("Intensity Difference (poff - pon) vs Delay")
     ax.legend()
-    
+
     plt.tight_layout()
 
     return fig
+
 
 def draw_com_diff_figure(data_df: pd.DataFrame) -> 'Figure':
     delay = data_df.index
@@ -125,6 +127,7 @@ def draw_com_diff_figure(data_df: pd.DataFrame) -> 'Figure':
     plt.tight_layout()
 
     return fig
+
 
 if __name__ == "__main__":
     print("run analyzer.draw_figure")

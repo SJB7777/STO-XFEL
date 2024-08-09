@@ -9,6 +9,7 @@ from config import load_config
 import numpy.typing as npt
 from typing import Optional
 
+
 def ransac_regression(y: np.ndarray, x: np.ndarray, min_samples: Optional[int] = None) -> tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]:
     """
     Perform RANSAC (Random Sample Consensus) regression to identify inliers and estimate the regression model.
@@ -26,17 +27,18 @@ def ransac_regression(y: np.ndarray, x: np.ndarray, min_samples: Optional[int] =
     inlier_mask = ransac.inlier_mask_
     return inlier_mask, ransac.estimator_.coef_, ransac.estimator_.intercept_
 
+
 def get_linear_regression_confidence_bounds(
-    y: npt.NDArray, 
-    x: npt.NDArray, 
+    y: npt.NDArray,
+    x: npt.NDArray,
     sigma: float
 ) -> npt.NDArray:
     """
     Get lower and upper bounds for data points based on their confidence interval in a linear regression model.
 
     Statistical Explanation:
-    This function applies the principle of propagation of uncertainty. It fits a linear 
-    regression model y = mx + b, calculates the standard errors of the model parameters 
+    This function applies the principle of propagation of uncertainty. It fits a linear
+    regression model y = mx + b, calculates the standard errors of the model parameters
     m and b, and uses these to generate prediction intervals for identifying outliers.
 
     The prediction interval is calculated using the formula:
@@ -59,13 +61,13 @@ def get_linear_regression_confidence_bounds(
     """
     def linear_model(x, m, b):
         return m * x + b
-    
+
     params, covars = curve_fit(linear_model, x, y)
 
     m, b = params
     m_err, b_err = np.sqrt(np.diag(covars))
     y_fit = linear_model(x, m, b)
-    
+
     # Calculate upper and lower bounds considering both slope and intercept errors
     error = np.sqrt((m_err * x)**2 + b_err**2)
     upper_bound = y_fit + error * sigma
@@ -73,14 +75,13 @@ def get_linear_regression_confidence_bounds(
 
     return lower_bound, upper_bound, y_fit
 
-def filter_images_qbpm_by_linear_model(
-    images: npt.NDArray, qbpm: npt.NDArray, sigma: float
-    ) -> tuple[npt.NDArray, npt.NDArray]:
+
+def filter_images_qbpm_by_linear_model(images: npt.NDArray, qbpm: npt.NDArray, sigma: float) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Filter images based on the confidence interval of their intensities using a linear regression model with QBPM values.
 
-    This function computes the total intensity of each image, applies a linear regression model 
-    to the intensity and QBPM values, and generates a mask to filter out images whose intensities 
+    This function computes the total intensity of each image, applies a linear regression model
+    to the intensity and QBPM values, and generates a mask to filter out images whose intensities
     fall outside the specified confidence interval.
 
     Parameters:
@@ -92,45 +93,49 @@ def filter_images_qbpm_by_linear_model(
     tuple[NDArray, NDArray]: Tuple of filtered intensities and QBPM values.
         - Filtered intensities (NDArray): Array of intensities within the confidence interval. Shape: (M,), where M <= N.
         - Filtered qbpm (NDArray): Array of QBPM values corresponding to the filtered intensities. Shape: (M,), where M <= N.
-    
+
     Note:
-    This method uses the `get_linear_regression_confidence_lower_upper_bound` function to generate the mask based 
+    This method uses the `get_linear_regression_confidence_lower_upper_bound` function to generate the mask based
     on the linear regression model and confidence interval.
     """
     intensites = images.sum(axis=(1, 2))
     lower_bound, upper_bound, _ = get_linear_regression_confidence_bounds(intensites, qbpm, sigma)
     mask = np.logical_and(intensites >= lower_bound, intensites <= upper_bound)
-    
+
     return images[mask], qbpm[mask]
+
 
 def div_images_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
     """
     Divide images by qbpm.
-    
+
     Parameters:
     images (NDArray): Array of images. Shape: (N, H, W), where N is the number of images, and H and W are the height and width of each image.
     qbpm (NDArray): Array of QBPM (Quadrature Balanced Photodetector Measurements) values. Shape: (N,)
-    
+
     Returns:
     NDArray: Images that divided by qbpm
     """
     return images * qbpm.mean() / qbpm[:, np.newaxis, np.newaxis]
 
+
 def subtract_dark(images: npt.NDArray) -> npt.NDArray:
     config = load_config()
     dark_file = os.path.join(config.path.save_dir, "DARK\\dark.npy")
-    
+
     if not os.path.exists(dark_file):
         raise FileNotFoundError(f"No such file or directory: {dark_file}")
-    
+
     dark_images = np.load(dark_file)
     dark = np.mean(dark_images, axis=0)
     return np.maximum(images - dark[np.newaxis, :, :], 0)
     # return images - dark[np.newaxis, :, :]
 
+
 def add_bias(images: npt.NDArray):
     bias = np.min(images)
     return images - bias
+
 
 def equalize_brightness(images: np.ndarray) -> np.ndarray:
     """
@@ -145,115 +150,5 @@ def equalize_brightness(images: np.ndarray) -> np.ndarray:
     intensites = images.sum(axis=(1, 2))
     overal_normed_intensites = intensites / intensites.mean()
     equalized_images = images / overal_normed_intensites[:, np.newaxis, np.newaxis]
-    
+
     return equalized_images
-
-
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    from processor.loader import HDF5FileLoader
-    from sklearn.linear_model import RANSACRegressor
-    from sklearn.metrics import mean_squared_error, r2_score
-    import numpy as np
-    from tqdm import tqdm
-    
-    file: str = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\run=176\\scan=001\\p0044.h5"
-
-    rr = HDF5FileLoader(file)
-    images = rr.images
-    qbpm = rr.qbpm_sum
-    fig, axs = plt.subplots(2, 1, figsize=(6, 8))
-    intensities = images.sum(axis=(1, 2))
-    sorted_indices = np.argsort(qbpm)
-    axs[0].scatter(qbpm[sorted_indices], intensities[sorted_indices])
-    axs[1].scatter(qbpm[sorted_indices], (intensities / qbpm)[sorted_indices])
-
-    axs[0].set_xlim(0, None)
-    axs[0].set_ylim(0, None)
-    axs[1].set_xlim(0, None)
-    axs[1].set_ylim(0, None)
-    plt.show()
- 
-
-    intensities = images.sum(axis=(1, 2))
-    intensities = intensities / intensities.mean()
-    images_div_by_intensities = images / intensities[:, np.newaxis, np.newaxis]
-    
-    fig, axs = plt.subplots(2, 2, figsize=(8, 8))
-    axs[0, 0].imshow(np.log1p(images.sum(axis=0)))
-    axs[0, 1].imshow(np.log1p(images_div_by_intensities.sum(axis=0)))
-    axs[1, 0].scatter(qbpm, images.sum(axis=(1, 2)))
-    axs[1, 1].scatter(qbpm, images_div_by_intensities.sum(axis=(1, 2)))
-    
-    axs[1, 0].set_ylim(0, None)
-    axs[1, 1].set_ylim(0, axs[1, 0].get_ylim()[1])
-    plt.tight_layout()
-    plt.show()
-
-
-    mask = ransac_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
-    good_images = images[mask]
-    good_intensites = good_images.sum(axis=(1, 2))
-    good_intensites = good_intensites / good_intensites.mean()
-    normed_images = good_images / good_intensites[:, np.newaxis, np.newaxis]
-    
-    # plt.imshow(np.log1p(normed_images.sum(axis=0)))
-    plt.scatter(range(len(good_intensites)), good_intensites)
-    plt.show()
-    quit()
-    min_samples_list = range(1, 11)
-    residuals_list = []
-    r2_scores = []
-    rmse_scores = []
-
-    fig, axs = plt.subplots(2, 5, figsize=(18, 9))
-    axs = axs.flatten()
-
-    for i, min_samples in tqdm(enumerate(min_samples_list), total=len(min_samples_list)):
-        ransac = RANSACRegressor(min_samples=min_samples)
-        ransac.fit(X, y)
-        y_pred = ransac.predict(X)
-        mask = ransac.inlier_mask_
-        coef = ransac.estimator_.coef_
-        intercept = ransac.estimator_.intercept_
-
-        def lin(x):
-            return coef[0] * x + intercept
-
-        residuals = y - y_pred
-        residuals_list.append(residuals)
-
-        r2 = r2_score(y[mask], y_pred[mask])
-        r2_scores.append(r2)
-
-        rmse = np.sqrt(mean_squared_error(y[mask], y_pred[mask]))
-        rmse_scores.append(rmse)
-
-        axs[i].scatter(X[mask], y[mask], color="blue", label="Inliers")
-        axs[i].scatter(X[~mask], y[~mask], color="red", label="Outliers")
-        axs[i].plot([X.min(), X.max()], [lin(X.min()), lin(X.max())], color="green")
-        axs[i].set_title(f"RANSAC - minsamples={min_samples}")
-        axs[i].legend()
-
-        # y축과 x축을 0부터 보이게 설정
-        axs[i].set_ylim(0, None)
-        axs[i].set_xlim(0, None)
-
-    plt.tight_layout()
-    plt.show()
-
-    # 결과 출력
-    print("min_samples\tR²\tRMSE")
-    for i, min_samples in enumerate(min_samples_list):
-        print(f"{min_samples}\t{r2_scores[i]:.4f}\t{rmse_scores[i]:.4f}")
-
-    # 잔차 시각화
-    # fig, axs = plt.subplots(2, 5, figsize=(20, 10))
-    # axs = axs.flatten()
-
-    # for i, min_samples in enumerate(min_samples_list):
-    #     axs[i].hist(residuals_list[i][mask], bins=20, color="blue", alpha=0.7)
-    #     axs[i].set_title(f"Residuals - minsamples={min_samples}")
-
-    # plt.tight_layout()
-    # plt.show()

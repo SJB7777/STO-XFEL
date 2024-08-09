@@ -1,0 +1,2554 @@
+===== .\analysis_main.py =====
+import os
+import numpy as np
+import tifffile
+from roi_rectangle import RoiRectangle
+
+from gui.roi import RoiSelector
+from utils.file_util import create_run_scan_directory
+from config import load_config
+from logger import AppLogger
+from analyzer.draw_figure import (
+    patch_rectangle, 
+    draw_com_figure, 
+    draw_intensity_figure, 
+    draw_intensity_diff_figure, 
+    draw_com_diff_figure
+)
+from analyzer.core import DataAnalyzer
+
+import numpy.typing as npt
+from typing import TYPE_CHECKING, Optional
+if TYPE_CHECKING:
+    from pandas import DataFrame
+    from matplotlib.figure import Figure
+    from config import ExperimentConfiguration
+
+def main() -> None:
+    config: ExperimentConfiguration = load_config()
+    logger: AppLogger = AppLogger("MainProcessor")
+
+    # Define run and scan numbers
+    run_num: int = 150
+    scan_num: int = 1
+    comment: Optional[str] = None
+    
+    logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3}")
+    
+    # Define file paths and names
+    npz_dir: str = config.path.npz_dir
+    file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
+    if comment is not None:
+        file_name += comment
+    npz_file: str = os.path.join(npz_dir, file_name + ".npz")
+    
+    # Initialize MeanDataProcessor
+    processor: DataAnalyzer = DataAnalyzer(npz_file, 0)
+    
+    # Extract images
+    poff_images: npt.NDArray = processor.poff_images
+    pon_images: npt.NDArray = processor.pon_images
+    
+    # Select ROI using GUI
+    roi: Optional[tuple[int, int, int, int]] = RoiSelector().select_roi(np.log1p(poff_images.sum(axis=0)))
+    if roi is None:
+        logger.error(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+        raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+    logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
+    roi_rect: RoiRectangle = RoiRectangle.from_tuple(roi)
+    
+    # Analyze data within the selected ROI
+    data_df: DataFrame = processor.analyze_by_roi(roi_rect)
+    
+    # Define save directory
+    image_dir: str = config.path.image_dir
+    save_dir: str = create_run_scan_directory(image_dir, run_num, scan_num)
+    
+    # Slice images to ROI
+    roi_poff_images: npt.NDArray = roi_rect.slice(poff_images)
+    roi_pon_images: npt.NDArray = roi_rect.slice(pon_images)
+    
+    # Save images as TIFF files
+    tifffile.imwrite(os.path.join(save_dir, "poff.tif"), poff_images.astype(np.float32))
+    logger.info(f"Saved TIF '{os.path.join(save_dir, "poff.tif")}'")
+
+    tifffile.imwrite(os.path.join(save_dir, "pon.tif"), pon_images.astype(np.float32))
+    logger.info(f"Saved TIF '{os.path.join(save_dir, "pon.tif")}'")
+
+    tifffile.imwrite(os.path.join(save_dir, "roi_poff.tif"), roi_poff_images.astype(np.float32))
+    logger.info(f"Saved TIF '{os.path.join(save_dir, "roi_poff.tif")}'")
+
+    tifffile.imwrite(os.path.join(save_dir, "roi_pon.tif"), roi_pon_images.astype(np.float32))
+    logger.info(f"Saved TIF '{os.path.join(save_dir, "roi_pon.tif")}'")
+    
+    # Save data as CSV
+    data_file: str = os.path.join(save_dir, "data.csv")
+    data_df.to_csv(data_file)
+    logger.info(f"Saved CSV '{data_file}'")
+    
+    # Create figures
+    image_fig: Figure = patch_rectangle(np.log1p(processor.poff_images.sum(axis=0)), *roi_rect.get_coordinate())
+    intensity_fig: Figure = draw_intensity_figure(data_df)
+    intensity_diff_fig: Figure = draw_intensity_diff_figure(data_df)
+    com_fig: Figure = draw_com_figure(data_df)
+    com_diff_fig: Figure = draw_com_diff_figure(data_df)
+    
+    # Save figures as PNG files
+    image_fig.savefig(os.path.join(save_dir, "log_image.png"))
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "log_image.png")}'")
+
+    intensity_fig.savefig(os.path.join(save_dir, "delay-intensity.png"))
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "delay-intensity.png")}'")
+
+    intensity_diff_fig.savefig(os.path.join(save_dir, "delay-intensity_diff.png"))
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "delay-intensity_diff.png")}'")
+
+    com_fig.savefig(os.path.join(save_dir, "delay-com.png"))
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "delay-com.png")}'")
+
+    com_diff_fig.savefig(os.path.join(save_dir, "delay-com_diff.png"))
+    logger.info(f"Saved PNG '{os.path.join(save_dir, "delay-com_diff.png")}'")
+    
+    logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3} is Done.")
+
+    
+if __name__ == "__main__":
+    main()
+
+===== .\config.py =====
+import os
+
+from cuptlib_config.palxfel import load_palxfel_config, save_palxfel_dict, ExperimentConfiguration
+import configparser
+
+config = configparser.ConfigParser()
+
+dir_name = os.path.dirname(__file__)
+config.read(os.path.join(dir_name, "config\config.ini"))
+config_dir = os.path.join(dir_name, config["config"]["config_dir"])
+
+def load_config() -> ExperimentConfiguration:
+    return load_palxfel_config(config_dir)
+
+def save_config(config_dict: dict) -> None:
+    save_palxfel_dict(config_dict, config_dir)
+
+if __name__ == "__main__":
+    from cuptlib_config.palxfel.enums import Hertz, Hutch, Detector, Xray
+
+    config_dict = {
+        "path":{
+            # Mother Directory of run files. 
+            "load_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
+            "save_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
+            # "load_dir": "D:\\dev\\p_python\\xrd\\xfel_sample_data",
+            # "save_dir": "D:\\dev\\p_python\\xrd\\xfel_sample_data",
+            # relative path based on save_dir
+            "image_dir": "Image",
+            "param_dir": "DataParameter",
+            "mat_dir": "Mat_files2",
+            "npz_dir": "Npz_files",
+            "tif_dir": "Tif_files"
+        },
+        "param":{
+            # Hutch 
+            "hutch": Hutch.EH1,
+            # Detector
+            "detector": Detector.JUNGFRAU2,
+            # Xray used in experiment. 
+            "xray": Xray.HARD,
+            # Rate of laser.
+            "pump_setting": Hertz.FIFTEEN,
+            # Index of roi coordinate inside h5 file.
+            "x1": 0, "x2": 1, "y1": 2, "y2": 3,
+            # Metric of SDD and DPS is meters.
+            "sdd": 1.3,
+            "dps": 7.5e-5, # Detector Pixel Size
+            "beam_energy": 9.7,
+        }
+    }
+
+    save_config(config_dict)
+
+===== .\logger.py =====
+import os
+import json
+import logging
+from datetime import datetime
+
+def format_run_scan_number(run_scan_list):
+    return ', '.join([f'({x}, {y})' for x, y in run_scan_list])
+
+class AppLogger:
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(AppLogger, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, name: str, log_dir: str = "logs"):
+        if not hasattr(self, 'logger'):  # Ensure initialization only happens once
+            self.log_dir = log_dir
+            self.logger = self._setup_logger(name)
+            self.logger.info("Start Logging")  # Log info message on first creation
+            self.results = {}
+
+    def _setup_logger(self, name: str) -> logging.Logger:
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s | %(levelname)s | %(message)s')
+        
+        log_file = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_analysis.log"
+        
+        if not os.path.exists(self.log_dir):
+            os.mkdir(self.log_dir)
+        log_dir = os.path.join(self.log_dir, str(datetime.now().date()))
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+        log_path = os.path.join(log_dir, log_file)
+        file_handler = logging.FileHandler(log_path)
+
+        self.log_path = log_path
+        
+        file_handler.setFormatter(formatter)
+        
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        
+        if not logger.handlers:
+            logger.addHandler(console_handler)
+            logger.addHandler(file_handler)
+        
+        return logger
+
+    def add_metadata(self, metadata:dict) -> None:
+        self.logger.info(f"{metadata}")
+
+    def add_result(self, key, value) -> None:
+        self.results[key] = value
+        self.logger.info(f"Result added: {key} = {value}")
+
+    def save_to_json(self, filename: str) -> None:
+        data = {
+            "metadata": self.metadata,
+            "results": self.results
+        }
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        self.logger.info(f"Record saved to {filename}")
+        
+    def info(self, message: str) -> None:
+        self.logger.info(message)
+
+    def warning(self, message: str) -> None:
+        self.logger.warning(message)
+
+    def error(self, message: str) -> None:
+        self.logger.error(message)
+
+
+
+
+===== .\processing_main.py =====
+from logger import AppLogger
+from processor.core import CoreProcessor
+from processor.loader import HDF5FileLoader
+from processor.saver import SaverFactory, SaverStrategy
+from preprocess.image_qbpm_pipeline import (
+    subtract_dark_background,
+    normalize_images_by_qbpm,
+    create_ransac_roi_outlier_remover,
+    ImagesQbpmProcessor
+)
+from gui.roi import select_roi_by_run_scan
+from utils.file_util import get_folder_list, get_run_scan_directory
+from config import load_config, ExperimentConfiguration
+
+from roi_rectangle import RoiRectangle
+from typing import Optional
+
+
+logger: AppLogger = AppLogger("MainProcessor")
+
+def get_scan_nums(run_num: int, config: ExperimentConfiguration) -> list[int]:
+    run_dir: str = get_run_scan_directory(config.path.load_dir, run_num)
+    scan_folders: list[str] = get_folder_list(run_dir)
+    return [int(scan_dir.split("=")[1]) for scan_dir in scan_folders]
+
+def setup_pipelines(roi_rect: RoiRectangle) -> dict[str, list[ImagesQbpmProcessor]]:
+    remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
+
+    standard_pipeline = [
+        subtract_dark_background,
+        remove_by_ransac_roi,
+        normalize_images_by_qbpm,
+    ]
+
+    return {
+        "standard" : standard_pipeline,
+    }
+    
+def process_scan(run_num: int, scan_num: int, config: ExperimentConfiguration) -> None:
+    load_dir = config.path.load_dir
+    scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
+
+    roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
+    if roi_rect is None:
+        raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+
+    logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
+    pipelines: dict[str, list[ImagesQbpmProcessor]] = setup_pipelines(roi_rect)
+
+    for pipeline_name, pipeline in pipelines.items():
+        logger.info(f"PipeLine: {pipeline_name}")
+        for function in pipeline:
+            logger.info(f"preprocess: {function.__name__}")
+
+    processor: CoreProcessor = CoreProcessor(HDF5FileLoader, {"standard": pipeline}, logger)
+    processor.scan(scan_dir)
+
+    file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
+    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    processor.save(mat_saver, file_name)
+
+    logger.info(f"Processing run={run_num}, scan={scan_num} is complete")
+
+def main() -> None:
+    """
+    60 Hz laser:
+    197, 201, 202, 203, 204, 212, 213, 214, 217, 218, 
+    219, 220, 221, 222, 223, 228, 229, 230, 231, 234, 235, 236, 237, 238, 241, 242, 243, 244, 246, 251,
+    252, 253, 254, 255, 256, 259, 260, 261, 262, 263
+    """
+
+    config = load_config()
+    run_nums: list[int] = [197]
+    logger.info(f"Runs to process: {run_nums}")
+
+    for run_num in run_nums:
+        scan_nums: list[int] = get_scan_nums(run_num, config)
+        for scan_num in scan_nums:
+            try:
+                process_scan(run_num, scan_num, config)
+            except Exception as e:
+                logger.error(f"Failed to process run={run_num}, scan={scan_num}: {type(e).__name__}: {str(e)}")
+                import traceback
+                error_message = traceback.format_exc()
+                logger.error("\n" + error_message)
+
+    logger.info("All processing is complete")
+
+if __name__ == "__main__":
+    main()
+
+===== .\temp.py =====
+def foo():
+    return 1
+
+===== .\analyzer\core.py =====
+import os
+
+import numpy as np
+import pandas as pd
+from scipy.ndimage import rotate
+from scipy.optimize import curve_fit
+from roi_rectangle import RoiRectangle
+
+from utils.math_util import gaussian, mul_deltaQ
+
+import numpy.typing as npt
+from typing import Mapping
+
+class DataAnalyzer:
+    def __init__(self, file: str, angle: int = 0) -> None:
+        if not os.path.exists(file):
+            raise FileNotFoundError(f"The file {file} was not found.")
+        
+        data: Mapping[str, npt.NDArray] = np.load(file)
+
+        if "delay" not in data or "pon" not in data or "poff" not in data:
+            raise ValueError("The file does not contain the required keys: 'delay', 'pon', 'poff'")
+        
+        self.delay: npt.NDArray = data["delay"]
+        self.poff_images: npt.NDArray = data["poff"]
+        self.pon_images: npt.NDArray = data["pon"]
+        
+        if angle:
+            self.poff_images = rotate(self.poff_images, 45, axes=(1, 2), reshape=False)
+            self.pon_images = rotate(self.pon_images, 45, axes=(1, 2), reshape=False)
+            
+    def get_summed_image(self) -> tuple[npt.NDArray, npt.NDArray]:
+        """
+        return: 
+            pump off image, pump on image
+        """
+        return self.poff_images.sum(axis=0), self.pon_images.sum(axis=0)
+    
+    def pon_subtract_by_poff(self):
+        return np.maximum(self.pon_images - self.poff_images, 0)
+    
+    def _roi_center_of_masses(self, roi_rect: RoiRectangle, images: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+        roi_images = roi_rect.slice(images)
+        height, width = roi_rect.height, roi_rect.width
+
+        y_coords, x_coords = np.mgrid[:height, :width]
+
+        total_mass = np.sum(roi_images, axis=(1, 2))
+        x_centroids = np.sum(x_coords * roi_images, axis=(1, 2)) / total_mass
+        y_centroids = np.sum(y_coords * roi_images, axis=(1, 2)) / total_mass
+
+        return x_centroids, y_centroids
+    
+    def _roi_gaussian(self, roi_rect: RoiRectangle, images: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
+        roi_images = roi_rect.slice(images)
+        height, width = roi_rect.height, roi_rect.width
+
+        intensities = []
+        com_xs = []
+        com_ys = []
+
+        for image in roi_images:
+            max_y, max_x = np.unravel_index(np.argmax(image), image.shape)
+            # max_y, max_x = height // 2, width // 2
+            
+            x: npt.NDArray = np.arange(0, width)
+            y: npt.NDArray = np.arange(0, height)
+
+            x_data = image.sum(axis=0)
+            y_data = image.sum(axis=1)
+
+            
+            initial_guess_x = [x_data[max_x], max_x, (np.max(x_data) - np.min(x_data)) / 4]
+            try:
+                params_x = curve_fit(gaussian, x, x_data, p0=initial_guess_x)[0]
+            except RuntimeError as e:
+                print(e, ": x")
+                params_x = [np.nan, np.nan, np.nan]    
+
+            initial_guess_y = [y_data[max_y], max_y, (np.max(y_data) - np.min(y_data)) / 4]
+            try:
+                params_y = curve_fit(gaussian, y, y_data, p0=initial_guess_y)[0]
+            except RuntimeError as e:
+                print(e, ": y")
+                params_y = [np.nan, np.nan, np.nan]
+
+            gaussian_a_x, gaussain_com_x, gaussian_sig_x = params_x
+            gaussian_a_y, gaussain_com_y, gaussian_sig_y = params_y
+
+            gaussian_a = np.sqrt(gaussian_a_x * gaussian_a_y)
+            intensities.append(gaussian_a)
+            com_xs.append(gaussain_com_x)
+            com_ys.append(gaussain_com_y)
+
+        return np.stack(intensities), np.stack(com_xs), np.stack(com_ys)
+
+
+    def _roi_intensities(self, roi_rect: RoiRectangle, images: npt.NDArray):
+        roi_images = roi_rect.slice(images)
+
+        return roi_images.mean(axis=(1, 2))
+
+    def analyze_by_roi(self, roi_rect: RoiRectangle) -> pd.DataFrame:
+
+        poff_com_x, poff_com_y = self._roi_center_of_masses(roi_rect, self.poff_images)
+        poff_intensity = self._roi_intensities(roi_rect, self.poff_images)
+        pon_com_x, pon_com_y = self._roi_center_of_masses(roi_rect, self.pon_images)
+        pon_intensity = self._roi_intensities(roi_rect, self.pon_images)
+
+        # poff_guassain_intensity, poff_gussian_com_x, poff_gussian_com_y = self._roi_gaussian(roi_rect, self.poff_images)
+        # pon_guassain_intensity, pon_gussian_com_x, pon_gussian_com_y = self._roi_gaussian(roi_rect, self.pon_images)
+
+        roi_df = pd.DataFrame(data={
+            "poff_com_x": mul_deltaQ(poff_com_x - poff_com_x[0]),
+            "poff_com_y": mul_deltaQ(poff_com_y - poff_com_y[0]),
+            "poff_intensity": poff_intensity / poff_intensity[0],
+            "pon_com_x": mul_deltaQ(pon_com_x - pon_com_x[0]),
+            "pon_com_y": mul_deltaQ(pon_com_y - pon_com_y[0]),
+            "pon_intensity": pon_intensity / pon_intensity[0],
+
+            # "poff_gussian_com_x": poff_gussian_com_x,
+            # "poff_gussian_com_y": poff_gussian_com_y,
+            # "poff_guassain_intensity": poff_guassain_intensity / poff_guassain_intensity[0],
+
+            # "pon_gussian_com_x": pon_gussian_com_x,
+            # "pon_gussian_com_y": pon_gussian_com_y,
+            # "pon_guassain_intensity": pon_guassain_intensity / pon_guassain_intensity[0],
+
+        })
+        
+        roi_df = roi_df.set_index(self.delay)
+        return roi_df
+
+
+if __name__ == "__main__":
+
+    print("Run analyzer.core")
+
+
+
+    
+    
+
+===== .\analyzer\draw_figure.py =====
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
+from typing import TYPE_CHECKING
+import numpy.typing as npt
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
+def patch_rectangle(image: npt.NDArray, x1: int, y1: int, x2: int, y2: int) -> 'Figure':
+    patched_image = np.copy(image)
+    
+    fig, ax = plt.subplots(figsize=(10, 10))
+    
+    ax.imshow(patched_image)
+    
+    rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=1, edgecolor='r', facecolor='none')
+    
+    ax.add_patch(rect)
+    
+    ax.set_title('Patched Image')
+    ax.set_xlabel('X-axis')
+    ax.set_ylabel('Y-axis')
+    
+    return fig
+
+def draw_intensity_figure(data_df: pd.DataFrame) -> 'Figure':
+    delay = data_df.index
+    poff_intensity = data_df["poff_intensity"]
+    pon_intensity = data_df["pon_intensity"]
+    
+    fig, ax = plt.subplots()
+    ax.plot(delay, poff_intensity, label="poff_intensity", marker='o')
+    ax.plot(delay, pon_intensity, label="pon_intensity", marker='x')
+    
+    ax.set_xlabel("Delay [ps]")
+    ax.set_ylabel("Intensity [a.u.]")
+    ax.set_title("Intensity vs Delay")
+    ax.legend()
+    
+    plt.tight_layout()
+
+    return fig
+
+def draw_com_figure(data_df: pd.DataFrame) -> 'Figure':
+    delay = data_df.index
+    poff_com_x = data_df["poff_com_x"]
+    pon_com_x = data_df["pon_com_x"]
+    poff_com_y = data_df["poff_com_y"]
+    pon_com_y = data_df["pon_com_y"]
+
+    fig, axs = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+    # Plot poff_com_x and pon_com_x
+    axs[0].plot(delay, poff_com_x, label='poff_com_x', marker='o', color='b')
+    axs[0].plot(delay, pon_com_x, label='pon_com_x', marker='x', color='r')
+    axs[0].set_title('COM X Position')
+    axs[0].set_ylabel('Position X($Q_z$) [Å$^{-1}$]')
+    axs[0].legend()
+
+    # Plot poff_com_y and pon_com_y
+    axs[1].plot(delay, poff_com_y, label='poff_com_y', marker='o', color='g')
+    axs[1].plot(delay, pon_com_y, label='pon_com_y', marker='x', color='y')
+    axs[1].set_title('COM Y Position')
+    axs[1].set_xlabel('Delay [ps]')
+    axs[1].set_ylabel('Position Y(2$\\theta$) [Å$^{-1}$]')
+    axs[1].legend()
+
+    plt.tight_layout()
+
+    return fig
+
+def draw_intensity_diff_figure(data_df: pd.DataFrame) -> 'Figure':
+    delay = data_df.index
+    poff_intensity = data_df["poff_intensity"]
+    pon_intensity = data_df["pon_intensity"]
+    
+    # Calculate the difference between pon_intensity and poff_intensity
+    intensity_difference = pon_intensity - poff_intensity
+    
+    fig, ax = plt.subplots()
+    ax.plot(delay, intensity_difference, label="Intensity Difference (poff - pon)", marker='o')
+    
+    ax.set_xlabel("Delay [ps]")
+    ax.set_ylabel("Intensity Difference [a.u.]")
+    ax.set_title("Intensity Difference (poff - pon) vs Delay")
+    ax.legend()
+    
+    plt.tight_layout()
+
+    return fig
+
+def draw_com_diff_figure(data_df: pd.DataFrame) -> 'Figure':
+    delay = data_df.index
+    poff_com_x = data_df["poff_com_x"]
+    pon_com_x = data_df["pon_com_x"]
+    poff_com_y = data_df["poff_com_y"]
+    pon_com_y = data_df["pon_com_y"]
+
+    # Calculate the difference between pon_com_x and poff_com_x
+    com_x_difference = poff_com_x - pon_com_x
+
+    # Calculate the difference between pon_com_y and poff_com_y
+    com_y_difference = poff_com_y - pon_com_y
+
+    fig, axs = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+    # Plot com_x_difference
+    axs[0].plot(delay, com_x_difference, label='COM X Difference (poff - pon)', marker='o', color='b')
+    axs[0].set_title('COM X Position Difference (poff - pon)')
+    axs[0].set_ylabel('Position X Difference($Q_z$) [Å$^{-1}$]')
+    axs[0].legend()
+
+    # Plot com_y_difference
+    axs[1].plot(delay, com_y_difference, label='COM Y Difference (poff - pon)', marker='o', color='g')
+    axs[1].set_title('COM Y Position Difference (poff - pon)')
+    axs[1].set_xlabel('Delay [ps]')
+    axs[1].set_ylabel('Position Y Difference(2$\\theta$) [Å$^{-1}$]')
+    axs[1].legend()
+
+    plt.tight_layout()
+    
+    return fig
+
+if __name__ == "__main__":
+    print("run analyzer.draw_figure")
+
+===== .\analyzer\loader.py =====
+from scipy.io import loadmat
+
+import numpy.typing as npt
+
+class MatLoader:
+    def __init__(self, file):
+        mat_images:npt.NDArray = loadmat(file)["data"]
+        images = mat_images.swapaxes(0, 2)
+        self.images = images.swapaxes(1, 2)
+
+if __name__ == "__main__":
+    import os
+    from processor.saver import NpzSaverStrategy
+    from config import load_config
+    config = load_config()
+    mat_dir = config.path.mat_dir
+    file_name = "run=0143_scan=0001_poff"
+    mat_file = os.path.join(mat_dir, file_name + ".mat")
+    mat_loader = MatLoader(mat_file)
+    off_images = mat_loader.images
+
+    file_name = "run=0143_scan=0001_pon"
+    mat_file = os.path.join(mat_dir, file_name + ".mat")
+    mat_loader = MatLoader(mat_file)
+    on_images = mat_loader.images
+
+    print(f"{off_images.shape = }")
+    print(f"{on_images.shape = }")
+
+===== .\gui\preprocess_gui.py =====
+import os
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
+from scipy.optimize import curve_fit
+
+from preprocess.generic_preprocessors import get_linear_regression_confidence_bounds, ransac_regression
+from processor.loader import HDF5FileLoader
+from utils.file_util import get_run_scan_directory, get_file_list
+
+from config import load_config
+import numpy.typing as npt
+
+def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:
+    fig, ax = plt.subplots(figsize=(10, 6))
+    plt.subplots_adjust(left=0.1, bottom=0.25, right=0.9, top=0.9)
+
+    # Initial plot
+    sigma_init = 3.0
+    lb, ub, yf = get_linear_regression_confidence_bounds(y, x, sigma_init)
+    within_bounds = (y >= lb) & (y <= ub)
+    
+    normal_points, = ax.plot(x[within_bounds], y[within_bounds], 'o', color='blue', markersize=3, label='Normal Points')
+    outlier_points, = ax.plot(x[~within_bounds], y[~within_bounds], 'o', color='red', markersize=3, label='Outliers')
+    line_fit, = ax.plot(x, yf, color='black', label='Fitted Line')
+    fill_between = ax.fill_between(x, lb, ub, color='gray', alpha=0.2, label='Confidence Interval')
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_title('Linear Regression with Confidence Interval for Outlier Detection')
+    y_range = np.max(y) - np.min(y)
+    ax.set_ylim([np.min(y) - y_range * 0.1, np.max(y) + y_range * 0.1])
+    ax.legend(loc='lower right')
+
+    # Add sigma value text
+    sigma_text = ax.text(0.02, 0.98, f'Sigma: {sigma_init:.1f}', transform=ax.transAxes, verticalalignment='top')
+
+    # Add outlier count text
+    outlier_count = np.sum(~within_bounds)
+    outlier_text = ax.text(0.02, 0.93, f'Outliers: {outlier_count} ({outlier_count/len(y):.1%})', 
+                        transform=ax.transAxes, verticalalignment='top')
+
+    axsigma = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor='lightgoldenrodyellow')
+    sigma_slider = Slider(axsigma, 'Sigma', 0.1, 20.0, valinit=sigma_init, valstep=0.1)
+
+    def update(val):
+        sigma = sigma_slider.val
+        lb, ub, yf = get_linear_regression_confidence_bounds(y, x, sigma)
+        line_fit.set_ydata(yf)
+        
+        # Clear previous fill_between collection
+        for coll in ax.collections:
+            if isinstance(coll, plt.matplotlib.collections.PolyCollection):
+                coll.remove()
+        
+        ax.fill_between(x, lb, ub, color='gray', alpha=0.2)
+        
+        within_bounds = (y >= lb) & (y <= ub)
+        normal_points.set_data(x[within_bounds], y[within_bounds])
+        outlier_points.set_data(x[~within_bounds], y[~within_bounds])
+        
+        # Update sigma text
+        sigma_text.set_text(f'Sigma: {sigma:.1f}')
+        
+        # Update outlier count
+        outlier_count = np.sum(~within_bounds)
+        outlier_text.set_text(f'Outliers: {outlier_count} ({outlier_count/len(y):.1%})')
+        
+        fig.canvas.draw_idle()
+
+    sigma_slider.on_changed(update)
+
+    plt.show()
+
+    return round(sigma_slider.val, 1)
+
+def find_outliers_run_scan_gui(run: int, scan: int) -> float:
+
+    config = load_config()
+    scan_dir = get_run_scan_directory(config.path.save_dir, run, scan)
+    files = get_file_list(scan_dir)
+    file = os.path.join(scan_dir, files[len(files) // 2])
+    
+    rr = HDF5FileLoader(file)
+    images = rr.images
+    qbpm = rr.qbpm_sum
+
+    return find_outliers_gui(images.sum(axis=(1, 2)), qbpm)
+
+def RANSAC_regression_gui(run: int, scan: int) -> None:
+    config = load_config()
+    scan_dir = get_run_scan_directory(config.path.save_dir, run, scan)
+    files = get_file_list(scan_dir)
+    file = os.path.join(scan_dir, files[len(files) // 2])
+    
+    rr = HDF5FileLoader(file)
+    images = rr.images
+    qbpm = rr.qbpm_sum
+
+    intensities = images.sum(axis=(1, 2))
+    mask, coef, intercept = ransac_regression(intensities, qbpm)
+    plt.scatter(qbpm[mask], intensities[mask], color="blue", label="Inliers")
+    plt.scatter(qbpm[~mask], intensities[~mask], color="red", label="Outliers")
+    plt.title("RANSAC - outliers vs inliers")
+
+    plt.show()
+
+if __name__ == "__main__":
+    # Example data
+    np.random.seed(0)  # For reproducibility
+    x = np.random.normal(10, 5, 100)
+    x.sort()
+    y = 2.5 * x + np.random.normal(0, 2, 100)
+    y[0] += 10  # Add an outlier
+    y[-1] -= 10  # Add another outlier
+
+    mask, coef, intercept = ransac_regression(y, x)
+    plt.scatter(x[mask], y[mask], color="blue", label="Inliers")
+    plt.scatter(x[~mask], y[~mask], color="red", label="Outliers")
+    plt.plot([x.min(), x.max()], [coef * x.min() + intercept, coef * x.max() + intercept])
+    plt.title("RANSAC - outliers vs inliers")
+
+    plt.show()
+
+
+===== .\gui\roi.py =====
+import os
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import numpy as np
+
+from processor.loader import HDF5FileLoader
+from roi_rectangle import RoiRectangle
+from utils.file_util import get_run_scan_directory, get_file_list
+from config import load_config
+
+from typing import Optional
+import numpy.typing as npt
+
+class RoiSelector:
+    def __init__(self):
+        self.drawing = False
+        self.ix, self.iy = -1, -1
+        self.fx, self.fy = -1, -1
+        self.rect = None
+        self.ax = None
+
+    def on_mouse_press(self, event):
+
+        if event.inaxes is not None:
+            if event.button == 1:
+                self.drawing = True
+                self.ix, self.iy = int(event.xdata), int(event.ydata)
+                self.fx, self.fy = self.ix, self.iy
+                if self.rect is not None:
+                    self.rect.remove()
+                self.rect = patches.Rectangle((self.ix, self.iy), 1, 1, linewidth=1, edgecolor='r', facecolor='none')
+                self.ax.add_patch(self.rect)
+                plt.draw()
+
+    def on_mouse_release(self, event):
+
+        if event.inaxes is not None and self.drawing:
+            self.drawing = False
+            self.fx, self.fy = int(event.xdata), int(event.ydata)
+            if self.rect is not None:
+                self.rect.set_width(self.fx - self.ix)
+                self.rect.set_height(self.fy - self.iy)
+                plt.draw()
+
+    def on_mouse_move(self, event):
+
+        if event.inaxes is not None and self.drawing:
+            self.fx, self.fy = int(event.xdata), int(event.ydata)
+            if self.rect is not None:
+                self.rect.set_width(self.fx - self.ix)
+                self.rect.set_height(self.fy - self.iy)
+                plt.draw()
+
+    def select_roi(self, image: npt.NDArray) -> Optional[tuple[int, int, int, int]]:
+        if image.ndim != 2:
+            raise TypeError(f"Invalid shape {image.shape} for image data")
+        fig, self.ax = plt.subplots()
+        self.ax.imshow(image)
+
+        fig.canvas.mpl_connect('button_press_event', self.on_mouse_press)
+        fig.canvas.mpl_connect('button_release_event', self.on_mouse_release)
+        fig.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
+
+        plt.show()
+
+        if self.ix == -1 or self.iy == -1 or self.fx == -1 or self.fy == -1:
+            return None
+        else:
+            x1, y1 = min(self.ix, self.fx), min(self.iy, self.fy)
+            x2, y2 = max(self.ix, self.fx), max(self.iy, self.fy)
+            return (x1, y1, x2, y2)
+
+
+def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None) -> Optional[RoiRectangle]:
+    config = load_config()
+    load_dir = config.path.load_dir
+    scan_dir = get_run_scan_directory(load_dir, run, scan)
+    files = get_file_list(scan_dir)
+
+    if index_mode is None:
+        index = len(files) // 2
+    elif isinstance(index_mode, int):
+        index = index_mode
+
+    file = os.path.join(scan_dir, files[index])
+    hfl = HDF5FileLoader(file)
+    data = hfl.get_data()
+    images = data.get("poff", None)
+    if images is None:
+        images = data.get("pon", None)
+
+    image = np.log1p(images.sum(axis=0))
+    
+    roi = RoiSelector().select_roi(image)
+    if roi is None:
+        return None
+    return RoiRectangle(*roi)
+
+
+if __name__ == "__main__":
+    from config import load_config
+    from utils.file_util import get_run_scan_directory
+
+    config = load_config()
+    load_dir = config.path.load_dir
+    file = get_run_scan_directory(load_dir, 154, 1, 1)
+    loader = HDF5FileLoader(file)
+
+    image = np.log1p(loader.images.sum(axis=0))
+    roi = RoiSelector().select_roi(image)
+    
+    print(roi)
+
+===== .\inspection\file_status_inspector.py =====
+import os
+
+import pandas as pd
+import h5py
+
+from utils.file_util import get_file_list, get_folder_list
+
+from typing import Any
+
+def get_file_status(root: str) -> dict:
+
+    status: dict = {}
+
+    runs: list[str] = get_folder_list(root)
+    for run in runs:
+        path = os.path.join(root, run)
+        scans = get_folder_list(path)
+        for scan in scans:
+            path = os.path.join(path, scan)
+            files = get_file_list(path)
+            
+            name = "_".join(path[-2:])[:-2]
+            
+            nums = {int(file[1:-3]) for file in files}
+            max_num = max(nums)
+            missing_nums = set(range(1, max_num + 1)) - nums
+            status[name] = [max_num, missing_nums]
+    
+    return status
+
+def h5_tree(val: Any, pre: None ='') -> None:
+    """
+    with h5py.File(file) as hf:
+        print(hf)
+        h5_tree(hf)
+    """
+    items_cnt = len(val)
+    for key, val in val.items():
+        items_cnt -= 1
+        if items_cnt == 0:
+            # the last item
+            if type(val) == h5py._hl.group.Group:
+                print(pre + '└── ' + key)
+                h5_tree(val, pre+'    ')
+            else:
+                try:
+                    print(pre + '└── ' + key + ' (%d)' % len(val))
+                except TypeError:
+                    print(pre + '└── ' + key + ' (scalar)')
+        else:
+            if type(val) == h5py._hl.group.Group:
+                print(pre + '├── ' + key)
+                h5_tree(val, pre+'│   ')
+            else:
+                try:
+                    print(pre + '├── ' + key + ' (%d)' % len(val))
+                except TypeError:
+                    print(pre + '├── ' + key + ' (scalar)')
+
+def load_matdata(h5file: str) -> pd.DataFrame:
+    return pd.read_hdf(h5file, 'metadata')
+    
+
+if __name__ == "__main__":
+
+    from utils.file_util import get_run_scan_directory
+    from config import load_config
+    
+    config = load_config()
+    load_dir = config.path.load_dir
+    
+    file = get_run_scan_directory(load_dir, 122, 1, 30)
+    
+    # metadata = load_matdata(file)
+    # metadata.to_csv("metadata122.csv")
+    
+    with h5py.File(file) as hf:
+        print(hf)
+        h5_tree(hf)
+    
+    
+
+
+===== .\inspection\list_files.py =====
+import os
+
+def gather_python_files(directory, output_file):
+    total_length = 0
+    with open(output_file, 'w', encoding='utf-8') as outfile:
+        for root, dirs, files in os.walk(directory):
+            for file in files:
+                if file.endswith('.py'):
+                    file_path = os.path.join(root, file)
+                    outfile.write(f"===== {file_path} =====\n")
+                    with open(file_path, 'r', encoding='utf-8') as infile:
+                        texts = infile.read()
+                        total_length += len(texts)
+                        outfile.write(texts)
+                    outfile.write("\n\n")
+    print(total_length)
+
+if __name__ == "__main__":
+    project_directory = '.'  # 프로젝트 디렉토리 경로를 지정하세요.
+    output_file = 'project_code.txt'  # 출력 파일 이름을 지정하세요.
+    gather_python_files(project_directory, output_file)
+
+===== .\inspection\profiler.py =====
+import cProfile
+import pstats
+import io
+import logging
+
+from processor.loader import HDF5FileLoader
+from config import load_config
+from utils.file_util import get_run_scan_directory
+
+config = load_config()
+load_dir = config.path.load_dir
+file = get_run_scan_directory(load_dir, 143, 1, 1)
+
+logging_file = 'logs\\profiling\\profiling.log'
+# 로깅 설정
+logging.basicConfig(filename=logging_file, level=logging.INFO, format='%(message)s')
+
+# Create a profiler object
+profiler = cProfile.Profile()
+
+# Enable the profiler
+profiler.enable()
+
+# Run the main function from the other file
+HDF5FileLoader(file)
+
+# Disable the profiler
+profiler.disable()
+
+# Create a Stats object and sort the results by cumulative time
+stats = pstats.Stats(profiler)
+stats.strip_dirs()
+stats.sort_stats('cumulative')
+
+# Redirect the stats output to a StringIO object
+output_stream = io.StringIO()
+stats.stream = output_stream
+
+# Print the stats to the StringIO object
+stats.print_stats()
+
+# Get the captured output
+profiling_results = output_stream.getvalue()
+
+# Log the captured output
+logging.info(profiling_results)
+
+print(f"Profiling results logged to '{logging_file}'")
+
+===== .\inspection\project_overview.py =====
+import os
+import ast
+import radon.complexity as rc
+import radon.raw as rr
+from radon.complexity import cc_rank
+
+from collections import defaultdict
+
+def analyze_project(root_dir):
+    project_structure = defaultdict(lambda: {"files": [], "modules": {}})
+    
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        rel_path = os.path.relpath(dirpath, root_dir)
+        if rel_path == ".":
+            rel_path = ""
+        
+        for filename in filenames:
+            if filename.endswith(".py"):
+                file_path = os.path.join(dirpath, filename)
+                module_name = os.path.splitext(filename)[0]
+                
+                with open(file_path, "r", encoding="utf-8") as file:
+                    content = file.read()
+                
+                tree = ast.parse(content)
+                classes, functions = [], []
+                
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.ClassDef):
+                        classes.append(node.name)
+                    elif isinstance(node, ast.FunctionDef):
+                        functions.append(node.name)
+                
+                loc = len(content.splitlines())
+                
+                project_structure[rel_path]["files"].append(filename)
+                project_structure[rel_path]["modules"][module_name] = {
+                    "classes": classes,
+                    "functions": functions,
+                    "loc": loc
+                }
+    
+    return project_structure
+
+def print_project_structure(structure, indent=""):
+    for dir_name, dir_content in structure.items():
+        print(f"{indent}└── {dir_name}/")
+        
+        for module_name, module_info in dir_content["modules"].items():
+            print(f"{indent}    ├── {module_name}.py:")
+            print(f"{indent}    │   ├── Classes: {', '.join(module_info['classes'])}")
+            print(f"{indent}    │   ├── Functions: {', '.join(module_info['functions'])}")
+            # print(f"{indent}    │   └── Lines of Code: {module_info['loc']}")
+        
+        # if dir_content["files"]:
+        #     print(f"{indent}    └── Files: {', '.join(dir_content['files'])}")
+
+def analyze_code_complexity(root_dir):
+    complexity_data = {}
+    
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        rel_path = os.path.relpath(dirpath, root_dir)
+        if rel_path == ".":
+            rel_path = ""
+        
+        for filename in filenames:
+            if filename.endswith(".py"):
+                file_path = os.path.join(dirpath, filename)
+                
+                try:
+                    with open(file_path, "r", encoding="utf-8") as file:
+                        content = file.read()
+                    
+                    raw_metrics = rr.analyze(content)
+                    cc_metrics = rc.cc_visit(content)
+                    
+                    complexity_data[file_path] = {
+                        "loc": raw_metrics.loc,
+                        "lloc": raw_metrics.lloc,
+                        "sloc": raw_metrics.sloc,
+                        "comments": raw_metrics.comments,
+                        "multi": raw_metrics.multi,
+                        "single_comments": raw_metrics.single_comments,
+                        "cc_complexity": {
+                            "average": calculate_average_complexity(cc_metrics),
+                            "details": [{"name": node.name, "complexity": node.complexity} for node in cc_metrics]
+                        }
+                    }
+                except Exception as e:
+                    print(f"Error analyzing {file_path}: {e}")
+    
+    return complexity_data
+
+def calculate_average_complexity(cc_metrics):
+    total_complexity = sum(node.complexity for node in cc_metrics)
+    return total_complexity / len(cc_metrics) if cc_metrics else 0
+
+def print_code_complexity(complexity_data):
+    for file_path, data in complexity_data.items():
+        print(f"{file_path}:")
+        print(f"  Lines of Code (LOC): {data['loc']}")
+        print(f"  Logical Lines of Code (LLOC): {data['lloc']}")
+        print(f"  Source Lines of Code (SLOC): {data['sloc']}")
+        print(f"  Comments: {data['comments']}")
+        print(f"  Multi-line Comments: {data['multi']}")
+        print(f"  Single-line Comments: {data['single_comments']}")
+        print(f"  Cyclomatic Complexity (CC):")
+        print(f"    Average: {data['cc_complexity']['average']}")
+        print(f"    Details:")
+        for detail in data['cc_complexity']['details']:
+            print(f"      {detail['name']}: {detail['complexity']}")
+        print()
+
+def print_complexity_grades(root_dir):
+
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        rel_path = os.path.relpath(dirpath, root_dir)
+        if rel_path == ".":
+            rel_path = ""
+        
+        for filename in filenames:
+            if filename.endswith(".py"):
+                file_path = os.path.join(dirpath, filename)
+
+                with open(file_path, "r", encoding="utf-8") as file:
+                    content = file.read()
+                
+                cc_metrics = rc.cc_visit(content)
+                
+                print(f"{file_path}:")
+                for node in cc_metrics:
+                    grade = cc_rank(node.complexity)
+                    print(f"  {node.name}: {node.complexity} ({grade})")
+                print()
+
+        
+if __name__ == "__main__":
+    root_dir = "."
+    
+    project_structure = analyze_project(root_dir)
+    print("Project Structure:")
+    print_project_structure(project_structure)
+    
+    # print("Project Complexity Grades:")
+    # print_complexity_grades(root_dir)
+    
+    # complexity_data = analyze_code_complexity(root_dir)
+    # print("Code Complexity Analysis:")
+    # print_code_complexity(complexity_data)
+
+===== .\preprocess\data_evaluation.py =====
+import numpy as np
+import pandas as pd
+from preprocess.data_evaluation_tools import evaluate_preprocessing
+
+# 예시 데이터 생성
+original_data = pd.DataFrame({
+    'A': [1, 2, 3, np.nan, 5],
+    'B': [10, 20, 30, 40, 50]
+})
+preprocessed_data = pd.DataFrame({
+    'A': [1, 2, 3, 4, 5],
+    'B': [10, 20, 30, 40, 50]
+})
+
+# 평가 함수 호출
+evaluation_results = evaluate_preprocessing(original_data, preprocessed_data)
+print(evaluation_results)
+
+===== .\preprocess\data_evaluation_tools.py =====
+import pandas as pd
+import numpy as np
+from sklearn.metrics import mean_squared_error, r2_score
+
+def handle_nan(data):
+    """
+    NaN 값을 열의 평균값으로 대체하는 함수
+
+    Parameters:
+    data (pd.DataFrame): 데이터프레임
+
+    Returns:
+    pd.DataFrame: NaN 값이 처리된 데이터프레임
+    """
+    return data.fillna(data.mean())
+
+# 이상치 비율 평가 (IQR 방법 사용)
+def detect_outliers(data):
+    Q1 = data.quantile(0.25)
+    Q3 = data.quantile(0.75)
+    IQR = Q3 - Q1
+    return ((data < (Q1 - 1.5 * IQR)) | (data > (Q3 + 1.5 * IQR))).sum().sum()
+
+def evaluate_preprocessing(original_data, preprocessed_data):
+    """
+    전처리 후 데이터의 상태를 평가하는 함수
+
+    Parameters:
+    original_data (pd.DataFrame): 전처리 전 데이터
+    preprocessed_data (pd.DataFrame): 전처리 후 데이터
+
+    Returns:
+    dict: 평가 결과를 담은 딕셔너리
+    """
+    results = {}
+
+    # NaN 값 처리
+    original_data = handle_nan(original_data)
+    preprocessed_data = handle_nan(preprocessed_data)
+
+    # 결측치 비율 평가
+    original_missing_ratio = original_data.isnull().sum().sum() / original_data.size
+    preprocessed_missing_ratio = preprocessed_data.isnull().sum().sum() / preprocessed_data.size
+    results['missing_ratio_improvement'] = original_missing_ratio - preprocessed_missing_ratio
+
+    original_outliers = detect_outliers(original_data)
+    preprocessed_outliers = detect_outliers(preprocessed_data)
+    results['outlier_ratio_improvement'] = original_outliers - preprocessed_outliers
+
+    # 데이터 분포 평가 (표준편차 사용)
+    original_std = original_data.std().mean()
+    preprocessed_std = preprocessed_data.std().mean()
+    results['std_deviation_improvement'] = original_std - preprocessed_std
+
+    # 회귀 모델 성능 평가 (예시로 MSE와 R^2 사용)
+    if original_data.shape[1] == preprocessed_data.shape[1]:
+        original_mse = mean_squared_error(original_data, preprocessed_data)
+        original_r2 = r2_score(original_data, preprocessed_data)
+        results['original_mse'] = original_mse
+        results['original_r2'] = original_r2
+
+    return results
+
+# 예시 사용법
+if __name__ == "__main__":
+    # 예시 데이터 생성
+    original_data = pd.DataFrame({
+        'A': [1, 2, 3, np.nan, 5],
+        'B': [10, 20, 30, 40, 50]
+    })
+    preprocessed_data = pd.DataFrame({
+        'A': [1, 2, 3, 4, 5],
+        'B': [10, 20, 30, 40, 50]
+    })
+
+    # 평가 함수 호출
+    evaluation_results = evaluate_preprocessing(original_data, preprocessed_data)
+    print(evaluation_results)
+
+===== .\preprocess\generic_preprocessors.py =====
+import os
+
+import numpy as np
+from scipy.optimize import curve_fit
+from sklearn.linear_model import RANSACRegressor
+
+from config import load_config
+
+import numpy.typing as npt
+from typing import Optional
+
+def ransac_regression(y: np.ndarray, x: np.ndarray, min_samples: Optional[int] = None) -> tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]:
+    """
+    Perform RANSAC (Random Sample Consensus) regression to identify inliers and estimate the regression model.
+
+    Parameters:
+    - y (np.ndarray): The target variable array.
+    - x (np.ndarray): The feature variable array.
+    - min_samples (int, optional): The minimum number of samples to fit the model. Default is 3.
+
+    Returns:
+    - tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]: A tuple containing the inlier mask, coefficient, and intercept of the linear model.
+    """
+    X = x[:, np.newaxis]
+    ransac = RANSACRegressor(min_samples=min_samples).fit(X, y)
+    inlier_mask = ransac.inlier_mask_
+    return inlier_mask, ransac.estimator_.coef_, ransac.estimator_.intercept_
+
+def get_linear_regression_confidence_bounds(
+    y: npt.NDArray, 
+    x: npt.NDArray, 
+    sigma: float
+) -> npt.NDArray:
+    """
+    Get lower and upper bounds for data points based on their confidence interval in a linear regression model.
+
+    Statistical Explanation:
+    This function applies the principle of propagation of uncertainty. It fits a linear 
+    regression model y = mx + b, calculates the standard errors of the model parameters 
+    m and b, and uses these to generate prediction intervals for identifying outliers.
+
+    The prediction interval is calculated using the formula:
+    y ± sqrt((m_err * x)^2 + b_err^2) * sigma
+    where m_err and b_err are the standard errors of m and b respectively.
+
+    Parameters:
+    y (NDArray): Dependent variable data. Shape: (N,)
+    x (NDArray): Independent variable data. Shape: (N,)
+    sigma (float): Number of standard deviations for the confidence interval. Default is 3.0.
+
+    Returns:
+    lowerbound (NDArray): Lower bounds of y
+    upperbound (NDArray): Upper bounds of y
+    y_fit (NDArray): Fitted y
+
+    Note:
+    This method assumes a linear relationship in the data. For strong non-linearities,
+    a different approach may be necessary.
+    """
+    def linear_model(x, m, b):
+        return m * x + b
+    
+    params, covars = curve_fit(linear_model, x, y)
+
+    m, b = params
+    m_err, b_err = np.sqrt(np.diag(covars))
+    y_fit = linear_model(x, m, b)
+    
+    # Calculate upper and lower bounds considering both slope and intercept errors
+    error = np.sqrt((m_err * x)**2 + b_err**2)
+    upper_bound = y_fit + error * sigma
+    lower_bound = y_fit - error * sigma
+
+    return lower_bound, upper_bound, y_fit
+
+def filter_images_qbpm_by_linear_model(
+    images: npt.NDArray, qbpm: npt.NDArray, sigma: float
+    ) -> tuple[npt.NDArray, npt.NDArray]:
+    """
+    Filter images based on the confidence interval of their intensities using a linear regression model with QBPM values.
+
+    This function computes the total intensity of each image, applies a linear regression model 
+    to the intensity and QBPM values, and generates a mask to filter out images whose intensities 
+    fall outside the specified confidence interval.
+
+    Parameters:
+    images (NDArray): Array of images. Shape: (N, H, W), where N is the number of images, and H and W are the height and width of each image.
+    qbpm (NDArray): Array of QBPM (Quadrature Balanced Photodetector Measurements) values. Shape: (N,)
+    sigma (float): Number of standard deviations for the confidence interval.
+
+    Returns:
+    tuple[NDArray, NDArray]: Tuple of filtered intensities and QBPM values.
+        - Filtered intensities (NDArray): Array of intensities within the confidence interval. Shape: (M,), where M <= N.
+        - Filtered qbpm (NDArray): Array of QBPM values corresponding to the filtered intensities. Shape: (M,), where M <= N.
+    
+    Note:
+    This method uses the `get_linear_regression_confidence_lower_upper_bound` function to generate the mask based 
+    on the linear regression model and confidence interval.
+    """
+    intensites = images.sum(axis=(1, 2))
+    lower_bound, upper_bound, _ = get_linear_regression_confidence_bounds(intensites, qbpm, sigma)
+    mask = np.logical_and(intensites >= lower_bound, intensites <= upper_bound)
+    
+    return images[mask], qbpm[mask]
+
+def div_images_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
+    """
+    Divide images by qbpm.
+    
+    Parameters:
+    images (NDArray): Array of images. Shape: (N, H, W), where N is the number of images, and H and W are the height and width of each image.
+    qbpm (NDArray): Array of QBPM (Quadrature Balanced Photodetector Measurements) values. Shape: (N,)
+    
+    Returns:
+    NDArray: Images that divided by qbpm
+    """
+    return images * qbpm.mean() / qbpm[:, np.newaxis, np.newaxis]
+
+def subtract_dark(images: npt.NDArray) -> npt.NDArray:
+    config = load_config()
+    dark_file = os.path.join(config.path.save_dir, "DARK\\dark.npy")
+    
+    if not os.path.exists(dark_file):
+        raise FileNotFoundError(f"No such file or directory: {dark_file}")
+    
+    dark_images = np.load(dark_file)
+    dark = np.mean(dark_images, axis=0)
+    return np.maximum(images - dark[np.newaxis, :, :], 0)
+    # return images - dark[np.newaxis, :, :]
+
+def add_bias(images: npt.NDArray):
+    bias = np.min(images)
+    return images - bias
+
+def equalize_brightness(images: np.ndarray) -> np.ndarray:
+    """
+    Equalize the brightness of each image in the 3D array while maintaining the overall average brightness.
+
+    Parameters:
+    - images: np.ndarray, 3D array of images (num_images, height, width).
+
+    Returns:
+    - np.ndarray: The brightness-equalized images.
+    """
+    intensites = images.sum(axis=(1, 2))
+    overal_normed_intensites = intensites / intensites.mean()
+    equalized_images = images / overal_normed_intensites[:, np.newaxis, np.newaxis]
+    
+    return equalized_images
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    from processor.loader import HDF5FileLoader
+    from sklearn.linear_model import RANSACRegressor
+    from sklearn.metrics import mean_squared_error, r2_score
+    import numpy as np
+    from tqdm import tqdm
+    
+    file: str = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\run=176\\scan=001\\p0044.h5"
+
+    rr = HDF5FileLoader(file)
+    images = rr.images
+    qbpm = rr.qbpm_sum
+    fig, axs = plt.subplots(2, 1, figsize=(6, 8))
+    intensities = images.sum(axis=(1, 2))
+    sorted_indices = np.argsort(qbpm)
+    axs[0].scatter(qbpm[sorted_indices], intensities[sorted_indices])
+    axs[1].scatter(qbpm[sorted_indices], (intensities / qbpm)[sorted_indices])
+
+    axs[0].set_xlim(0, None)
+    axs[0].set_ylim(0, None)
+    axs[1].set_xlim(0, None)
+    axs[1].set_ylim(0, None)
+    plt.show()
+ 
+
+    intensities = images.sum(axis=(1, 2))
+    intensities = intensities / intensities.mean()
+    images_div_by_intensities = images / intensities[:, np.newaxis, np.newaxis]
+    
+    fig, axs = plt.subplots(2, 2, figsize=(8, 8))
+    axs[0, 0].imshow(np.log1p(images.sum(axis=0)))
+    axs[0, 1].imshow(np.log1p(images_div_by_intensities.sum(axis=0)))
+    axs[1, 0].scatter(qbpm, images.sum(axis=(1, 2)))
+    axs[1, 1].scatter(qbpm, images_div_by_intensities.sum(axis=(1, 2)))
+    
+    axs[1, 0].set_ylim(0, None)
+    axs[1, 1].set_ylim(0, axs[1, 0].get_ylim()[1])
+    plt.tight_layout()
+    plt.show()
+
+
+    mask = ransac_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
+    good_images = images[mask]
+    good_intensites = good_images.sum(axis=(1, 2))
+    good_intensites = good_intensites / good_intensites.mean()
+    normed_images = good_images / good_intensites[:, np.newaxis, np.newaxis]
+    
+    # plt.imshow(np.log1p(normed_images.sum(axis=0)))
+    plt.scatter(range(len(good_intensites)), good_intensites)
+    plt.show()
+    quit()
+    min_samples_list = range(1, 11)
+    residuals_list = []
+    r2_scores = []
+    rmse_scores = []
+
+    fig, axs = plt.subplots(2, 5, figsize=(18, 9))
+    axs = axs.flatten()
+
+    for i, min_samples in tqdm(enumerate(min_samples_list), total=len(min_samples_list)):
+        ransac = RANSACRegressor(min_samples=min_samples)
+        ransac.fit(X, y)
+        y_pred = ransac.predict(X)
+        mask = ransac.inlier_mask_
+        coef = ransac.estimator_.coef_
+        intercept = ransac.estimator_.intercept_
+
+        def lin(x):
+            return coef[0] * x + intercept
+
+        residuals = y - y_pred
+        residuals_list.append(residuals)
+
+        r2 = r2_score(y[mask], y_pred[mask])
+        r2_scores.append(r2)
+
+        rmse = np.sqrt(mean_squared_error(y[mask], y_pred[mask]))
+        rmse_scores.append(rmse)
+
+        axs[i].scatter(X[mask], y[mask], color="blue", label="Inliers")
+        axs[i].scatter(X[~mask], y[~mask], color="red", label="Outliers")
+        axs[i].plot([X.min(), X.max()], [lin(X.min()), lin(X.max())], color="green")
+        axs[i].set_title(f"RANSAC - minsamples={min_samples}")
+        axs[i].legend()
+
+        # y축과 x축을 0부터 보이게 설정
+        axs[i].set_ylim(0, None)
+        axs[i].set_xlim(0, None)
+
+    plt.tight_layout()
+    plt.show()
+
+    # 결과 출력
+    print("min_samples\tR²\tRMSE")
+    for i, min_samples in enumerate(min_samples_list):
+        print(f"{min_samples}\t{r2_scores[i]:.4f}\t{rmse_scores[i]:.4f}")
+
+    # 잔차 시각화
+    # fig, axs = plt.subplots(2, 5, figsize=(20, 10))
+    # axs = axs.flatten()
+
+    # for i, min_samples in enumerate(min_samples_list):
+    #     axs[i].hist(residuals_list[i][mask], bins=20, color="blue", alpha=0.7)
+    #     axs[i].set_title(f"Residuals - minsamples={min_samples}")
+
+    # plt.tight_layout()
+    # plt.show()
+
+
+===== .\preprocess\image_qbpm_pipeline.py =====
+from functools import partial
+
+from roi_rectangle import RoiRectangle
+from preprocess.generic_preprocessors import (
+    div_images_by_qbpm, 
+    filter_images_qbpm_by_linear_model,
+    subtract_dark, 
+    ransac_regression,
+    equalize_brightness,
+    add_bias
+    )
+
+from typing import Callable
+import numpy.typing as npt
+
+ImagesQbpmProcessor = Callable[[npt.NDArray, npt.NDArray], tuple[npt.NDArray, npt.NDArray]]
+
+
+def shift_to_positive(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+    """
+    Shift the images to ensure all values are non-negative by adding a bias.
+
+    This function adds a bias to the images to ensure that all pixel values are non-negative.
+    The bias is calculated as the absolute value of the minimum pixel value in the images.
+
+    Parameters:
+    - images (Images): The input images to be shifted.
+    - qbpm (Qbpm): The QBPM values corresponding to the images.
+
+    Returns:
+    - tuple[Images, Qbpm]: A tuple containing the shifted images and the original QBPM values.
+    """
+    return add_bias(images), qbpm
+
+def subtract_dark_background(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+    """
+    Remove the dark background from the images.
+
+    Parameters:
+    - images: Images, the input images.
+    - qbpm: Qbpm, the Qbpm values.
+
+    Returns:
+    - tuple[Images, Qbpm]: The images with dark background removed and the original Qbpm values.
+    """
+
+    return subtract_dark(images), qbpm
+
+def normalize_images_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+    """
+    Normalize the images by the Qbpm values.
+
+    Parameters:
+    - images: Images, the input images.
+    - qbpm: Qbpm, the Qbpm values.
+
+    Returns:
+    - tuple[Images, Qbpm]: The normalized images and the original Qbpm values.
+    """
+    return div_images_by_qbpm(images, qbpm), qbpm
+
+def remove_outliers_using_ransac(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+    """
+    Remove outliers from the images and Qbpm values using RANSAC regression.
+
+    Parameters:
+    - images: Images, the input images.
+    - qbpm: Qbpm, the Qbpm values.
+
+    Returns:
+    - tuple[Images, Qbpm]: The images and Qbpm values with outliers removed.
+    """
+    mask = ransac_regression(images.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
+    return images[mask], qbpm[mask]
+
+def create_ransac_roi_outlier_remover(roi_rect: RoiRectangle) -> ImagesQbpmProcessor:
+    """
+    Create a function to remove outliers using a linear model with a given sigma.
+
+    Parameters:
+    - sigma: float, the sigma value for the outlier removal.
+
+    Returns:
+    - ImageQbpmProcessor: A function that takes images and Qbpm values and returns the filtered images and Qbpm values.
+    """
+    def remove_ransac_roi_outliers(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+        roi_image = roi_rect.slice(images)
+        mask = ransac_regression(roi_image.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
+        return images[mask], qbpm[mask]
+    return remove_ransac_roi_outliers
+
+def equalize_intensities(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+    """
+    Equalize the intensities of the images while keeping the Qbpm values unchanged.
+
+    Parameters:
+    - images: np.ndarray, 3D array of images (num_images, height, width).
+    - qbpm: np.ndarray, 1D array of Qbpm values corresponding to each image.
+
+    Returns:
+    - tuple[np.ndarray, np.ndarray]: A tuple containing the brightness-equalized images and the original Qbpm values.
+    """
+    return equalize_brightness(images), qbpm
+
+def create_linear_model_outlier_remover(sigma) -> ImagesQbpmProcessor:
+    """
+    Create a function to remove outliers using a linear model with a given sigma.
+
+    Parameters:
+    - sigma: float, the sigma value for the outlier removal.
+
+    Returns:
+    - ImageQbpmProcessor: A function that takes images and Qbpm values and returns the filtered images and Qbpm values.
+    """
+    remove_outlier: ImagesQbpmProcessor = partial(filter_images_qbpm_by_linear_model, sigma=sigma)
+    return remove_outlier
+
+def apply_pipeline(pipeline: list[ImagesQbpmProcessor], images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+    """
+    Apply a series of image and Qbpm processing functions to the input data.
+
+    Parameters:
+    - pipeline: list[ImagesQbpmProcessor], a list of processing functions to apply.
+    - images: Images, the input images.
+    - qbpm: Qbpm, the Qbpm values.
+
+    Returns:
+    - tuple[Images, Qbpm]: The processed images and Qbpm values.
+    """
+    for processor in pipeline:
+        images, qbpm = processor(images, qbpm)
+    return images, qbpm
+
+===== .\preprocess\remove_continuous_noise.py =====
+import numpy as np
+
+import numpy.typing as npt
+
+def remove_noise(images: npt.NDArray, threshold: float, front: int=5, back :int=5):
+    N = 15
+    n_th = N * 0.6
+
+    images_front = images[:front]
+    array_sel_th = images_front >= threshold
+    noise_addr = np.prod(array_sel_th, axis=0)
+    noise_avg = np.mean(images_front*noise_addr, axis=0)
+    array_sel_noise_removal = images - noise_avg
+
+    array_sel_2 = array_sel_noise_removal[-back:]
+    array_sel_th_2 = array_sel_2 >= threshold
+    noise_addr_2 = np.sum(array_sel_th_2, axis=0) >= n_th
+    
+    noise_avg_2 = np.mean(array_sel_2 * noise_addr_2, axis=0)
+    array_sel_noise_removal_2 = array_sel_noise_removal - noise_avg_2
+    array_sel_noise_removal = np.abs(array_sel_noise_removal_2)
+
+    return array_sel_noise_removal
+
+# 예제 사용법
+if __name__ == "__main__":
+    import os
+    from scipy.io import loadmat, savemat
+    import matplotlib.pyplot as plt
+    from roi_rectangle import RoiRectangle
+
+
+
+    file = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\Mat_files2\\run=0176_scan=0001_no_normalize_poff.mat"
+    images = loadmat(file)["data"]
+    images = images.swapaxes(0, 2)
+    images = images.swapaxes(1, 2)
+
+    denoised_images = remove_noise(images, 5)
+
+    savemat("denoised_images.mat")
+
+    roi_rect = RoiRectangle(0, 0, 500, 500)
+    roi_rect.slice(images)
+    
+
+===== .\processor\core.py =====
+import os
+from collections import defaultdict
+from typing import Optional, DefaultDict, Type, Tuple
+
+import numpy as np
+import numpy.typing as npt
+from tqdm import tqdm
+
+from utils.file_util import get_file_list
+from processor.saver import SaverStrategy
+from processor.loader import RawDataLoader
+from logger import AppLogger
+from config import load_config
+
+from typing import Any
+from preprocess.image_qbpm_pipeline import ImagesQbpmProcessor, apply_pipeline
+
+class CoreProcessor:
+    
+    def __init__(self, LoaderStrategy: Type[RawDataLoader], pipelines: Optional[dict[str, list[ImagesQbpmProcessor]]] = None, logger: Optional[AppLogger] = None) -> None:
+        
+        self.LoaderStrategy = LoaderStrategy
+        self.pipelines = pipelines if pipelines is not None else {"no_processing" : []}
+
+        self.logger = logger if logger is not None else AppLogger("MainProcessor")
+        self.config = load_config()
+        self.logger.add_metadata(self.config.to_config_dict())
+
+    def scan(self, scan_dir: str):
+        """
+        Scans directories for rocking scan data and processes them.
+
+        Parameters:
+        - run_num (int): Run number to scan.
+        """
+        scan_dir = scan_dir
+        self.logger.info(f"Starting scan: {scan_dir}")
+        
+        self.result: dict[str, DefaultDict[str, npt.NDArray]] = self.process_scan_directory(scan_dir)
+        self.logger.info(f"Completed processing: {scan_dir}")
+            
+    def process_scan_directory(self, scan_dir: str) -> dict[str, DefaultDict[str, npt.NDArray]]:
+        """
+        Processes a single scan directory.
+
+        Parameters:
+        - scan_dir (str): Directory path of the scan to process.
+
+        Returns:
+        - dict[str, npt.NDArray]: Dictionary containing stacked images from the scan.
+        """
+        self.logger.info(f"Starting single scan for directory: {scan_dir}")
+
+        hdf5_files = get_file_list(scan_dir)
+        pbar = tqdm(hdf5_files, total=len(hdf5_files))
+
+        self.pipeline_data_dict: dict[str, DefaultDict[str, list]] = {pipline_name : defaultdict(list) for pipline_name in self.pipelines}
+
+        for hdf5_file in pbar:
+
+            loader_strategy = self.get_loader_strategy(scan_dir, hdf5_file)
+            if loader_strategy is not None:
+                self.add_processed_data_to_dict(loader_strategy)
+
+        return self.stack_processed_data(self.pipeline_data_dict)
+    
+    def get_loader_strategy(self, scan_dir: str, hdf5_file: str) -> Optional[RawDataLoader]:
+        hdf5_dir = os.path.join(scan_dir, hdf5_file)
+        try:
+            return self.LoaderStrategy(hdf5_dir)
+        except KeyError as e:
+            self.logger.warning(f"{e}")
+            self.logger.warning(f"KeyError happened in {scan_dir}")
+            return None
+        except FileNotFoundError as e:
+            self.logger.warning(f"{e}")
+            self.logger.warning(f"FileNotFoundError happened in {scan_dir}")
+            return None
+        # except Exception as e:
+        #     self.logger.error(f"Failed to load: {type(e)}: {str(e)}")
+        #     import traceback
+        #     error_message = traceback.format_exc()
+        #     self.logger.error(error_message)
+        #     return None
+
+    def add_processed_data_to_dict(self, loader_strategy: RawDataLoader) -> dict[str, DefaultDict[str, list]]:
+
+        pipeline_data:dict[str, dict[str, Any]] = {}
+        for pipeline_name, pipeline in self.pipelines.items():
+            data: dict[str, Any] = {}
+
+            images_dict = loader_strategy.get_data()
+            if "pon" in images_dict:
+                applied_images: npt.NDArray = apply_pipeline(pipeline, images_dict['pon'], images_dict['pon_qbpm'])[0]
+                data['pon'] = applied_images.mean(axis=0)
+            if 'poff' in images_dict:
+                applied_images: npt.NDArray = apply_pipeline(pipeline, images_dict['poff'], images_dict['poff_qbpm'])[0]
+                data['poff'] = applied_images.mean(axis=0)
+                
+            data["delay"] = loader_strategy.delay
+            pipeline_data[pipeline_name] = data
+        
+        for pipeline_name, data in pipeline_data.items():
+            for data_name, data_value in data.items():
+                self.pipeline_data_dict[pipeline_name][data_name].append(data_value)
+
+    def stack_processed_data(self, pipeline_data_dict: dict[str, DefaultDict[str, list]]) -> dict[str, DefaultDict[str, npt.NDArray]]:
+        pipeline_data_dict_result: dict[str, DefaultDict[str, npt.NDArray]] = {}
+        for pipeline_name, data in pipeline_data_dict.items():
+            pipeline_data_dict_result[pipeline_name] = {data_name: np.stack(data_list) for data_name, data_list in data.items()}
+
+        return pipeline_data_dict_result
+
+    def save(self, saver: SaverStrategy, file_name: str):
+        """
+        Saves processed images using a specified saving strategy.
+
+        Parameters:
+        - saver (SaverStrategy): Saving strategy to use.
+        - comment (str, optional): Comment to append to the file name.
+        """
+        self.logger.info(f"Start to save as {saver.file_type.capitalize()}")
+        
+        if not self.result:
+            self.logger.error("Nothing to save")
+            raise Exception("Nothing to save")
+        
+        for pipline_name, data_dict in self.result.items():
+            file_base_name = f"{file_name}"
+            
+            saver.save(file_base_name, data_dict)
+            self.logger.info(f"Finished Pipeline: {pipline_name}")
+            self.logger.info(f"Data Dict Keys: {data_dict.keys()}")        
+            self.logger.info(f"Saved file '{saver.file}'")
+
+if __name__ == "__main__":
+    
+    from processor.loader import HDF5FileLoader
+    from processor.saver import SaverFactory
+    from preprocess.image_qbpm_pipeline import (
+        subtract_dark_background,
+        normalize_images_by_qbpm,
+        remove_outliers_using_ransac,
+        equalize_intensities
+    )
+    run_num = 1
+    logger: AppLogger = AppLogger("MainProcessor")
+    
+    # Pipeline 1
+    pipeline_normalize_images_by_qbpm: list[ImagesQbpmProcessor] = [
+        subtract_dark_background,
+        remove_outliers_using_ransac,
+        normalize_images_by_qbpm,
+    ]
+    logger.info(f"Pipeline: normalize_images_by_qbpm")
+    logger.info(f"preprocessing: subtract_dark_background")
+    logger.info(f"preprocessing: remove_by_ransac")
+    logger.info(f"preprocessing: normalize_images_by_qbpm")
+    
+    # Pipeline 2
+    pipeline_equalize_intensities: list[ImagesQbpmProcessor] = [
+        subtract_dark_background,
+        remove_outliers_using_ransac,
+        equalize_intensities,
+    ]
+    logger.info(f"Pipeline: normalize_images_by_qbpm")
+    logger.info(f"preprocessing: subtract_dark_background")
+    logger.info(f"preprocessing: remove_by_ransac")
+    logger.info(f"preprocessing: equalize_intensities")
+
+    # Pipeline 3
+    pipeline_no_normalize: list[ImagesQbpmProcessor] = [
+        subtract_dark_background,
+        remove_outliers_using_ransac,
+    ]
+    logger.info(f"Pipeline: no_normalize")
+    logger.info(f"preprocessing: subtract_dark_background")
+    logger.info(f"preprocessing: remove_by_ransac")
+
+    pipelines: dict[str, list[ImagesQbpmProcessor]] = {
+        "normalize_images_by_qbpm" : pipeline_normalize_images_by_qbpm,
+        "equalize_intensities": pipeline_equalize_intensities,
+        "no_normalize" : pipeline_no_normalize
+    }
+
+    cp = CoreProcessor(HDF5FileLoader, pipelines, logger)
+    cp.scan(run_num)
+    
+    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    # tif_saver: SaverStrategy = SaverFactory.get_saver("tif")
+    # npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
+    cp.save(mat_saver)
+    # cp.save(tif_saver)
+    # cp.save(npz_saver)
+    
+    logger.info("Processing is over")
+
+===== .\processor\loader.py =====
+import os
+from abc import ABC, abstractmethod
+
+import numpy as np
+import pandas as pd
+import h5py
+import hdf5plugin
+from cuptlib_config.palxfel import Hertz
+from config import load_config, ExperimentConfiguration
+
+import numpy.typing as npt
+from typing import Union
+
+class RawDataLoader(ABC):
+    @abstractmethod
+    def __init__(self, file: str) -> None:
+        pass
+    
+    @abstractmethod
+    def get_data(self) -> dict[str, npt.NDArray]:
+        pass
+
+class HDF5FileLoader(RawDataLoader):
+
+    def __init__(self, file: str):
+        """
+        Initializes the HDF5FileLoader by loading metadata, images, and qbpm data from the given file.
+
+        Parameters:
+        - file (str): Path to the HDF5 file.
+        """
+        if not os.path.isfile(file):
+            raise FileNotFoundError(f"No such file: {file}")
+        
+        self.file: str = file
+        # self.logger: AppLogger = AppLogger("MainProcessor")
+        self.config: ExperimentConfiguration = load_config()
+        
+        metadata: pd.DataFrame = pd.read_hdf(self.file, key='metadata')
+        merged_df: pd.DataFrame = self.get_merged_df(metadata)
+        
+        self.images: npt.NDArray[np.float32] = np.maximum(0, np.stack(merged_df['image'].values))  # Fill Negative Values to Zero
+        self.qbpm: npt.NDArray[np.float32] = np.stack(merged_df['qbpm'].values)
+        self.pump_status: npt.NDArray[np.bool_] = self.get_pump_mask(merged_df)
+        self.delay: Union[np.float32, float] = self.get_delay(metadata)
+        
+        # roi_coord = np.array(self.metadata[f'detector_{self.config.param.hutch}_{self.config.param.detector}_parameters.ROI'].iloc[0][0])
+        # self.roi_rect = np.array([roi_coord[self.config.param.x1], roi_coord[self.config.param.x2], roi_coord[self.config.param.y1], roi_coord[self.config.param.y2]], dtype=np.int_)
+
+    def get_merged_df(self, metadata: pd.DataFrame) -> pd.DataFrame:
+        """
+        Merges image and qbpm data with metadata based on timestamps.
+
+        Parameters:
+        - metadata (pd.DataFrame): Metadata DataFrame.
+
+        Returns:
+        - pd.DataFrame: Merged DataFrame containing metadata, images, and qbpm data.
+        """
+        with h5py.File(self.file, "r") as hf:
+            if "detector" not in hf:
+                raise KeyError(f"Key 'detector' not found in the HDF5 file")
+            
+            images = np.asarray(hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_values'], dtype=np.float32)
+            images_ts = np.asarray(hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_items'], dtype=np.int64)
+            qbpm = hf[f'qbpm/{self.config.param.hutch}/qbpm1']
+            qbpm_ts = qbpm[f'waveforms.ch1/axis1'][()]
+            qbpm_sum = np.sum([qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)], axis=0, dtype=np.float32).sum(axis=1)
+        
+        image_df = pd.DataFrame(
+            {
+                "timestamp": images_ts,
+                "image": list(images)
+            }
+        ).set_index('timestamp')
+
+        qbpm_df = pd.DataFrame(
+            {
+                "timestamp": qbpm_ts,
+                "qbpm": list(qbpm_sum)
+            }
+        ).set_index('timestamp')
+
+        merged_df = pd.merge(image_df, qbpm_df, left_index=True, right_index=True, how='inner')
+        return pd.merge(metadata, merged_df, left_index=True, right_index=True, how='inner')
+    
+    def get_delay(self, metadata: pd.DataFrame) -> Union[np.float32, float]:
+        """
+        Retrieves the delay value from the metadata.
+
+        Parameters:
+        - metadata (pd.DataFrame): Metadata DataFrame.
+
+        Returns:
+        - Union[np.float32, float]: Delay value or NaN if not found.
+        """
+        if "th_value" in metadata:
+            return np.asarray(metadata['th_value'], dtype=np.float32)[0]
+        if "delay_value" in metadata:
+            return np.asarray(metadata['delay_value'], dtype=np.float32)[0]
+        else:
+            return np.nan
+    
+    def get_pump_mask(self, merged_df: pd.DataFrame) -> npt.NDArray[np.bool_]:
+        """
+        Generates a pump status mask based on the configuration settings.
+
+        Parameters:
+        - merged_df (pd.DataFrame): Merged DataFrame.
+
+        Returns:
+        - npt.NDArray[np.bool_]: Pump status mask.
+        """
+        # FIXME: config.param.pump_setting should be Hertz(Enum) but it is str now.
+        # if config.param.pump_setting is Hertz.ZERO:
+        if self.config.param.pump_setting == str(Hertz.ZERO):
+            return np.zeros(merged_df.shape[0], dtype=np.bool_)
+        return merged_df[f'timestamp_info.RATE_{self.config.param.xray}_{self.config.param.pump_setting}'].astype(bool)
+
+    def get_data(self) -> dict[str, npt.NDArray]:
+        """
+        Retrieves data based on pump status.
+
+        Returns:
+        - dict[str, npt.NDArray]: Dictionary containing images and qbpm data for both pump-on and pump-off states.
+        """
+        data = {}
+
+        poff_images = self.images[~self.pump_status]
+        poff_qbpm = self.qbpm[~self.pump_status]
+        pon_images = self.images[self.pump_status]
+        pon_qbpm = self.qbpm[self.pump_status]
+
+        if poff_images.size > 0:
+            data["poff"] = poff_images
+            data["poff_qbpm"] = poff_qbpm
+        if pon_images.size > 0:
+            data["pon"] = pon_images
+            data["pon_qbpm"] = pon_qbpm
+
+        return data
+
+if __name__ == "__main__":
+    file: str = "D:\\dev\\xfel_sample_data\\run=001\scan=001\p0110.h5"
+    loader = HDF5FileLoader(file)
+    data = loader.get_data()
+    print(loader.delay)
+
+===== .\processor\saver.py =====
+import os
+from abc import ABC, abstractmethod
+
+import numpy.typing as npt
+import numpy as np
+from scipy.io import savemat
+import tifffile
+from config import load_config
+
+class SaverStrategy(ABC):
+    @abstractmethod
+    def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
+        pass
+    
+    @property
+    @abstractmethod
+    def file(self) -> str:
+        pass
+    
+    @property
+    @abstractmethod
+    def file_type(self) -> str:
+        pass
+
+
+class MatSaverStrategy(SaverStrategy):
+    def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
+        comment = "_" + comment if comment else ""
+        config = load_config()
+        mat_dir = config.path.mat_dir
+        
+        for key, val in data_dict.items():
+            if val.ndim == 3:
+                mat_format_images = val.swapaxes(0, 2)
+                mat_format_images = mat_format_images.swapaxes(0, 1) # TEMP
+                
+                mat_file = os.path.join(mat_dir, f"{file_base_name}_{key}{comment}.mat")
+                
+                savemat(mat_file, {"data": mat_format_images})
+        self._file_name = mat_file
+    
+    @property
+    def file(self) -> str:
+        return self._file_name
+    @property
+    def file_type(self) -> str:
+        return "mat"
+
+
+class NpzSaverStrategy(SaverStrategy):
+    def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
+        comment = "_" + comment if comment else ""
+        config = load_config()
+        npz_dir = config.path.npz_dir
+        npz_file = os.path.join(npz_dir, file_base_name + comment + ".npz")
+        
+        np.savez(npz_file, **data_dict)
+        self._file_name = npz_file
+    
+    @property
+    def file(self) -> str:
+        return self._file_name
+    @property
+    def file_type(self) -> str:
+        return "npz"
+
+
+class TifSaverStrategy(SaverStrategy):
+    def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str=""):
+        comment = "_" + comment if comment else ""
+        config = load_config()
+        tif_dir = config.path.tif_dir
+        
+        for key, val in data_dict.items():
+            if val.ndim == 3:
+                
+                tif_file = os.path.join(tif_dir, f"{file_base_name}_{key}{comment}.tif")
+                tifffile.imwrite(tif_file, val.astype(np.float32))
+
+        self._file_name = tif_file
+        
+    @property
+    def file(self) -> str:
+        return self._file_name
+    @property
+    def file_type(self) -> str:
+        return "tif"
+
+class SaverFactory:
+    @staticmethod
+    def get_saver(file_type) -> SaverStrategy:
+        if file_type == 'mat':
+            return MatSaverStrategy()
+        elif file_type == 'npz':
+            return NpzSaverStrategy()
+        elif file_type == 'tif':
+            return TifSaverStrategy()
+        else:
+            raise ValueError(f"Unsupported file type: {file_type}")
+
+
+===== .\utils\file_util.py =====
+import os
+import json
+
+import numpy as np
+import scipy.io
+from config import load_config
+from roi_rectangle import RoiRectangle
+
+from typing import Optional
+import numpy.typing as npt
+
+def get_file_list(mother: str = ".") -> list[str]:
+    """
+    Get a list of files in the specified directory or the current directory if no directory is specified.
+
+    Args:
+        mother (str, optional): The directory path to search for files. Defaults to None, which represents the current directory.
+
+    Returns:
+        list: A list of filenames in the specified directory.
+    """
+
+    files = [file for file in os.listdir(mother) if os.path.isfile(os.path.join(mother, file))]
+    return files
+
+def get_folder_list(mother: str = ".") -> list[str]:
+    """
+    Get a list of folders (directories) in the specified directory or the current directory if no directory is specified.
+
+    Args:
+        mother (str, optional): The directory path to search for folders. Defaults to None, which represents the current directory.
+
+    Returns:
+        list: A list of folder names in the specified directory.
+    """
+    folders = [folder for folder in os.listdir(mother) if os.path.isdir(os.path.join(mother, folder))]
+    return folders
+
+def create_idx_path(mother: str, suffix: str="") -> str:
+    folders = get_folder_list(mother)
+    idxes = []
+    for folder in folders:
+        try:
+            idx = int(folder.split("=")[1].split("_")[0])
+            idxes.append(idx)
+        except (ValueError, IndexError):
+            pass
+    if idxes:
+        idx = max(idxes) + 1
+    else:
+        idx = 0
+    folder_name = f"idx={idx}_{suffix}"
+    values_path = os.path.join(mother, folder_name)
+    os.makedirs(values_path, exist_ok=True)
+    return values_path
+
+def get_run_scan_directory(mother: str, run: int, scan: Optional[int] = None, file_num: Optional[int] = None) -> str:
+    """
+    Generate the directory for a given run and scan number, optionally with a file number.
+
+    Parameters:
+        mother (str): The base directory or path where the path will be generated.
+        run (int): The run number for which the path will be generated.
+        scan (int, optional): The scan number for which the path will be generated. If not provided, only the run directory path will be returned.
+        file_num (int, optional): The file number for which the path will be generated. If provided, both run and scan directories will be included in the path.
+
+    Returns:
+        str: The path representing the specified run, scan, and file number (if applicable).
+    """
+    
+    if scan is None and file_num is None:
+        return os.path.join(mother, f"run={run:0>3}")
+    if scan is not None and file_num is None:
+        return os.path.join(mother, f"run={run:0>3}", f"scan={scan:0>3}")
+    if scan is not None and file_num is not None:
+        return os.path.join(mother, f"run={run:0>3}", f"scan={scan:0>3}", f"p{file_num:0>4}.h5")
+
+def create_run_scan_directory(dir: str, run: int, scan: int) -> str:
+    """
+    Create a nested directory structure for the given run and scan numbers.
+
+    Parameters:
+        dir (str): The base directory where the nested structure will be created.
+        run (int): The run number for which the directory will be created.
+        scan (int): The scan number for which the directory will be created.
+
+    Returns:
+        str: The path of the created nested directory.
+    """
+    
+    os.makedirs(dir, exist_ok=True)        
+    path = os.path.join(dir, f'run={run:0>3d}')
+    os.makedirs(path, exist_ok=True)    
+    path = os.path.join(path, f'scan={scan:0>3d}')
+    os.makedirs(path, exist_ok=True)        
+    return path
+
+def format_run_scan_filename(run: int, scan:Optional[int] = None, file_num:Optional[int] = None) -> str:
+    """
+    Generate a formatted file name based on the provided run, scan, and file number.
+
+    Parameters:
+        run (int): The run number to be included in the file name.
+        scan (int, optional): The scan number to be included in the file name. If not provided, only the run number will be included.
+        file_num (int, optional): The file number to be included in the file name. If provided, both run and scan numbers will be included.
+
+    Returns:
+        str: The formatted file name containing run, scan, and file numbers (if applicable) separated by underscores.
+    """    
+
+    if scan is None and file_num is None:
+        return f"run={run:0>3}"
+    if scan is not None and file_num is None:
+        return "_".join([f"run={run:0>3}", f"scan={scan:0>3}"])
+    if scan is not None and file_num is not None:
+        return "_".join([f"run={run:0>3}", f"scan={scan:0>3}", f"p{file_num:0>4}"])
+
+def get_roi_list(mother: str) -> Optional[list[RoiRectangle]]:
+    
+    file_path = os.path.join(mother, f'ROI_coords.json')
+    if os.path.exists(file_path):
+        # If paramter file exists, open json file.
+        with open(file_path, 'r') as f:
+            try:
+                roi_rect_list = json.load(f)
+            except json.decoder.JSONDecodeError:
+                roi_rect_list = None
+    else:
+        roi_rect_list = None    
+    
+    if not roi_rect_list:
+        roi_rect_list = None
+    
+    if isinstance(roi_rect_list, list):
+        roi_rect_list = [RoiRectangle(*region) for region in roi_rect_list]
+    
+    return roi_rect_list
+
+def get_ooi(mother: str) -> Optional[RoiRectangle]:
+    file_path = os.path.join(mother, f'OOI_coords.txt')
+    if os.path.exists(file_path):
+        # If paramter file exists, open json file.
+        with open(file_path, 'r') as f:
+            
+            temp = list(map(int, f.readline().split()))
+            ooi_rect = RoiRectangle(*temp)
+            
+    else:
+        ooi_rect = None    
+    
+    return ooi_rect
+
+def get_sigma_factor(mother: str) -> Optional[float]:
+        
+    file_path = os.path.join(mother, f'sigma_factor.txt')
+    if os.path.exists(file_path):
+        with open(os.path.join(mother, f'sigma_factor.txt'), 'r') as f:
+            sig_fac = float(f.read())
+    else:
+        sig_fac = None
+        
+    return sig_fac
+
+def save_roi_list(mother: str, roi_rect_list: list[RoiRectangle]) -> None:
+    region_list = [list(region.get_coordinate()) for region in roi_rect_list]
+    file_name = os.path.join(mother, f'ROI_coords.json')
+    with open(file_name, 'w') as f:
+        f.write(json.dumps(region_list))
+
+def save_ooi(mother: str, ooi_rect: RoiRectangle) -> None:
+    
+    with open(os.path.join(mother, f'OOI_coords.txt'), 'w') as f:
+        f.write(f"{ooi_rect.x1} {ooi_rect.y1} {ooi_rect.x2} {ooi_rect.y2}")
+
+def save_sigma_factor(mother: str, sig_fac: float) -> None:
+    with open(os.path.join(mother, f'sigma_factor.txt'), 'w') as f:
+        f.write(str(sig_fac))
+
+def mat_to_ndarray(run: int, scan: int) -> npt.NDArray:
+    config = load_config()
+    path = os.path.join(config.path.mat_dir, f'run={run:0>3d}_scan={scan}.mat')
+    mat_data = scipy.io.loadmat(path)
+    images = mat_data["data"]
+    return np.transpose(images, axes=range(images.ndim)[::-1])
+
+===== .\utils\math_util.py =====
+import numpy as np
+from scipy.integrate import quad, dblquad
+
+from config import load_config
+
+from typing import Final
+import numpy.typing as npt
+
+FWHM_COEFFICIENT: Final[float] = 2.35482  # FWHM_COEFFICIENT = 2 * np.sqrt(2 * np.log(2))
+
+def reverse_axis(array: npt.NDArray):
+    return np.transpose(array, axes=range(array.ndim)[::-1])
+
+def gaussian(x: npt.NDArray, a: float, mu: float, sig: float) -> npt.NDArray:
+    return a * np.exp(-(x - mu) ** 2 / (2 * sig ** 2))
+
+def integrate_FWHM(a: float, mu: float, sig: float) -> float:
+    fwhm = FWHM_COEFFICIENT * np.abs(sig)
+    result, _ = quad(gaussian, mu - 0.5*fwhm, mu + 0.5*fwhm, args=(a, mu, sig))
+    return result
+
+def gaussian2D(xy, amplitude: float, x0: float, y0: float, sigma_x: float, sigma_y: float, theta: float, offset: float) -> npt.NDArray:
+    """
+    Calculate the 2D Gaussian distribution at the given coordinates.
+
+    Parameters:
+        xy (tuple of arrays): A tuple containing two arrays 'x' and 'y' representing the 2D coordinates.
+        amplitude (float): The amplitude (peak value) of the Gaussian.
+        x0 (float): The x-coordinate of the center of the Gaussian.
+        y0 (float): The y-coordinate of the center of the Gaussian.
+        sigma_x (float): The standard deviation in the x-direction.
+        sigma_y (float): The standard deviation in the y-direction.
+        theta (float): The rotation angle in radians. The Gaussian will be rotated counterclockwise by this angle.
+        offset (float): The constant offset added to the Gaussian distribution.
+
+    Returns:
+        numpy.ndarray: A 1D array containing the values of the 2D Gaussian distribution flattened into a 1D array.
+    """
+    x, y = xy
+    a = (np.cos(theta) ** 2) / (2 * sigma_x ** 2) + (np.sin(theta) ** 2) / (2 * sigma_y ** 2)
+    b = -(np.sin(2 * theta)) / (4 * sigma_x ** 2) + (np.sin(2 * theta)) / (4 * sigma_y ** 2)
+    c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
+    g = offset + amplitude * np.exp(-(a * ((x - x0) ** 2) + 2 * b * (x - x0) * (y - y0) + c * ((y - y0) ** 2)))
+    return g.ravel()
+
+def integrate_FWHM_2D(amplitude: float, xo: float, yo: float, sigma_x: float, sigma_y: float, theta: float, offset: float) -> float:
+    """
+    Calculate the integral of a 2D Gaussian with an offset over its FWHM
+    """
+    def integrand(y, x):
+        XY = np.meshgrid(x, y)
+        return gaussian2D(XY, amplitude, xo, yo, sigma_x, sigma_y, theta, offset)
+
+    # Calculate FWHM in x and y directions
+    fwhm_x = FWHM_COEFFICIENT * np.abs(sigma_x)
+    fwhm_y = FWHM_COEFFICIENT * np.abs(sigma_y)
+
+    x0 = xo
+    y0 = yo
+    # Define integration limits based on FWHM
+    x_lower = x0 - fwhm_x * 0.5
+    x_upper = x0 + fwhm_x * 0.5
+    y_lower = y0 - fwhm_y * 0.5
+    y_upper = y0 + fwhm_y * 0.5
+
+    # Perform the double integration
+    result, _ = dblquad(integrand, y_lower, y_upper, lambda x: x_lower, lambda x: x_upper)
+    return result
+
+def pixel_to_delQ(pixels: npt.NDArray) -> npt.NDArray:
+
+    config = load_config()
+    del_pixels = pixels - pixels[0]
+    del_two_theta = np.arctan2(config.param.dps, config.param.sdd * del_pixels)
+    return 4 * np.pi / config.param.wavelength * np.sin(del_two_theta / 2)
+
+def mul_deltaQ(pixels: npt.NDArray) -> npt.NDArray:
+    config = load_config()
+    two_theta = np.arctan2(config.param.dps, config.param.sdd)
+    deltaQ = (4 * np.pi / config.param.wavelength) * (two_theta)
+    return pixels * deltaQ
+
+'''
+sdd = 1.3 # m
+dps = 75e-06 # um
+beam_energy = 9.7 # keV
+wavelength [A]
+'''
+
+def pixel_to_Q(pixels: npt.NDArray) -> npt.NDArray:
+    """
+    two_theta = arctan(dps * pixels / sdd)
+    Q = (4 * pi / wavelength) * sin(two_theta / 2)
+      = (4 * pi / wavelength) * two_theta / 2
+      = (4 * pi / wavelength) * arctan(dps * pixels / sdd) / 2
+      = pixels * (4 * pi / wavelength) * arctan(dps / sdd) / 2
+    """
+    config = load_config()
+
+    two_theta = np.arctan2(config.param.dps, config.param.sdd * pixels)
+    return 4 * np.pi / config.param.wavelength * np.sin(two_theta / 2)
+
+def get_min_max(arr:npt.NDArray) -> tuple[float, float]:
+    
+    arr = arr.flatten()
+    minimum = maximum = arr[0]
+    n = len(arr)
+    # If the array length is odd, initialize the variables with the first element
+    # Otherwise, compare the first two elements and assign them accordingly
+    if n % 2 == 0:
+        minimum = min(arr[0], arr[1])
+        maximum = max(arr[0], arr[1])
+        i = 2
+    else:
+        i = 1
+
+    # Iterate over pairs of elements, updating the minimum and maximum values
+    while i < n - 1:
+        if arr[i] < arr[i + 1]:
+            minimum = min(minimum, arr[i])
+            maximum = max(maximum, arr[i + 1])
+        else:
+            minimum = min(minimum, arr[i + 1])
+            maximum = max(maximum, arr[i])
+        i += 2
+
+    return minimum, maximum
+
+def chunck(arr: list, size: int) -> list:
+    return [arr[i:i + size] for i in range(0, len(arr), size)]
+
+def get_most_common_element(arr: npt.NDArray) -> int:
+    """
+    Get the most common element in a NumPy array along with its count.
+
+    Parameters:
+    arr (np.ndarray): Input NumPy array.
+
+    Returns:
+    int: The most common element in the array.
+    """
+
+    max_val = int(np.max(arr))
+    counts, bins = np.histogram(arr, bins=max_val + 1, range=(0, max_val + 1))
+    most_common_element = np.argmax(counts)
+    
+    return most_common_element
+
+def non_outlier_indices_percentile(arr: npt.NDArray, lower_percentile: float, upper_percentile: float) -> npt.NDArray[np.bool_]:
+    """
+    Get the indices of non-outliers in a NumPy array.
+
+    Parameters:
+    arr (np.ndarray): Input NumPy array containing data.
+
+    Returns:
+    np.ndarray: Boolean array with the same shape as 'arr' where True indicates non-outlier data points.
+    """
+    
+    # Calculate the first quartile (Q1) and third quartile (Q3)
+    q1 = np.percentile(arr, lower_percentile)
+    q3 = np.percentile(arr, upper_percentile)
+
+    # Calculate the Interquartile Range (IQR)
+    iqr = q3 - q1
+    
+    # Define the lower and upper bounds for outliers
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+
+    # Create a boolean array to identify non-outliers
+    conditions = np.logical_and(arr > lower_bound, arr < upper_bound)
+    
+    return conditions
+
