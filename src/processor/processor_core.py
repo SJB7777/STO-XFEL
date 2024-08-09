@@ -7,8 +7,8 @@ import numpy.typing as npt
 from tqdm import tqdm
 
 from utils.file_util import get_file_list
-from processor.saver import SaverStrategy
-from processor.raw_data_loader import RawDataLoader
+from processor.processor_saver import SaverStrategy
+from processor.processor_loader import RawDataLoader
 from logger import AppLogger
 from config import load_config
 
@@ -135,8 +135,8 @@ class RawDataProcessor:
 
 if __name__ == "__main__":
     
-    from processor.raw_data_loader import HDF5FileLoader
-    from processor.saver import SaverFactory
+    from processor.processor_loader import HDF5FileLoader
+    from processor.processor_saver import SaverFactory
     from preprocess.image_qbpm_pipeline import (
         subtract_dark_background,
         normalize_images_by_qbpm,

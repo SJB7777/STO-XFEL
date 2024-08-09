@@ -1,7 +1,7 @@
 from logger import AppLogger
 from processor.processor_core import RawDataProcessor
-from processor.raw_data_loader import HDF5FileLoader
-from processor.saver import SaverFactory, SaverStrategy
+from processor.processor_loader import HDF5FileLoader
+from processor.processor_saver import SaverFactory, SaverStrategy
 from preprocess.image_qbpm_pipeline import (
     ImagesQbpmProcessor,
     subtract_dark_background,
@@ -10,80 +10,73 @@ from preprocess.image_qbpm_pipeline import (
 )
 from gui.roi import select_roi_by_run_scan
 from utils.file_util import get_folder_list, get_run_scan_directory
-from config import load_config
+from config import load_config, ExperimentConfiguration
 
 from roi_rectangle import RoiRectangle
 from typing import Optional
 
 logger: AppLogger = AppLogger("MainProcessor")
 
-def get_scan_nums(run_num: int) -> list[tuple[int, int]]:
-    config = load_config()
+def get_scan_nums(run_num: int, config: ExperimentConfiguration) -> list[int]:
     run_dir: str = get_run_scan_directory(config.path.load_dir, run_num)
     scan_folders: list[str] = get_folder_list(run_dir)
-
     return [int(scan_dir.split("=")[1]) for scan_dir in scan_folders]
 
-def processing(run_num: int, scan_num: int) -> None:
-    config = load_config()
-    load_dir = config.path.load_dir
-    scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
-
-    roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
-    
-    if roi_rect is None:
-        raise Exception(f"No Roi Rectangle Setted: roi_rect is None")
-    
-    logger.info(f"roi rectangle: {roi_rect.get_coordinate()}")
+def setup_pipelines(roi_rect: RoiRectangle) -> dict[str, list[ImagesQbpmProcessor]]:
     remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
 
-    # Standard Pipeline
-    standard_pipeline: list[ImagesQbpmProcessor] = [
+    standard_pipeline = [
         subtract_dark_background,
         remove_by_ransac_roi,
         normalize_images_by_qbpm,
     ]
-    
-    # Dict of Pipelines
-    pipelines: dict[str, list[ImagesQbpmProcessor]] = {
+
+    return {
         "standard" : standard_pipeline,
     }
+    
+def process_scan(run_num: int, scan_num: int, config: ExperimentConfiguration) -> None:
+    load_dir = config.path.load_dir
+    scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
+
+    roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
+    if roi_rect is None:
+        raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+
+    logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
+    pipelines: dict[str, list[ImagesQbpmProcessor]] = setup_pipelines(roi_rect)
 
     for pipeline_name, pipeline in pipelines.items():
         logger.info(f"PipeLine: {pipeline_name}")
         for function in pipeline:
             logger.info(f"preprocess: {function.__name__}")
 
-    processor: RawDataProcessor = RawDataProcessor(HDF5FileLoader, pipelines, logger)
+    processor: RawDataProcessor = RawDataProcessor(HDF5FileLoader, {"standard": pipeline}, logger)
     processor.scan(scan_dir)
 
+    file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
     mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
-    # npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
-
-    file_name:str = f"run={run_num:0>4}_scan={scan_num:0>4}"
     processor.save(mat_saver, file_name)
-    
-    logger.info(f"Processing run={run_num} is over")
+
+    logger.info(f"Processing run={run_num}, scan={scan_num} is complete")
 
 def main() -> None:
-
-    run_nums: list[int] = [186]
-    logger.info(f"run: {run_nums}")
+    config = load_config()
+    run_nums: list[int] = [187]
+    logger.info(f"Runs to process: {run_nums}")
 
     for run_num in run_nums:
-        scan_nums: list[int] = get_scan_nums(run_num)
+        scan_nums: list[int] = get_scan_nums(run_num, config)
         for scan_num in scan_nums:
             try:
-                processing(run_num, scan_num)
+                process_scan(run_num, scan_num, config)
             except Exception as e:
-                logger.error(f"Failed to Process: {type(e)}: {str(e)}")
+                logger.error(f"Failed to process run={run_num}, scan={scan_num}: {type(e).__name__}: {str(e)}")
                 import traceback
                 error_message = traceback.format_exc()
                 logger.error("\n" + error_message)
-                return None
 
-    logger.info("Processing is over")
-
+    logger.info("All processing is complete")
 
 if __name__ == "__main__":
     main()

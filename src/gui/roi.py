@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
-from processor.loader_strategy import HDF5FileLoader
+from processor.processor_loader import HDF5FileLoader
 from roi_rectangle import RoiRectangle
 from utils.file_util import get_run_scan_directory, get_file_list
 from config import load_config

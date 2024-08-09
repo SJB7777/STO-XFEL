@@ -44,17 +44,16 @@ def analyze_project(root_dir):
 
 def print_project_structure(structure, indent=""):
     for dir_name, dir_content in structure.items():
-        print(f"{indent}{dir_name}/")
-        # for file in dir_content["files"]:
-        #     print(f"{indent}  {file}")
+        print(f"{indent}└── {dir_name}/")
         
         for module_name, module_info in dir_content["modules"].items():
-            print(f"{indent}  {module_name}.py:")
-            print(f"{indent}    Classes: {', '.join(module_info['classes'])}")
-            print(f"{indent}    Functions: {', '.join(module_info['functions'])}")
-            print(f"{indent}    Lines of Code: {module_info['loc']}")
+            print(f"{indent}    ├── {module_name}.py:")
+            print(f"{indent}    │   ├── Classes: {', '.join(module_info['classes'])}")
+            print(f"{indent}    │   ├── Functions: {', '.join(module_info['functions'])}")
+            # print(f"{indent}    │   └── Lines of Code: {module_info['loc']}")
         
-        # 하위 디렉토리 처리를 위한 재귀 호출 제거
+        # if dir_content["files"]:
+        #     print(f"{indent}    └── Files: {', '.join(dir_content['files'])}")
 
 def analyze_code_complexity(root_dir):
     complexity_data = {}
@@ -125,7 +124,6 @@ def print_complexity_grades(root_dir):
 
                 with open(file_path, "r", encoding="utf-8") as file:
                     content = file.read()
-                
                 
                 cc_metrics = rc.cc_visit(content)
                 
