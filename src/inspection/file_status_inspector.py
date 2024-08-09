@@ -43,7 +43,7 @@ def h5_tree(val: Any, pre: None = '') -> None:
             # the last item
             if isinstance(val, h5py._hl.group.Group):
                 print(pre + '└── ' + key)
-                h5_tree(val, pre+'    ')
+                h5_tree(val, pre + '    ')
             else:
                 try:
                     print(pre + '└── ' + key + ' (%d)' % len(val))
@@ -52,7 +52,7 @@ def h5_tree(val: Any, pre: None = '') -> None:
         else:
             if isinstance(val, h5py._hl.group.Group):
                 print(pre + '├── ' + key)
-                h5_tree(val, pre+'│   ')
+                h5_tree(val, pre + '│   ')
             else:
                 try:
                     print(pre + '├── ' + key + ' (%d)' % len(val))

@@ -15,7 +15,8 @@ def get_file_list(mother: str = ".") -> list[str]:
     Get a list of files in the specified directory or the current directory if no directory is specified.
 
     Args:
-        mother (str, optional): The directory path to search for files. Defaults to None, which represents the current directory.
+        mother (str, optional): The directory path to search for files.
+            Defaults to None, which represents the current directory.
 
     Returns:
         list: A list of filenames in the specified directory.
@@ -30,7 +31,8 @@ def get_folder_list(mother: str = ".") -> list[str]:
     Get a list of folders (directories) in the specified directory or the current directory if no directory is specified.
 
     Args:
-        mother (str, optional): The directory path to search for folders. Defaults to None, which represents the current directory.
+        mother (str, optional): The directory path to search for folders.
+            Defaults to None, which represents the current directory.
 
     Returns:
         list: A list of folder names in the specified directory.
@@ -65,8 +67,10 @@ def get_run_scan_directory(mother: str, run: int, scan: Optional[int] = None, fi
     Parameters:
         mother (str): The base directory or path where the path will be generated.
         run (int): The run number for which the path will be generated.
-        scan (int, optional): The scan number for which the path will be generated. If not provided, only the run directory path will be returned.
-        file_num (int, optional): The file number for which the path will be generated. If provided, both run and scan directories will be included in the path.
+        scan (int, optional): The scan number for which the path will be generated.
+            If not provided, only the run directory path will be returned.
+        file_num (int, optional): The file number for which the path will be generated.
+            If provided, both run and scan directories will be included in the path.
 
     Returns:
         str: The path representing the specified run, scan, and file number (if applicable).
@@ -107,8 +111,10 @@ def format_run_scan_filename(run: int, scan: Optional[int] = None, file_num: Opt
 
     Parameters:
         run (int): The run number to be included in the file name.
-        scan (int, optional): The scan number to be included in the file name. If not provided, only the run number will be included.
-        file_num (int, optional): The file number to be included in the file name. If provided, both run and scan numbers will be included.
+        scan (int, optional): The scan number to be included in the file name.
+            If not provided, only the run number will be included.
+        file_num (int, optional): The file number to be included in the file name.
+            If provided, both run and scan numbers will be included.
 
     Returns:
         str: The formatted file name containing run, scan, and file numbers (if applicable) separated by underscores.

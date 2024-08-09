@@ -20,11 +20,16 @@ def gaussian(x: npt.NDArray, a: float, mu: float, sig: float) -> npt.NDArray:
 
 def integrate_FWHM(a: float, mu: float, sig: float) -> float:
     fwhm = FWHM_COEFFICIENT * np.abs(sig)
-    result, _ = quad(gaussian, mu - 0.5*fwhm, mu + 0.5*fwhm, args=(a, mu, sig))
+    result, _ = quad(gaussian, mu - 0.5 * fwhm, mu + 0.5 * fwhm, args=(a, mu, sig))
     return result
 
 
-def gaussian2D(xy, amplitude: float, x0: float, y0: float, sigma_x: float, sigma_y: float, theta: float, offset: float) -> npt.NDArray:
+def gaussian2D(
+    xy, amplitude: float,
+    x0: float, y0: float,
+    sigma_x: float, sigma_y: float,
+    theta: float, offset: float
+) -> npt.NDArray:
     """
     Calculate the 2D Gaussian distribution at the given coordinates.
 
@@ -49,7 +54,12 @@ def gaussian2D(xy, amplitude: float, x0: float, y0: float, sigma_x: float, sigma
     return g.ravel()
 
 
-def integrate_FWHM_2D(amplitude: float, xo: float, yo: float, sigma_x: float, sigma_y: float, theta: float, offset: float) -> float:
+def integrate_FWHM_2D(
+    amplitude: float,
+    xo: float, yo: float,
+    sigma_x: float, sigma_y: float,
+    theta: float, offset: float
+) -> float:
     """
     Calculate the integral of a 2D Gaussian with an offset over its FWHM
     """
@@ -87,14 +97,6 @@ def mul_deltaQ(pixels: npt.NDArray) -> npt.NDArray:
     two_theta = np.arctan2(config.param.dps, config.param.sdd)
     deltaQ = (4 * np.pi / config.param.wavelength) * (two_theta)
     return pixels * deltaQ
-
-
-'''
-sdd = 1.3 # m
-dps = 75e-06 # um
-beam_energy = 9.7 # keV
-wavelength [A]
-'''
 
 
 def pixel_to_Q(pixels: npt.NDArray) -> npt.NDArray:
@@ -160,7 +162,11 @@ def get_most_common_element(arr: npt.NDArray) -> int:
     return most_common_element
 
 
-def non_outlier_indices_percentile(arr: npt.NDArray, lower_percentile: float, upper_percentile: float) -> npt.NDArray[np.bool_]:
+def non_outlier_indices_percentile(
+    arr: npt.NDArray,
+    lower_percentile: float,
+    upper_percentile: float
+) -> npt.NDArray[np.bool_]:
     """
     Get the indices of non-outliers in a NumPy array.
 

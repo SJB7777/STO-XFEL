@@ -20,7 +20,9 @@ class DataAnalyzer:
         data: Mapping[str, npt.NDArray] = np.load(file)
 
         if "delay" not in data or "pon" not in data or "poff" not in data:
-            raise ValueError("The file does not contain the required keys: 'delay', 'pon', 'poff'")
+            raise ValueError(
+                "The file does not contain the required keys: 'delay', 'pon', 'poff'"
+            )
 
         self.delay: npt.NDArray = data["delay"]
         self.poff_images: npt.NDArray = data["poff"]
@@ -40,7 +42,11 @@ class DataAnalyzer:
     def pon_subtract_by_poff(self):
         return np.maximum(self.pon_images - self.poff_images, 0)
 
-    def _roi_center_of_masses(self, roi_rect: RoiRectangle, images: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
+    def _roi_center_of_masses(
+        self,
+        roi_rect: RoiRectangle,
+        images: npt.NDArray
+    ) -> tuple[npt.NDArray, npt.NDArray]:
         roi_images = roi_rect.slice(images)
         height, width = roi_rect.height, roi_rect.width
 
@@ -52,7 +58,12 @@ class DataAnalyzer:
 
         return x_centroids, y_centroids
 
-    def _roi_gaussian(self, roi_rect: RoiRectangle, images: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
+    def _roi_gaussian(
+        self,
+        roi_rect: RoiRectangle,
+        images: npt.NDArray
+    ) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
+
         roi_images = roi_rect.slice(images)
         height, width = roi_rect.height, roi_rect.width
 

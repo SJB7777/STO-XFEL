@@ -50,7 +50,9 @@ def main() -> None:
     pon_images: npt.NDArray = processor.pon_images
 
     # Select ROI using GUI
-    roi: Optional[tuple[int, int, int, int]] = RoiSelector().select_roi(np.log1p(poff_images.sum(axis=0)))
+    roi: Optional[tuple[int, int, int, int]] = RoiSelector().select_roi(
+        np.log1p(poff_images.sum(axis=0))
+    )
     if roi is None:
         logger.error(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
         raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
@@ -87,7 +89,10 @@ def main() -> None:
     logger.info(f"Saved CSV '{data_file}'")
 
     # Create figures
-    image_fig: Figure = patch_rectangle(np.log1p(processor.poff_images.sum(axis=0)), *roi_rect.get_coordinate())
+    image_fig: Figure = patch_rectangle(
+        np.log1p(processor.poff_images.sum(axis=0)),
+        *roi_rect.get_coordinate()
+    )
     intensity_fig: Figure = draw_intensity_figure(data_df)
     intensity_diff_fig: Figure = draw_intensity_diff_figure(data_df)
     com_fig: Figure = draw_com_figure(data_df)

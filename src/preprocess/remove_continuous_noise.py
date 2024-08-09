@@ -10,7 +10,7 @@ def remove_noise(images: npt.NDArray, threshold: float, front: int = 5, back: in
     images_front = images[:front]
     array_sel_th = images_front >= threshold
     noise_addr = np.prod(array_sel_th, axis=0)
-    noise_avg = np.mean(images_front*noise_addr, axis=0)
+    noise_avg = np.mean(images_front * noise_addr, axis=0)
     array_sel_noise_removal = images - noise_avg
 
     array_sel_2 = array_sel_noise_removal[-back:]

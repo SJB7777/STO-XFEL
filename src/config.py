@@ -22,6 +22,12 @@ def save_config(config_dict: dict) -> None:
 if __name__ == "__main__":
     from cuptlib_config.palxfel.enums import Hertz, Hutch, Detector, Xray
 
+    '''
+    sdd = 1.3 # m
+    dps = 75e-06 # m (73 um)
+    beam_energy = 9.7 # keV
+    wavelength [A]
+    '''
     config_dict = {
         "path": {
             # Mother Directory of run files.

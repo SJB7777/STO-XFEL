@@ -9,14 +9,21 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 
-def patch_rectangle(image: npt.NDArray, x1: int, y1: int, x2: int, y2: int) -> 'Figure':
+def patch_rectangle(
+    image: npt.NDArray,
+    x1: int, y1: int,
+    x2: int, y2: int
+) -> 'Figure':
     patched_image = np.copy(image)
 
     fig, ax = plt.subplots(figsize=(10, 10))
 
     ax.imshow(patched_image)
 
-    rect = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=1, edgecolor='r', facecolor='none')
+    rect = patches.Rectangle(
+        (x1, y1), x2 - x1, y2 - y1,
+        linewidth=1, edgecolor='r', facecolor='none'
+    )
 
     ax.add_patch(rect)
 

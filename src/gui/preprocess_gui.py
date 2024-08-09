@@ -21,8 +21,16 @@ def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:
     lb, ub, yf = get_linear_regression_confidence_bounds(y, x, sigma_init)
     within_bounds = (y >= lb) & (y <= ub)
 
-    normal_points, = ax.plot(x[within_bounds], y[within_bounds], 'o', color='blue', markersize=3, label='Normal Points')
-    outlier_points, = ax.plot(x[~within_bounds], y[~within_bounds], 'o', color='red', markersize=3, label='Outliers')
+    normal_points, = ax.plot(
+        x[within_bounds], y[within_bounds],
+        'o', color='blue', markersize=3,
+        label='Normal Points'
+    )
+    outlier_points, = ax.plot(
+        x[~within_bounds], y[~within_bounds],
+        'o', color='red', markersize=3,
+        label='Outliers'
+    )
     line_fit, = ax.plot(x, yf, color='black', label='Fitted Line')
     ax.fill_between(x, lb, ub, color='gray', alpha=0.2, label='Confidence Interval')
 
@@ -42,7 +50,7 @@ def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:
         0.02, 0.93,
         f'Outliers: {outlier_count} ({outlier_count/len(y):.1%})',
         transform=ax.transAxes, verticalalignment='top'
-        )
+    )
 
     axsigma = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor='lightgoldenrodyellow')
     sigma_slider = Slider(axsigma, 'Sigma', 0.1, 20.0, valinit=sigma_init, valstep=0.1)

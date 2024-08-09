@@ -4,12 +4,14 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 import h5py
-import hdf5plugin
 from cuptlib_config.palxfel import Hertz
 from config import load_config, ExperimentConfiguration
 
 import numpy.typing as npt
 from typing import Union
+
+import importlib
+importlib.import_module("hdf5plugin")
 
 
 class RawDataLoader(ABC):
@@ -26,7 +28,8 @@ class HDF5FileLoader(RawDataLoader):
 
     def __init__(self, file: str):
         """
-        Initializes the HDF5FileLoader by loading metadata, images, and qbpm data from the given file.
+        Initializes the HDF5FileLoader by loading
+        metadata, images, and qbpm data from the given file.
 
         Parameters:
         - file (str): Path to the HDF5 file.
@@ -41,13 +44,15 @@ class HDF5FileLoader(RawDataLoader):
         metadata: pd.DataFrame = pd.read_hdf(self.file, key='metadata')
         merged_df: pd.DataFrame = self.get_merged_df(metadata)
 
-        self.images: npt.NDArray[np.float32] = np.maximum(0, np.stack(merged_df['image'].values))  # Fill Negative Values to Zero
+        # Fill Negative Values to Zero
+        self.images: npt.NDArray[np.float32] = np.maximum(0, np.stack(merged_df['image'].values))
         self.qbpm: npt.NDArray[np.float32] = np.stack(merged_df['qbpm'].values)
         self.pump_status: npt.NDArray[np.bool_] = self.get_pump_mask(merged_df)
         self.delay: Union[np.float32, float] = self.get_delay(metadata)
 
         # roi_coord = np.array(self.metadata[f'detector_{self.config.param.hutch}_{self.config.param.detector}_parameters.ROI'].iloc[0][0])
-        # self.roi_rect = np.array([roi_coord[self.config.param.x1], roi_coord[self.config.param.x2], roi_coord[self.config.param.y1], roi_coord[self.config.param.y2]], dtype=np.int_)
+        # roi = np.array([roi_coord[self.config.param.x1], roi_coord[self.config.param.x2], roi_coord[self.config.param.y1], roi_coord[self.config.param.y2]], dtype=np.int_)
+        # self.roi_rect = RoiRectangle().from_tuple(roi)
 
     def get_merged_df(self, metadata: pd.DataFrame) -> pd.DataFrame:
         """
