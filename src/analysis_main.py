@@ -13,7 +13,7 @@ from analyzer.draw_figure import (
     draw_intensity_diff_figure, 
     draw_com_diff_figure
 )
-from analyzer.core import MeanDataProcessor
+from analyzer.analyzer_core import DataAnalyzer
 
 import numpy.typing as npt
 from typing import TYPE_CHECKING, Optional
@@ -40,7 +40,7 @@ def main() -> None:
     npz_file: str = os.path.join(npz_dir, file_name + ".npz")
     
     # Initialize MeanDataProcessor
-    processor: MeanDataProcessor = MeanDataProcessor(npz_file, 0)
+    processor: DataAnalyzer = DataAnalyzer(npz_file, 0)
     
     # Extract images
     poff_images: npt.NDArray = processor.poff_images

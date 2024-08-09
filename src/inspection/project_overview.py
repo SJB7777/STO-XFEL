@@ -45,8 +45,8 @@ def analyze_project(root_dir):
 def print_project_structure(structure, indent=""):
     for dir_name, dir_content in structure.items():
         print(f"{indent}{dir_name}/")
-        for file in dir_content["files"]:
-            print(f"{indent}  {file}")
+        # for file in dir_content["files"]:
+        #     print(f"{indent}  {file}")
         
         for module_name, module_info in dir_content["modules"].items():
             print(f"{indent}  {module_name}.py:")

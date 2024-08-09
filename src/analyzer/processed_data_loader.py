@@ -10,7 +10,7 @@ class MatLoader:
 
 if __name__ == "__main__":
     import os
-    from core.saver import NpzSaverStrategy
+    from processor.saver import NpzSaverStrategy
     from config import load_config
     config = load_config()
     mat_dir = config.path.mat_dir

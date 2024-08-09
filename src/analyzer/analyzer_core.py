@@ -1,6 +1,5 @@
 import os
 
-
 import numpy as np
 import pandas as pd
 from scipy.ndimage import rotate
@@ -12,7 +11,7 @@ from utils.math_util import gaussian, mul_deltaQ
 import numpy.typing as npt
 from typing import Mapping
 
-class MeanDataProcessor:
+class DataAnalyzer:
     def __init__(self, file: str, angle: int = 0) -> None:
         if not os.path.exists(file):
             raise FileNotFoundError(f"The file {file} was not found.")
@@ -170,7 +169,7 @@ if __name__ == "__main__":
         file_name += comment
 
     npz_file = os.path.join(npz_dir, file_name + ".npz")
-    processor = MeanDataProcessor(npz_file, 0)
+    processor = DataAnalyzer(npz_file, 0)
 
     roi_rect = select_roi_by_run_scan(run_num, scan_num, 0)
 

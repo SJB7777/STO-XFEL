@@ -8,17 +8,16 @@ from tqdm import tqdm
 
 from utils.file_util import get_file_list
 from processor.saver import SaverStrategy
-from processor.loader_strategy import HDF5LoaderInterface
+from processor.raw_data_loader import RawDataLoader
 from logger import AppLogger
 from config import load_config
 
 from typing import Any
 from preprocess.image_qbpm_pipeline import ImagesQbpmProcessor, apply_pipeline
 
-
 class RawDataProcessor:
     
-    def __init__(self, LoaderStrategy: Type[HDF5LoaderInterface], pipelines: Optional[dict[str, list[ImagesQbpmProcessor]]] = None, logger: Optional[AppLogger] = None) -> None:
+    def __init__(self, LoaderStrategy: Type[RawDataLoader], pipelines: Optional[dict[str, list[ImagesQbpmProcessor]]] = None, logger: Optional[AppLogger] = None) -> None:
         
         self.LoaderStrategy = LoaderStrategy
         self.pipelines = pipelines if pipelines is not None else {"no_processing" : []}
@@ -65,7 +64,7 @@ class RawDataProcessor:
 
         return self.stack_processed_data(self.pipeline_data_dict)
     
-    def get_loader_strategy(self, scan_dir: str, hdf5_file: str) -> Optional[HDF5LoaderInterface]:
+    def get_loader_strategy(self, scan_dir: str, hdf5_file: str) -> Optional[RawDataLoader]:
         hdf5_dir = os.path.join(scan_dir, hdf5_file)
         try:
             return self.LoaderStrategy(hdf5_dir)
@@ -84,7 +83,7 @@ class RawDataProcessor:
         #     self.logger.error(error_message)
         #     return None
 
-    def add_processed_data_to_dict(self, loader_strategy: HDF5LoaderInterface) -> dict[str, DefaultDict[str, list]]:
+    def add_processed_data_to_dict(self, loader_strategy: RawDataLoader) -> dict[str, DefaultDict[str, list]]:
 
         pipeline_data:dict[str, dict[str, Any]] = {}
         for pipeline_name, pipeline in self.pipelines.items():
@@ -136,7 +135,7 @@ class RawDataProcessor:
 
 if __name__ == "__main__":
     
-    from processor.loader_strategy import HDF5FileLoader
+    from processor.raw_data_loader import HDF5FileLoader
     from processor.saver import SaverFactory
     from preprocess.image_qbpm_pipeline import (
         subtract_dark_background,

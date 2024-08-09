@@ -6,13 +6,12 @@ import pandas as pd
 import h5py
 import hdf5plugin
 from cuptlib_config.palxfel import Hertz
-from logger import AppLogger
 from config import load_config, ExperimentConfiguration
 
 import numpy.typing as npt
 from typing import Union
 
-class HDF5LoaderInterface(ABC):
+class RawDataLoader(ABC):
     @abstractmethod
     def __init__(self, file: str) -> None:
         pass
@@ -21,7 +20,7 @@ class HDF5LoaderInterface(ABC):
     def get_data(self) -> dict[str, npt.NDArray]:
         pass
 
-class HDF5FileLoader(HDF5LoaderInterface):
+class HDF5FileLoader(RawDataLoader):
 
     def __init__(self, file: str):
         """
