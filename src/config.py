@@ -7,7 +7,7 @@ config = configparser.ConfigParser()
 
 dir_name = os.path.dirname(__file__)
 config.read(os.path.join(dir_name, "config\config.ini"))
-config_dir = config["config"]["config_dir"]
+config_dir = os.path.join(dir_name, config["config"]["config_dir"])
 
 def load_config() -> ExperimentConfiguration:
     return load_palxfel_config(config_dir)

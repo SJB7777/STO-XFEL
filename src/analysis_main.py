@@ -26,7 +26,7 @@ def main() -> None:
     config: ExperimentConfiguration = load_config()
     
     # Define run and scan numbers
-    run_num: int = 143
+    run_num: int = 187
     scan_num: int = 1
     comment: Optional[str] = None
     
