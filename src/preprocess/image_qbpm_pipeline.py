@@ -1,9 +1,6 @@
 from functools import partial
 
 from roi_rectangle import RoiRectangle
-import numpy.typing as npt
-from typing import Callable
-
 from preprocess.generic_preprocessors import (
     div_images_by_qbpm, 
     filter_images_qbpm_by_linear_model,
@@ -13,11 +10,13 @@ from preprocess.generic_preprocessors import (
     add_bias
     )
 
-Images = npt.NDArray
-Qbpm = npt.NDArray
-ImagesQbpmProcessor = Callable[[Images, Qbpm], tuple[Images, Qbpm]]
+from typing import Callable
+import numpy.typing as npt
 
-def shift_to_positive(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
+ImagesQbpmProcessor = Callable[[npt.NDArray, npt.NDArray], tuple[npt.NDArray, npt.NDArray]]
+
+
+def shift_to_positive(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Shift the images to ensure all values are non-negative by adding a bias.
 
@@ -33,7 +32,7 @@ def shift_to_positive(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
     """
     return add_bias(images), qbpm
 
-def subtract_dark_background(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
+def subtract_dark_background(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Remove the dark background from the images.
 
@@ -47,7 +46,7 @@ def subtract_dark_background(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
 
     return subtract_dark(images), qbpm
 
-def normalize_images_by_qbpm(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
+def normalize_images_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Normalize the images by the Qbpm values.
 
@@ -60,7 +59,7 @@ def normalize_images_by_qbpm(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
     """
     return div_images_by_qbpm(images, qbpm), qbpm
 
-def remove_outliers_using_ransac(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
+def remove_outliers_using_ransac(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Remove outliers from the images and Qbpm values using RANSAC regression.
 
@@ -84,13 +83,13 @@ def create_ransac_roi_outlier_remover(roi_rect: RoiRectangle) -> ImagesQbpmProce
     Returns:
     - ImageQbpmProcessor: A function that takes images and Qbpm values and returns the filtered images and Qbpm values.
     """
-    def remove_ransac_roi_outliers(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
+    def remove_ransac_roi_outliers(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
         roi_image = roi_rect.slice(images)
         mask = ransac_regression(roi_image.sum(axis=(1, 2)), qbpm, min_samples=2)[0]
         return images[mask], qbpm[mask]
     return remove_ransac_roi_outliers
 
-def equalize_intensities(images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
+def equalize_intensities(images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Equalize the intensities of the images while keeping the Qbpm values unchanged.
 
@@ -116,7 +115,7 @@ def create_linear_model_outlier_remover(sigma) -> ImagesQbpmProcessor:
     remove_outlier: ImagesQbpmProcessor = partial(filter_images_qbpm_by_linear_model, sigma=sigma)
     return remove_outlier
 
-def apply_pipeline(pipeline: list[ImagesQbpmProcessor], images: Images, qbpm: Qbpm) -> tuple[Images, Qbpm]:
+def apply_pipeline(pipeline: list[ImagesQbpmProcessor], images: npt.NDArray, qbpm: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
     """
     Apply a series of image and Qbpm processing functions to the input data.
 

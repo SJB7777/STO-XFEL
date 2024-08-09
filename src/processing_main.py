@@ -1,12 +1,12 @@
 from logger import AppLogger
-from processor.processor_core import RawDataProcessor
-from processor.processor_loader import HDF5FileLoader
-from processor.processor_saver import SaverFactory, SaverStrategy
+from processor.core import CoreProcessor
+from processor.loader import HDF5FileLoader
+from processor.saver import SaverFactory, SaverStrategy
 from preprocess.image_qbpm_pipeline import (
-    ImagesQbpmProcessor,
     subtract_dark_background,
     normalize_images_by_qbpm,
     create_ransac_roi_outlier_remover,
+    ImagesQbpmProcessor
 )
 from gui.roi import select_roi_by_run_scan
 from utils.file_util import get_folder_list, get_run_scan_directory
@@ -14,6 +14,7 @@ from config import load_config, ExperimentConfiguration
 
 from roi_rectangle import RoiRectangle
 from typing import Optional
+
 
 logger: AppLogger = AppLogger("MainProcessor")
 
@@ -51,7 +52,7 @@ def process_scan(run_num: int, scan_num: int, config: ExperimentConfiguration) -
         for function in pipeline:
             logger.info(f"preprocess: {function.__name__}")
 
-    processor: RawDataProcessor = RawDataProcessor(HDF5FileLoader, {"standard": pipeline}, logger)
+    processor: CoreProcessor = CoreProcessor(HDF5FileLoader, {"standard": pipeline}, logger)
     processor.scan(scan_dir)
 
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
@@ -62,7 +63,7 @@ def process_scan(run_num: int, scan_num: int, config: ExperimentConfiguration) -
 
 def main() -> None:
     config = load_config()
-    run_nums: list[int] = [189]
+    run_nums: list[int] = [193]
     logger.info(f"Runs to process: {run_nums}")
 
     for run_num in run_nums:

@@ -3,7 +3,7 @@ import pstats
 import io
 import logging
 
-from processor.processor_loader import HDF5FileLoader
+from processor.loader import HDF5FileLoader
 from config import load_config
 from utils.file_util import get_run_scan_directory
 

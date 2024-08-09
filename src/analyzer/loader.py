@@ -10,7 +10,7 @@ class MatLoader:
 
 if __name__ == "__main__":
     import os
-    from processor.processor_saver import NpzSaverStrategy
+    from processor.saver import NpzSaverStrategy
     from config import load_config
     config = load_config()
     mat_dir = config.path.mat_dir
@@ -24,8 +24,5 @@ if __name__ == "__main__":
     mat_loader = MatLoader(mat_file)
     on_images = mat_loader.images
 
-    npz_dir = config.path.npz_dir
-    npz_file = os.path.join(npz_dir, file_name + ".npz")
-
-    # npz_saver = NpzSaverStrategy()
-    # npz_saver.save(file_name, {"pon": images})
+    print(f"{off_images.shape = }")
+    print(f"{on_images.shape = }")

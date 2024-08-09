@@ -122,3 +122,6 @@ def draw_com_diff_figure(data_df: pd.DataFrame) -> 'Figure':
     plt.tight_layout()
     
     return fig
+
+if __name__ == "__main__":
+    print("run analyzer.draw_figure")

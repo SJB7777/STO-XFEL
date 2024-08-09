@@ -6,7 +6,7 @@ from matplotlib.widgets import Slider
 from scipy.optimize import curve_fit
 
 from preprocess.generic_preprocessors import get_linear_regression_confidence_bounds, ransac_regression
-from core.loader_strategy import HDF5FileLoader
+from processor.loader import HDF5FileLoader
 from utils.file_util import get_run_scan_directory, get_file_list
 
 from config import load_config

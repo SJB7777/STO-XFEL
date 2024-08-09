@@ -7,15 +7,15 @@ import numpy.typing as npt
 from tqdm import tqdm
 
 from utils.file_util import get_file_list
-from processor.processor_saver import SaverStrategy
-from processor.processor_loader import RawDataLoader
+from processor.saver import SaverStrategy
+from processor.loader import RawDataLoader
 from logger import AppLogger
 from config import load_config
 
 from typing import Any
 from preprocess.image_qbpm_pipeline import ImagesQbpmProcessor, apply_pipeline
 
-class RawDataProcessor:
+class CoreProcessor:
     
     def __init__(self, LoaderStrategy: Type[RawDataLoader], pipelines: Optional[dict[str, list[ImagesQbpmProcessor]]] = None, logger: Optional[AppLogger] = None) -> None:
         
@@ -135,8 +135,8 @@ class RawDataProcessor:
 
 if __name__ == "__main__":
     
-    from processor.processor_loader import HDF5FileLoader
-    from processor.processor_saver import SaverFactory
+    from processor.loader import HDF5FileLoader
+    from processor.saver import SaverFactory
     from preprocess.image_qbpm_pipeline import (
         subtract_dark_background,
         normalize_images_by_qbpm,
@@ -183,7 +183,7 @@ if __name__ == "__main__":
         "no_normalize" : pipeline_no_normalize
     }
 
-    cp = RawDataProcessor(HDF5FileLoader, pipelines, logger)
+    cp = CoreProcessor(HDF5FileLoader, pipelines, logger)
     cp.scan(run_num)
     
     mat_saver: SaverStrategy = SaverFactory.get_saver("mat")

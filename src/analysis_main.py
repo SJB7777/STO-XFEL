@@ -13,7 +13,7 @@ from analyzer.draw_figure import (
     draw_intensity_diff_figure, 
     draw_com_diff_figure
 )
-from analyzer.analyzer_core import DataAnalyzer
+from analyzer.core import DataAnalyzer
 
 import numpy.typing as npt
 from typing import TYPE_CHECKING, Optional
@@ -26,7 +26,7 @@ def main() -> None:
     config: ExperimentConfiguration = load_config()
     
     # Define run and scan numbers
-    run_num: int = 187
+    run_num: int = 150
     scan_num: int = 1
     comment: Optional[str] = None
     
