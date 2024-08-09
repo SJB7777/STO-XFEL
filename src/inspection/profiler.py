@@ -3,10 +3,13 @@ import pstats
 import io
 import logging
 
-import main
-from core.loader_strategy import HDF5FileLoader
+from processor.loader_strategy import HDF5FileLoader
+from config import load_config
+from utils.file_util import get_run_scan_directory
 
-file = "D:\\dev\\xfel_sample_data\\run=001\scan=001\p0110.h5"
+config = load_config()
+load_dir = config.path.load_dir
+file = get_run_scan_directory(load_dir, 143, 1, 1)
 
 logging_file = 'logs\\profiling\\profiling.log'
 # 로깅 설정
@@ -19,7 +22,6 @@ profiler = cProfile.Profile()
 profiler.enable()
 
 # Run the main function from the other file
-# main.main()
 HDF5FileLoader(file)
 
 # Disable the profiler

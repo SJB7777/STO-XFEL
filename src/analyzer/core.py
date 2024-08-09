@@ -1,27 +1,27 @@
-from roi_rectangle import RoiRectangle
+import os
+
+
 import numpy as np
 import pandas as pd
 from scipy.ndimage import rotate
 from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
+from roi_rectangle import RoiRectangle
 
 from utils.math_util import gaussian, mul_deltaQ
 
 import numpy.typing as npt
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from matplotlib.figure import Figure
+from typing import Mapping
 
 class MeanDataProcessor:
     def __init__(self, file: str, angle: int = 0) -> None:
-        try:
-            data = np.load(file)
-            if "delay" not in data or "pon" not in data or "poff" not in data:
-                raise ValueError("The file does not contain the required keys: 'delay', 'pon', 'poff'")
-        except FileNotFoundError:
+        if not os.path.exists(file):
             raise FileNotFoundError(f"The file {file} was not found.")
+        
+        data: Mapping[str, npt.NDArray] = np.load(file)
 
+        if "delay" not in data or "pon" not in data or "poff" not in data:
+            raise ValueError("The file does not contain the required keys: 'delay', 'pon', 'poff'")
+        
         self.delay: npt.NDArray = data["delay"]
         self.poff_images: npt.NDArray = data["poff"]
         self.pon_images: npt.NDArray = data["pon"]
@@ -101,40 +101,37 @@ class MeanDataProcessor:
 
         return roi_images.mean(axis=(1, 2))
 
-    def analyze_by_rois(self, named_roi_rects: list[str, RoiRectangle]) -> pd.DataFrame:
-        data_frames = []
+    def analyze_by_roi(self, roi_rect: RoiRectangle) -> pd.DataFrame:
 
-        for name, roi_rect in named_roi_rects:
+        poff_com_x, poff_com_y = self._roi_center_of_masses(roi_rect, self.poff_images)
+        poff_intensity = self._roi_intensities(roi_rect, self.poff_images)
+        pon_com_x, pon_com_y = self._roi_center_of_masses(roi_rect, self.pon_images)
+        pon_intensity = self._roi_intensities(roi_rect, self.pon_images)
 
-            poff_com_x, poff_com_y = self._roi_center_of_masses(roi_rect, self.poff_images)
-            poff_intensity = self._roi_intensities(roi_rect, self.poff_images)
-            pon_com_x, pon_com_y = self._roi_center_of_masses(roi_rect, self.pon_images)
-            pon_intensity = self._roi_intensities(roi_rect, self.pon_images)
+        # poff_guassain_intensity, poff_gussian_com_x, poff_gussian_com_y = self._roi_gaussian(roi_rect, self.poff_images)
+        # pon_guassain_intensity, pon_gussian_com_x, pon_gussian_com_y = self._roi_gaussian(roi_rect, self.pon_images)
 
-            # poff_guassain_intensity, poff_gussian_com_x, poff_gussian_com_y = self._roi_gaussian(roi_rect, self.poff_images)
-            # pon_guassain_intensity, pon_gussian_com_x, pon_gussian_com_y = self._roi_gaussian(roi_rect, self.pon_images)
+        roi_df = pd.DataFrame(data={
+            "poff_com_x": mul_deltaQ(poff_com_x - poff_com_x[0]),
+            "poff_com_y": mul_deltaQ(poff_com_y - poff_com_y[0]),
+            "poff_intensity": poff_intensity / poff_intensity[0],
+            "pon_com_x": mul_deltaQ(pon_com_x - pon_com_x[0]),
+            "pon_com_y": mul_deltaQ(pon_com_y - pon_com_y[0]),
+            "pon_intensity": pon_intensity / pon_intensity[0],
 
-            roi_df = pd.DataFrame(data={
-                "poff_com_x": mul_deltaQ(poff_com_x - poff_com_x[0]),
-                "poff_com_y": mul_deltaQ(poff_com_y - poff_com_y[0]),
-                "poff_intensity": poff_intensity / poff_intensity[0],
-                "pon_com_x": mul_deltaQ(pon_com_x - pon_com_x[0]),
-                "pon_com_y": mul_deltaQ(pon_com_y - pon_com_y[0]),
-                "pon_intensity": pon_intensity / pon_intensity[0],
+            # "poff_gussian_com_x": poff_gussian_com_x,
+            # "poff_gussian_com_y": poff_gussian_com_y,
+            # "poff_guassain_intensity": poff_guassain_intensity / poff_guassain_intensity[0],
 
-                # "poff_gussian_com_x": poff_gussian_com_x,
-                # "poff_gussian_com_y": poff_gussian_com_y,
-                # "poff_guassain_intensity": poff_guassain_intensity / poff_guassain_intensity[0],
+            # "pon_gussian_com_x": pon_gussian_com_x,
+            # "pon_gussian_com_y": pon_gussian_com_y,
+            # "pon_guassain_intensity": pon_guassain_intensity / pon_guassain_intensity[0],
 
-                # "pon_gussian_com_x": pon_gussian_com_x,
-                # "pon_gussian_com_y": pon_gussian_com_y,
-                # "pon_guassain_intensity": pon_guassain_intensity / pon_guassain_intensity[0],
+        })
+        
+        roi_df = roi_df.set_index(self.delay)
+        return roi_df
 
-            })
-            
-            roi_df = roi_df.set_index(self.delay)
-            data_frames.append(roi_df)
-        return data_frames
 
 if __name__ == "__main__":
     import os
@@ -143,7 +140,7 @@ if __name__ == "__main__":
     from gui.roi import select_roi_by_run_scan
     from utils.file_util import create_run_scan_directory
     from config import load_config
-    from analysis.draw_figure import (
+    from analyzer.draw_figure import (
         patch_rectangle, 
         draw_com_figure, 
         draw_intensity_figure, 
@@ -158,14 +155,14 @@ if __name__ == "__main__":
     # Run MeanDataProcessor
     ##########################################################
     '''
-    scan : 143, 144, 145, 148, 149, 150 , 151, 152, 153, 154, 155, 160, 161, 
+    scan: 143, 144, 145, 148, 149, 150, 151, 152, 153, 154, 155, 160, 161, 
     206, 207, 208, 209, 210, 211
     '''
     config = load_config()
-    run_num: int = 144
+    run_num: int = 143
     scan_num: int = 1
     comment: Optional[str] = None
-
+    print(f"Run MeanDataProcessor run={run_num:0>3}")
     npz_dir: str = config.path.npz_dir
 
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
@@ -180,7 +177,7 @@ if __name__ == "__main__":
     roi_rects = [roi_rect]
     names = ["center"]
     named_roi_rects = zip(names, roi_rects)
-    data_df = processor.analyze_by_rois(named_roi_rects)[0]
+    data_df = processor.analyze_by_roi(named_roi_rects)[0]
 
     ##########################################################
     # Save Data

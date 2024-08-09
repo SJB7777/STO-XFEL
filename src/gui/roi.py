@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 
-from core.loader_strategy import HDF5FileLoader
+from processor.loader_strategy import HDF5FileLoader
 from roi_rectangle import RoiRectangle
 from utils.file_util import get_run_scan_directory, get_file_list
 from config import load_config
 
-from typing import Optional, Union
+from typing import Optional
 import numpy.typing as npt
 
 class RoiSelector:
@@ -52,8 +52,9 @@ class RoiSelector:
                 self.rect.set_height(self.fy - self.iy)
                 plt.draw()
 
-    def select_roi(self, image: npt.NDArray):
-
+    def select_roi(self, image: npt.NDArray) -> tuple[int, int, int, int]:
+        if image.ndim != 2:
+            raise TypeError(f"Invalid shape {image.shape} for image data")
         fig, self.ax = plt.subplots()
         self.ax.imshow(image)
 
@@ -71,13 +72,13 @@ class RoiSelector:
             return (x1, y1, x2, y2)
 
 
-def select_roi_by_run_scan(run: int, scan: int, index_mode: Union[int, str]="auto") -> Optional[RoiRectangle]:
+def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None) -> Optional[RoiRectangle]:
     config = load_config()
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run, scan)
     files = get_file_list(scan_dir)
 
-    if index_mode == "auto":
+    if index_mode is None:
         index = len(files) // 2
     elif isinstance(index_mode, int):
         index = index_mode
@@ -92,10 +93,10 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Union[int, str]="aut
 
     image = np.log1p(images.sum(axis=0))
     
-    roi_tuple = RoiSelector().select_roi(image)
-    if roi_tuple is None:
+    roi = RoiSelector().select_roi(image)
+    if roi is None:
         return None
-    return RoiRectangle(*roi_tuple)
+    return RoiRectangle(*roi)
 
 
 if __name__ == "__main__":
