@@ -11,34 +11,35 @@ from utils.math_util import gaussian, mul_deltaQ
 import numpy.typing as npt
 from typing import Mapping
 
+
 class DataAnalyzer:
     def __init__(self, file: str, angle: int = 0) -> None:
         if not os.path.exists(file):
             raise FileNotFoundError(f"The file {file} was not found.")
-        
+
         data: Mapping[str, npt.NDArray] = np.load(file)
 
         if "delay" not in data or "pon" not in data or "poff" not in data:
             raise ValueError("The file does not contain the required keys: 'delay', 'pon', 'poff'")
-        
+
         self.delay: npt.NDArray = data["delay"]
         self.poff_images: npt.NDArray = data["poff"]
         self.pon_images: npt.NDArray = data["pon"]
-        
+
         if angle:
             self.poff_images = rotate(self.poff_images, 45, axes=(1, 2), reshape=False)
             self.pon_images = rotate(self.pon_images, 45, axes=(1, 2), reshape=False)
-            
+
     def get_summed_image(self) -> tuple[npt.NDArray, npt.NDArray]:
         """
         return: 
             pump off image, pump on image
         """
         return self.poff_images.sum(axis=0), self.pon_images.sum(axis=0)
-    
+
     def pon_subtract_by_poff(self):
         return np.maximum(self.pon_images - self.poff_images, 0)
-    
+
     def _roi_center_of_masses(self, roi_rect: RoiRectangle, images: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray]:
         roi_images = roi_rect.slice(images)
         height, width = roi_rect.height, roi_rect.width
@@ -50,7 +51,7 @@ class DataAnalyzer:
         y_centroids = np.sum(y_coords * roi_images, axis=(1, 2)) / total_mass
 
         return x_centroids, y_centroids
-    
+
     def _roi_gaussian(self, roi_rect: RoiRectangle, images: npt.NDArray) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
         roi_images = roi_rect.slice(images)
         height, width = roi_rect.height, roi_rect.width
@@ -69,13 +70,12 @@ class DataAnalyzer:
             x_data = image.sum(axis=0)
             y_data = image.sum(axis=1)
 
-            
             initial_guess_x = [x_data[max_x], max_x, (np.max(x_data) - np.min(x_data)) / 4]
             try:
                 params_x = curve_fit(gaussian, x, x_data, p0=initial_guess_x)[0]
             except RuntimeError as e:
                 print(e, ": x")
-                params_x = [np.nan, np.nan, np.nan]    
+                params_x = [np.nan, np.nan, np.nan]
 
             initial_guess_y = [y_data[max_y], max_y, (np.max(y_data) - np.min(y_data)) / 4]
             try:
@@ -93,7 +93,6 @@ class DataAnalyzer:
             com_ys.append(gaussain_com_y)
 
         return np.stack(intensities), np.stack(com_xs), np.stack(com_ys)
-
 
     def _roi_intensities(self, roi_rect: RoiRectangle, images: npt.NDArray):
         roi_images = roi_rect.slice(images)
@@ -127,7 +126,7 @@ class DataAnalyzer:
             # "pon_guassain_intensity": pon_guassain_intensity / pon_guassain_intensity[0],
 
         })
-        
+
         roi_df = roi_df.set_index(self.delay)
         return roi_df
 
@@ -135,8 +134,3 @@ class DataAnalyzer:
 if __name__ == "__main__":
 
     print("Run analyzer.core")
-
-
-
-    
-    

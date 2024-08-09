@@ -19,7 +19,7 @@ if __name__ == "__main__":
     from cuptlib_config.palxfel.enums import Hertz, Hutch, Detector, Xray
 
     config_dict = {
-        "path":{
+        "path": {
             # Mother Directory of run files. 
             "load_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
             "save_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
@@ -32,7 +32,7 @@ if __name__ == "__main__":
             "npz_dir": "Npz_files",
             "tif_dir": "Tif_files"
         },
-        "param":{
+        "param": {
             # Hutch 
             "hutch": Hutch.EH1,
             # Detector

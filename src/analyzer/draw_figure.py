@@ -25,6 +25,7 @@ def patch_rectangle(image: npt.NDArray, x1: int, y1: int, x2: int, y2: int) -> '
     
     return fig
 
+
 def draw_intensity_figure(data_df: pd.DataFrame) -> 'Figure':
     delay = data_df.index
     poff_intensity = data_df["poff_intensity"]
@@ -42,6 +43,7 @@ def draw_intensity_figure(data_df: pd.DataFrame) -> 'Figure':
     plt.tight_layout()
 
     return fig
+
 
 def draw_com_figure(data_df: pd.DataFrame) -> 'Figure':
     delay = data_df.index
@@ -71,6 +73,7 @@ def draw_com_figure(data_df: pd.DataFrame) -> 'Figure':
 
     return fig
 
+
 def draw_intensity_diff_figure(data_df: pd.DataFrame) -> 'Figure':
     delay = data_df.index
     poff_intensity = data_df["poff_intensity"]
@@ -78,10 +81,10 @@ def draw_intensity_diff_figure(data_df: pd.DataFrame) -> 'Figure':
     
     # Calculate the difference between pon_intensity and poff_intensity
     intensity_difference = pon_intensity - poff_intensity
-    
+
     fig, ax = plt.subplots()
     ax.plot(delay, intensity_difference, label="Intensity Difference (poff - pon)", marker='o')
-    
+
     ax.set_xlabel("Delay [ps]")
     ax.set_ylabel("Intensity Difference [a.u.]")
     ax.set_title("Intensity Difference (poff - pon) vs Delay")
@@ -120,7 +123,7 @@ def draw_com_diff_figure(data_df: pd.DataFrame) -> 'Figure':
     axs[1].legend()
 
     plt.tight_layout()
-    
+
     return fig
 
 if __name__ == "__main__":
