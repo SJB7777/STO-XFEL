@@ -1,10 +1,11 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-from typing import TYPE_CHECKING
-import numpy.typing as npt
 if TYPE_CHECKING:
     from matplotlib.figure import Figure
 

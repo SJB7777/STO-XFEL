@@ -1,16 +1,16 @@
 import os
 from abc import ABC, abstractmethod
+from typing import Union
+import importlib
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import h5py
 from cuptlib_config.palxfel import Hertz
-from config import load_config, ExperimentConfiguration
 
-import numpy.typing as npt
-from typing import Union
+from src.config import load_config, ExperimentConfiguration
 
-import importlib
 importlib.import_module("hdf5plugin")
 
 
@@ -68,11 +68,20 @@ class HDF5FileLoader(RawDataLoader):
             if "detector" not in hf:
                 raise KeyError("Key 'detector' not found in the HDF5 file")
 
-            images = np.asarray(hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_values'], dtype=np.float32)
-            images_ts = np.asarray(hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_items'], dtype=np.int64)
+            images = np.asarray(
+                hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_values'],
+                dtype=np.float32
+            )
+            images_ts = np.asarray(
+                hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_items'],
+                dtype=np.int64
+                )
             qbpm = hf[f'qbpm/{self.config.param.hutch}/qbpm1']
             qbpm_ts = qbpm['waveforms.ch1/axis1'][()]
-            qbpm_sum = np.sum([qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)], axis=0, dtype=np.float32).sum(axis=1)
+            qbpm_sum = np.sum(
+                [qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)],
+                axis=0, dtype=np.float32
+            ).sum(axis=1)
 
         image_df = pd.DataFrame(
             {
@@ -105,8 +114,7 @@ class HDF5FileLoader(RawDataLoader):
             return np.asarray(metadata['th_value'], dtype=np.float32)[0]
         if "delay_value" in metadata:
             return np.asarray(metadata['delay_value'], dtype=np.float32)[0]
-        else:
-            return np.nan
+        return np.nan
 
     def get_pump_mask(self, merged_df: pd.DataFrame) -> npt.NDArray[np.bool_]:
         """
@@ -149,7 +157,22 @@ class HDF5FileLoader(RawDataLoader):
 
 
 if __name__ == "__main__":
-    file: str = "D:\\dev\\xfel_sample_data\\run=001\\scan=001\\p0110.h5"
-    loader = HDF5FileLoader(file)
-    data = loader.get_data()
-    print(loader.delay)
+    import time
+    from src.utils.file_util import get_run_scan_directory
+
+    config: ExperimentConfiguration = load_config()
+    load_dir: str = config.path.load_dir
+    file: str = get_run_scan_directory(load_dir, 1, 1, 110)
+    print(f"Load HDF5 File: {file}")
+
+    start = time.time()
+    loader: HDF5FileLoader = HDF5FileLoader(file)
+    delta_time = time.time() - start
+
+    print(f"Loading Time: {delta_time} sec")
+    data: dict = loader.get_data()
+
+    print()
+    print(f"delay: {loader.delay}")
+    for key, val in data.items():
+        print(f"data[{key}] shape: {val.shape}")

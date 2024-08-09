@@ -1,10 +1,10 @@
+from typing import Final
+
 import numpy as np
+import numpy.typing as npt
 from scipy.integrate import quad, dblquad
 
-from config import load_config
-
-from typing import Final
-import numpy.typing as npt
+from src.config import load_config
 
 
 FWHM_COEFFICIENT: Final[float] = 2.35482  # FWHM_COEFFICIENT = 2 * np.sqrt(2 * np.log(2))

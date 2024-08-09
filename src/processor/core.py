@@ -1,23 +1,23 @@
 import os
 from collections import defaultdict
-from typing import Optional, DefaultDict, Type
+from typing import Optional, DefaultDict, Type, Any
 
 import numpy as np
 import numpy.typing as npt
 from tqdm import tqdm
 
-from utils.file_util import get_file_list
-from processor.saver import SaverStrategy
-from processor.loader import RawDataLoader
-from logger import AppLogger
-from config import load_config
-
-from typing import Any
-from preprocess.image_qbpm_pipeline import ImagesQbpmProcessor, apply_pipeline
+from src.utils.file_util import get_file_list
+from src.processor.saver import SaverStrategy
+from src.processor.loader import RawDataLoader
+from src.preprocess.image_qbpm_pipeline import ImagesQbpmProcessor, apply_pipeline
+from src.logger import AppLogger
+from src.config import load_config
 
 
 class CoreProcessor:
-
+    """
+    Use ETL Pattern
+    """
     def __init__(self, LoaderStrategy: Type[RawDataLoader], pipelines: Optional[dict[str, list[ImagesQbpmProcessor]]] = None, logger: Optional[AppLogger] = None) -> None:
 
         self.LoaderStrategy = LoaderStrategy
@@ -34,7 +34,7 @@ class CoreProcessor:
         Parameters:
         - run_num (int): Run number to scan.
         """
-        scan_dir = scan_dir
+
         self.logger.info(f"Starting scan: {scan_dir}")
 
         self.result: dict[str, DefaultDict[str, npt.NDArray]] = self.process_scan_directory(scan_dir)
@@ -59,13 +59,14 @@ class CoreProcessor:
 
         for hdf5_file in pbar:
 
-            loader_strategy = self.get_loader_strategy(scan_dir, hdf5_file)
+            loader_strategy = self.get_loader(scan_dir, hdf5_file)
             if loader_strategy is not None:
                 self.add_processed_data_to_dict(loader_strategy)
 
         return self.stack_processed_data(self.pipeline_data_dict)
 
-    def get_loader_strategy(self, scan_dir: str, hdf5_file: str) -> Optional[RawDataLoader]:
+    def get_loader(self, scan_dir: str, hdf5_file: str) -> Optional[RawDataLoader]:
+        """Get Loader"""
         hdf5_dir = os.path.join(scan_dir, hdf5_file)
         try:
             return self.LoaderStrategy(hdf5_dir)
@@ -78,16 +79,17 @@ class CoreProcessor:
             self.logger.warning(f"FileNotFoundError happened in {scan_dir}")
             return None
         # except Exception as e:
-        #     self.logger.error(f"Failed to load: {type(e)}: {str(e)}")
+        #     self.logger.exception(f"Failed to load: {type(e)}: {str(e)}")
         #     import traceback
         #     error_message = traceback.format_exc()
-        #     self.logger.error(error_message)
+        #     self.logger.exception(error_message)
         #     return None
 
     def add_processed_data_to_dict(self, loader_strategy: RawDataLoader) -> dict[str, DefaultDict[str, list]]:
 
         pipeline_data: dict[str, dict[str, Any]] = {}
         for pipeline_name, pipeline in self.pipelines.items():
+
             data: dict[str, Any] = {}
 
             images_dict = loader_strategy.get_data()
@@ -124,7 +126,7 @@ class CoreProcessor:
 
         if not self.result:
             self.logger.error("Nothing to save")
-            raise Exception("Nothing to save")
+            raise ValueError("Nothing to save")
 
         for pipline_name, data_dict in self.result.items():
             file_base_name = f"{file_name}"
@@ -137,15 +139,18 @@ class CoreProcessor:
 
 if __name__ == "__main__":
 
-    from processor.loader import HDF5FileLoader
-    from processor.saver import SaverFactory
-    from preprocess.image_qbpm_pipeline import (
+    from src.processor.loader import HDF5FileLoader
+    from src.processor.saver import SaverFactory
+    from src.preprocess.image_qbpm_pipeline import (
         subtract_dark_background,
         normalize_images_by_qbpm,
         remove_outliers_using_ransac,
         equalize_intensities
     )
-    run_num = 1
+
+
+    run_num: int = 1
+    scan_num: int = 1
     logger: AppLogger = AppLogger("MainProcessor")
 
     # Pipeline 1
@@ -187,11 +192,13 @@ if __name__ == "__main__":
 
     cp = CoreProcessor(HDF5FileLoader, pipelines, logger)
     cp.scan(run_num)
-
+    
+    file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
+    
     mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
     # tif_saver: SaverStrategy = SaverFactory.get_saver("tif")
     # npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
-    cp.save(mat_saver)
+    cp.save(mat_saver, file_name)
     # cp.save(tif_saver)
     # cp.save(npz_saver)
 

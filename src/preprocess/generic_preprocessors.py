@@ -1,13 +1,13 @@
 import os
+from typing import Optional
 
 import numpy as np
+import numpy.typing as npt
 from scipy.optimize import curve_fit
 from sklearn.linear_model import RANSACRegressor
 
-from config import load_config
+from src.config import load_config
 
-import numpy.typing as npt
-from typing import Optional
 
 
 def ransac_regression(y: np.ndarray, x: np.ndarray, min_samples: Optional[int] = None) -> tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]:

@@ -1,15 +1,14 @@
 import os
+from typing import Mapping
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from scipy.ndimage import rotate
 from scipy.optimize import curve_fit
 from roi_rectangle import RoiRectangle
 
-from utils.math_util import gaussian, mul_deltaQ
-
-import numpy.typing as npt
-from typing import Mapping
+from src.utils.math_util import gaussian, mul_deltaQ
 
 
 class DataAnalyzer:

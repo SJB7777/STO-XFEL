@@ -1,14 +1,10 @@
 import os
-import json
 import logging
 from datetime import datetime
 
 
-def format_run_scan_number(run_scan_list):
-    return ', '.join([f'({x}, {y})' for x, y in run_scan_list])
-
-
 class AppLogger:
+    """Basic Logging Class For Main Processing"""
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -52,26 +48,50 @@ class AppLogger:
         return logger
 
     def add_metadata(self, metadata: dict) -> None:
-        self.logger.info(f"{metadata}")
+        """Logging Metadata that is type dict"""
+        self.logger.info(str(metadata))
 
-    def add_result(self, key, value) -> None:
-        self.results[key] = value
-        self.logger.info(f"Result added: {key} = {value}")
-
-    def save_to_json(self, filename: str) -> None:
-        data = {
-            "metadata": self.metadata,
-            "results": self.results
-        }
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-        self.logger.info(f"Record saved to {filename}")
+    def debug(self, message: str) -> None:
+        "Logging Debug Messages"
+        self.logger.debug(message)
 
     def info(self, message: str) -> None:
+        "Logging Regular Info"
         self.logger.info(message)
 
     def warning(self, message: str) -> None:
+        "Logging Warning But Not Error"
         self.logger.warning(message)
 
     def error(self, message: str) -> None:
+        "Logging Error"
         self.logger.error(message)
+
+    def exception(self, message: str) -> None:
+        "Logging Exception"
+        self.logger.exception(message)
+
+
+if __name__ == "__main__":
+    logger = AppLogger("TestLogger")
+
+    logger.debug("This is a debug message.")
+
+    logger.info("This is an info message.")
+
+    logger.warning("This is a warning message.")
+
+    logger.error("This is an error message.")
+
+    try:
+        raise ValueError("This is a test exception.")
+    except ValueError as e:
+        logger.exception(f"An exception occurred: {e}")
+
+    metadata = {"key1": "value1", "key2": "value2"}
+    logger.add_metadata(metadata)
+
+    logger2 = AppLogger("TestLogger")
+    assert logger is logger2, "Singleton pattern is not working correctly."
+
+    print("All tests passed.")

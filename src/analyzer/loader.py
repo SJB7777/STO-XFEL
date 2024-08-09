@@ -1,5 +1,4 @@
 from scipy.io import loadmat
-
 import numpy.typing as npt
 
 

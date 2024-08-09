@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
-from preprocess.data_evaluation_tools import evaluate_preprocessing
+
+from src.preprocess.data_evaluation_tools import evaluate_preprocessing
 
 # 예시 데이터 생성
 original_data = pd.DataFrame({

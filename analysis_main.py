@@ -3,21 +3,21 @@ import numpy as np
 import tifffile
 from roi_rectangle import RoiRectangle
 
-from gui.roi import RoiSelector
-from utils.file_util import create_run_scan_directory
-from config import load_config
-from logger import AppLogger
-from analyzer.draw_figure import (
+from src.gui.roi import RoiSelector
+from src.utils.file_util import create_run_scan_directory
+from src.config import load_config
+from src.logger import AppLogger
+from src.analyzer.draw_figure import (
     patch_rectangle,
     draw_com_figure,
     draw_intensity_figure,
     draw_intensity_diff_figure,
     draw_com_diff_figure
 )
-from analyzer.core import DataAnalyzer
+from src.analyzer.core import DataAnalyzer
 
-import numpy.typing as npt
 from typing import TYPE_CHECKING, Optional
+import numpy.typing as npt
 if TYPE_CHECKING:
     from pandas import DataFrame
     from matplotlib.figure import Figure
@@ -29,7 +29,7 @@ def main() -> None:
     logger: AppLogger = AppLogger("MainProcessor")
 
     # Define run and scan numbers
-    run_num: int = 150
+    run_num: int = 1
     scan_num: int = 1
     comment: Optional[str] = None
 

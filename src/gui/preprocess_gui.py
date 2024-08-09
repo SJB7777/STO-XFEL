@@ -4,11 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
-from preprocess.generic_preprocessors import get_linear_regression_confidence_bounds, ransac_regression
-from processor.loader import HDF5FileLoader
-from utils.file_util import get_run_scan_directory, get_file_list
+from src.preprocess.generic_preprocessors import get_linear_regression_confidence_bounds, ransac_regression
+from src.processor.loader import HDF5FileLoader
+from src.utils.file_util import get_run_scan_directory, get_file_list
 
-from config import load_config
+from src.config import load_config
 import numpy.typing as npt
 
 

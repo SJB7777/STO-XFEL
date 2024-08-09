@@ -1,10 +1,10 @@
 import os
+from collections import defaultdict
+
 import ast
 import radon.complexity as rc
 import radon.raw as rr
 from radon.complexity import cc_rank
-
-from collections import defaultdict
 
 
 def analyze_project(root_dir):

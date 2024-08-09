@@ -1,33 +1,34 @@
 import os
-
-from cuptlib_config.palxfel import load_palxfel_config, save_palxfel_dict, ExperimentConfiguration
 import configparser
 
+from cuptlib_config.palxfel import load_palxfel_config, save_palxfel_dict, ExperimentConfiguration
 
-config = configparser.ConfigParser()
 
-dir_name = os.path.dirname(__file__)
-config.read(os.path.join(dir_name, "config\\config.ini"))
-config_dir = os.path.join(dir_name, config["config"]["config_dir"])
+config: configparser.ConfigParser = configparser.ConfigParser()
+
+config_file: str = "config\\config.ini"
+config.read(config_file)
+config_dir: str = config["config"]["config_dir"]
 
 
 def load_config() -> ExperimentConfiguration:
+    """load config file and return config object"""
     return load_palxfel_config(config_dir)
 
 
 def save_config(config_dict: dict) -> None:
+    """get config dict and save to file"""
     save_palxfel_dict(config_dict, config_dir)
 
 
 if __name__ == "__main__":
     from cuptlib_config.palxfel.enums import Hertz, Hutch, Detector, Xray
 
-    '''
-    sdd = 1.3 # m
-    dps = 75e-06 # m (73 um)
-    beam_energy = 9.7 # keV
-    wavelength [A]
-    '''
+    # sdd = 1.3 # m
+    # dps = 75e-06 # m (73 um)
+    # beam_energy = 9.7 # keV
+    # wavelength [A]
+
     config_dict = {
         "path": {
             # Mother Directory of run files.
