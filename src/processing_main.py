@@ -63,7 +63,7 @@ def process_scan(run_num: int, scan_num: int, config: ExperimentConfiguration) -
 
 def main() -> None:
     config = load_config()
-    run_nums: list[int] = [193]
+    run_nums: list[int] = [196]
     logger.info(f"Runs to process: {run_nums}")
 
     for run_num in run_nums:
