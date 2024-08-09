@@ -1,8 +1,12 @@
+import os
+
 from cuptlib_config.palxfel import load_palxfel_config, save_palxfel_dict, ExperimentConfiguration
 import configparser
 
 config = configparser.ConfigParser()
-config.read("config\config.ini")
+
+dir_name = os.path.dirname(__file__)
+config.read(os.path.join(dir_name, "config\config.ini"))
 config_dir = config["config"]["config_dir"]
 
 def load_config() -> ExperimentConfiguration:
