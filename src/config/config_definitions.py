@@ -46,11 +46,12 @@ class ExpParams(BaseModel):
     dps: float = 7.5e-5
     beam_energy: float = 10
     sigma_factor: float = 1
+    wavelength: float = None
 
     @model_validator(mode='before')
     @classmethod
     def calculate_wavelength(cls, values):
-        """Caluculate Wavelength"""
+        """Calculate Wavelength"""
         beam_energy = values.get('beam_energy')
         if beam_energy is not None:
             values['wavelength'] = 12.398419843320025 / beam_energy
@@ -102,8 +103,8 @@ class ExpConfig(BaseModel):
 if __name__ == "__main__":
     config_dict = {
         'path': {
-            'load_dir': 'your/path', 
-            'save_dir': 'your/path',
+            'load_dir': 'your\\path', 
+            'save_dir': 'your\\path',
             'image_dir': 'Image', 
             'mat_dir': 'mat_files', 
             'npz_dir': 'npz_files', 
@@ -132,4 +133,5 @@ if __name__ == "__main__":
     print(config.path.save_dir)
     print(config.path.param_dir)
 
-    print(type(config.param.hutch))
+    params = ExpParams(beam_energy=9.7)
+    print(params.wavelength)

@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 from scipy.integrate import quad, dblquad
 
-from config.config import load_config
+from src.config.config import load_config
 
 
 FWHM_COEFFICIENT: Final[float] = 2.35482  # FWHM_COEFFICIENT = 2 * np.sqrt(2 * np.log(2))
@@ -24,7 +24,7 @@ def integrate_FWHM(a: float, mu: float, sig: float) -> float:
     return result
 
 
-def gaussian2D(
+def gaussian2d(
     xy, amplitude: float,
     x0: float, y0: float,
     sigma_x: float, sigma_y: float,
@@ -54,7 +54,7 @@ def gaussian2D(
     return g.ravel()
 
 
-def integrate_FWHM_2D(
+def integrate_fwhm_2d(
     amplitude: float,
     xo: float, yo: float,
     sigma_x: float, sigma_y: float,
@@ -64,8 +64,8 @@ def integrate_FWHM_2D(
     Calculate the integral of a 2D Gaussian with an offset over its FWHM
     """
     def integrand(y, x):
-        XY = np.meshgrid(x, y)
-        return gaussian2D(XY, amplitude, xo, yo, sigma_x, sigma_y, theta, offset)
+        xy = np.meshgrid(x, y)
+        return gaussian2d(xy, amplitude, xo, yo, sigma_x, sigma_y, theta, offset)
 
     # Calculate FWHM in x and y directions
     fwhm_x = FWHM_COEFFICIENT * np.abs(sigma_x)
@@ -84,7 +84,7 @@ def integrate_FWHM_2D(
     return result
 
 
-def pixel_to_delQ(pixels: npt.NDArray) -> npt.NDArray:
+def pixel_to_del_q(pixels: npt.NDArray) -> npt.NDArray:
 
     config = load_config()
     del_pixels = pixels - pixels[0]
@@ -92,14 +92,14 @@ def pixel_to_delQ(pixels: npt.NDArray) -> npt.NDArray:
     return 4 * np.pi / config.param.wavelength * np.sin(del_two_theta / 2)
 
 
-def mul_deltaQ(pixels: npt.NDArray) -> npt.NDArray:
+def mul_delta_q(pixels: npt.NDArray) -> npt.NDArray:
     config = load_config()
     two_theta = np.arctan2(config.param.dps, config.param.sdd)
-    deltaQ = (4 * np.pi / config.param.wavelength) * (two_theta)
-    return pixels * deltaQ
+    delta_q = (4 * np.pi / config.param.wavelength) * (two_theta)
+    return pixels * delta_q
 
 
-def pixel_to_Q(pixels: npt.NDArray) -> npt.NDArray:
+def pixel_to_q(pixels: npt.NDArray) -> npt.NDArray:
     """
     two_theta = arctan(dps * pixels / sdd)
     Q = (4 * pi / wavelength) * sin(two_theta / 2)

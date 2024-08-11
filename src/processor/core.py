@@ -1,7 +1,6 @@
 import os
 from collections import defaultdict
 from typing import Optional, DefaultDict, Type, Any
-import json
 
 import numpy as np
 import numpy.typing as npt
@@ -12,7 +11,7 @@ from src.processor.saver import SaverStrategy
 from src.processor.loader import RawDataLoader
 from src.preprocessor.image_qbpm_preprocessor import ImagesQbpmProcessor
 from src.logger import setup_logger, Logger
-from config.config import load_config, ExpConfig
+from src.config.config import load_config, ExpConfig
 
 
 class CoreProcessor:
@@ -28,13 +27,15 @@ class CoreProcessor:
 
         self.LoaderStrategy: Type[RawDataLoader] = LoaderStrategy  # pylint: disable=invalid-name
         self.preprocessor: dict[str, ImagesQbpmProcessor] = preprocessor if preprocessor is not None else {"no_processing": lambda x: x}
-        self.preprocessor_data_dict: dict[str, DefaultDict[str, list]] = {pipline_name: defaultdict(list) for pipline_name in self.preprocessor}
+        self.preprocessor_data_dict: dict[str, DefaultDict[str, list]] = {
+            pipline_name: defaultdict(list)
+            for pipline_name in self.preprocessor
+        }
 
         self.logger: Logger = logger if logger is not None else setup_logger()
         self.config: ExpConfig = load_config()
         self.result: dict[str, DefaultDict[str, npt.NDArray]] = {}
-        config_dict_jump: str = json.dumps(self.config.to_config_dict(), indent=4)
-        self.logger.info(f"Meta Data:\n{config_dict_jump}")
+        self.logger.info(f"Meta Data:\n{self.config}")
 
     def scan(self, scan_dir: str):
         """

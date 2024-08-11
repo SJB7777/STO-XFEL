@@ -22,7 +22,7 @@ from src.analyzer.core import DataAnalyzer
 if TYPE_CHECKING:
     from pandas import DataFrame
     from matplotlib.figure import Figure
-    from config.config import ExpConfig
+    from src.config.config import ExpConfig
 
 
 def main() -> None:

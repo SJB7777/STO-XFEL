@@ -6,7 +6,7 @@ import numpy as np
 from scipy.io import savemat
 import tifffile
 
-from config.config import load_config
+from src.config.config import load_config
 
 
 class SaverStrategy(ABC):

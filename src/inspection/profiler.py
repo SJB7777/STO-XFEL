@@ -4,7 +4,7 @@ import io
 import logging
 
 from src.processor.loader import HDF5FileLoader
-from config.config import load_config, ExpConfig
+from src.config.config import load_config, ExpConfig
 from src.utils.file_util import get_run_scan_directory
 
 

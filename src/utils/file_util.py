@@ -2,7 +2,7 @@ import os
 import json
 from typing import Optional
 
-from config.config import load_config
+from src.config.config import load_config
 
 from roi_rectangle import RoiRectangle
 import numpy as np

@@ -8,7 +8,7 @@ from scipy.ndimage import rotate
 from scipy.optimize import curve_fit
 from roi_rectangle import RoiRectangle
 
-from src.utils.math_util import gaussian, mul_deltaQ
+from src.utils.math_util import gaussian, mul_delta_q
 
 
 class DataAnalyzer:
@@ -120,11 +120,11 @@ class DataAnalyzer:
         # pon_guassain_intensity, pon_gussian_com_x, pon_gussian_com_y = self._roi_gaussian(roi_rect, self.pon_images)
 
         roi_df = pd.DataFrame(data={
-            "poff_com_x": mul_deltaQ(poff_com_x - poff_com_x[0]),
-            "poff_com_y": mul_deltaQ(poff_com_y - poff_com_y[0]),
+            "poff_com_x": mul_delta_q(poff_com_x - poff_com_x[0]),
+            "poff_com_y": mul_delta_q(poff_com_y - poff_com_y[0]),
             "poff_intensity": poff_intensity / poff_intensity[0],
-            "pon_com_x": mul_deltaQ(pon_com_x - pon_com_x[0]),
-            "pon_com_y": mul_deltaQ(pon_com_y - pon_com_y[0]),
+            "pon_com_x": mul_delta_q(pon_com_x - pon_com_x[0]),
+            "pon_com_y": mul_delta_q(pon_com_y - pon_com_y[0]),
             "pon_intensity": pon_intensity / pon_intensity[0],
 
             # "poff_gussian_com_x": poff_gussian_com_x,

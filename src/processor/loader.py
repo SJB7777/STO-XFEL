@@ -8,7 +8,7 @@ import numpy.typing as npt
 import pandas as pd
 import h5py
 
-from config.config import load_config, ExpConfig
+from src.config.config import load_config, ExpConfig
 from src.config.enums import Hertz
 
 importlib.import_module("hdf5plugin")

@@ -8,7 +8,7 @@ from src.preprocessor.generic_preprocessors import get_linear_regression_confide
 from src.processor.loader import HDF5FileLoader
 from src.utils.file_util import get_run_scan_directory, get_file_list
 
-from config.config import load_config
+from src.config.config import load_config
 import numpy.typing as npt
 
 

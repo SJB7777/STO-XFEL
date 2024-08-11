@@ -66,7 +66,7 @@ def load_matdata(h5file: str) -> pd.DataFrame:
 if __name__ == "__main__":
 
     from utils.file_util import get_run_scan_directory
-    from config.config import load_config
+    from src.config.config import load_config
 
     config = load_config()
     load_dir = config.path.load_dir

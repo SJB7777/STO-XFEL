@@ -5,22 +5,22 @@ import yaml
 from src.config.config_definitions import ExpConfig
 
 
-config: configparser.ConfigParser = configparser.ConfigParser()
-config_file: str = "config\\config.ini"
-config.read(config_file)
-config_dir: str = config["config"]["config_dir"]
+def _get_config_dir() -> str:
+    config = configparser.ConfigParser()
+    config.read("config\\config.ini")
+    return config["config"]["config_dir"]
 
 
 def load_config() -> ExpConfig:
     """load config file and return config object"""
-    with open(config_dir, 'r', encoding="utf-8") as f:
+    with open(_get_config_dir(), 'r', encoding="utf-8") as f:
         config_dict = yaml.safe_load(f)
     return ExpConfig(**config_dict)
 
 
 def save_config(config_dict: dict) -> None:
     """get config dict and save to file"""
-    with open(config_dir, 'w', encoding="utf-8") as f:
+    with open(_get_config_dir(), 'w', encoding="utf-8") as f:
         yaml.safe_dump(config_dict, f, default_flow_style=False, sort_keys=False)
 
 
@@ -59,4 +59,5 @@ if __name__ == "__main__":
             "beam_energy": 9.7,
         }
     }
+
     save_config(config_dict)
