@@ -10,7 +10,7 @@ from radon.complexity import cc_rank
 def analyze_project(root_dir):
     project_structure = defaultdict(lambda: {"files": [], "modules": {}})
 
-    for dirpath, dirnames, filenames in os.walk(root_dir):
+    for dirpath, _, filenames in os.walk(root_dir):
         rel_path = os.path.relpath(dirpath, root_dir)
         if rel_path == ".":
             rel_path = ""
@@ -70,27 +70,25 @@ def analyze_code_complexity(root_dir):
             if filename.endswith(".py"):
                 file_path = os.path.join(dirpath, filename)
 
-                try:
-                    with open(file_path, "r", encoding="utf-8") as file:
-                        content = file.read()
 
-                    raw_metrics = rr.analyze(content)
-                    cc_metrics = rc.cc_visit(content)
+                with open(file_path, "r", encoding="utf-8") as file:
+                    content = file.read()
 
-                    complexity_data[file_path] = {
-                        "loc": raw_metrics.loc,
-                        "lloc": raw_metrics.lloc,
-                        "sloc": raw_metrics.sloc,
-                        "comments": raw_metrics.comments,
-                        "multi": raw_metrics.multi,
-                        "single_comments": raw_metrics.single_comments,
-                        "cc_complexity": {
-                            "average": calculate_average_complexity(cc_metrics),
-                            "details": [{"name": node.name, "complexity": node.complexity} for node in cc_metrics]
-                        }
+                raw_metrics = rr.analyze(content)
+                cc_metrics = rc.cc_visit(content)
+
+                complexity_data[file_path] = {
+                    "loc": raw_metrics.loc,
+                    "lloc": raw_metrics.lloc,
+                    "sloc": raw_metrics.sloc,
+                    "comments": raw_metrics.comments,
+                    "multi": raw_metrics.multi,
+                    "single_comments": raw_metrics.single_comments,
+                    "cc_complexity": {
+                        "average": calculate_average_complexity(cc_metrics),
+                        "details": [{"name": node.name, "complexity": node.complexity} for node in cc_metrics]
                     }
-                except Exception as e:
-                    print(f"Error analyzing {file_path}: {e}")
+                }
 
     return complexity_data
 
@@ -141,7 +139,7 @@ def print_complexity_grades(root_dir):
 
 
 if __name__ == "__main__":
-    root_dir = "."
+    root_dir: str = ".\\"
 
     project_structure = analyze_project(root_dir)
     print("Project Structure:")

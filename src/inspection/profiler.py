@@ -4,45 +4,52 @@ import io
 import logging
 
 from src.processor.loader import HDF5FileLoader
-from src.config import load_config
+from config.config import load_config, ExpConfig
 from src.utils.file_util import get_run_scan_directory
 
-config = load_config()
-load_dir = config.path.load_dir
-file = get_run_scan_directory(load_dir, 143, 1, 1)
 
-logging_file = 'logs\\profiling\\profiling.log'
-# 로깅 설정
-logging.basicConfig(filename=logging_file, level=logging.INFO, format='%(message)s')
+def main() -> None:
+    """Profile program with cProfile module."""
+    config: ExpConfig = load_config()
+    load_dir: str = config.path.load_dir
+    file: str = get_run_scan_directory(load_dir, 1, 1, 110)
 
-# Create a profiler object
-profiler = cProfile.Profile()
+    logging_file: str = 'logs\\profiling\\profiling.log'
+    # logging Setting
+    logging.basicConfig(filename=logging_file, level=logging.INFO, format='%(message)s')
 
-# Enable the profiler
-profiler.enable()
+    # Create a profiler object
+    profiler = cProfile.Profile()
 
-# Run the main function from the other file
-HDF5FileLoader(file)
+    # Enable the profiler
+    profiler.enable()
 
-# Disable the profiler
-profiler.disable()
+    # Run the main function from the other file
+    HDF5FileLoader(file)
 
-# Create a Stats object and sort the results by cumulative time
-stats = pstats.Stats(profiler)
-stats.strip_dirs()
-stats.sort_stats('cumulative')
+    # Disable the profiler
+    profiler.disable()
 
-# Redirect the stats output to a StringIO object
-output_stream = io.StringIO()
-stats.stream = output_stream
+    # Create a Stats object and sort the results by cumulative time
+    stats = pstats.Stats(profiler)
+    stats.strip_dirs()
+    stats.sort_stats('cumulative')
 
-# Print the stats to the StringIO object
-stats.print_stats()
+    # Redirect the stats output to a StringIO object
+    output_stream = io.StringIO()
+    stats.stream = output_stream
 
-# Get the captured output
-profiling_results = output_stream.getvalue()
+    # Print the stats to the StringIO object
+    stats.print_stats()
 
-# Log the captured output
-logging.info(profiling_results)
+    # Get the captured output
+    profiling_results = output_stream.getvalue()
 
-print(f"Profiling results logged to '{logging_file}'")
+    # Log the captured output
+    logging.info(profiling_results)
+
+    print(f"Profiling results logged to '{logging_file}'")
+
+
+if __name__ == "__main__":
+    main()

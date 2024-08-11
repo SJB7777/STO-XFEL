@@ -9,7 +9,7 @@ import numpy.typing as npt
 from src.processor.loader import HDF5FileLoader
 from roi_rectangle import RoiRectangle
 from src.utils.file_util import get_run_scan_directory, get_file_list
-from src.config import load_config
+from config.config import load_config
 
 
 class RoiSelector:

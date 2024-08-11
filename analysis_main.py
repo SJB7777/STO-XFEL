@@ -1,11 +1,14 @@
 import os
+from typing import TYPE_CHECKING, Optional
+
 import numpy as np
+import numpy.typing as npt
 import tifffile
 from roi_rectangle import RoiRectangle
 
 from src.gui.roi import RoiSelector
 from src.utils.file_util import create_run_scan_directory
-from src.config import load_config
+from src.config.config import load_config
 from src.logger import setup_logger, Logger
 from src.analyzer.draw_figure import (
     patch_rectangle,
@@ -16,16 +19,14 @@ from src.analyzer.draw_figure import (
 )
 from src.analyzer.core import DataAnalyzer
 
-from typing import TYPE_CHECKING, Optional
-import numpy.typing as npt
 if TYPE_CHECKING:
     from pandas import DataFrame
     from matplotlib.figure import Figure
-    from config import ExperimentConfiguration
+    from config.config import ExpConfig
 
 
 def main() -> None:
-    config: ExperimentConfiguration = load_config()
+    config: ExpConfig = load_config()
     logger: Logger = setup_logger()
 
     # Define run and scan numbers

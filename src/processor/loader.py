@@ -7,9 +7,9 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import h5py
-from cuptlib_config.palxfel import Hertz
 
-from src.config import load_config, ExperimentConfiguration
+from config.config import load_config, ExpConfig
+from src.config.enums import Hertz
 
 importlib.import_module("hdf5plugin")
 
@@ -38,8 +38,7 @@ class HDF5FileLoader(RawDataLoader):
             raise FileNotFoundError(f"No such file: {file}")
 
         self.file: str = file
-        # self.logger: AppLogger = AppLogger("MainProcessor")
-        self.config: ExperimentConfiguration = load_config()
+        self.config: ExpConfig = load_config()
 
         metadata: pd.DataFrame = pd.read_hdf(self.file, key='metadata')
         merged_df: pd.DataFrame = self.get_merged_df(metadata)
@@ -69,14 +68,14 @@ class HDF5FileLoader(RawDataLoader):
                 raise KeyError("Key 'detector' not found in the HDF5 file")
 
             images = np.asarray(
-                hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_values'],
+                hf[f'detector/{self.config.param.hutch.value}/{self.config.param.detector.value}/image/block0_values'],
                 dtype=np.float32
             )
             images_ts = np.asarray(
-                hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_items'],
+                hf[f'detector/{self.config.param.hutch.value}/{self.config.param.detector.value}/image/block0_items'],
                 dtype=np.int64
             )
-            qbpm = hf[f'qbpm/{self.config.param.hutch}/qbpm1']
+            qbpm = hf[f'qbpm/{self.config.param.hutch.value}/qbpm1']
             qbpm_ts = qbpm['waveforms.ch1/axis1'][()]
             qbpm_sum = np.sum(
                 [qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)],
@@ -126,11 +125,9 @@ class HDF5FileLoader(RawDataLoader):
         Returns:
         - npt.NDArray[np.bool_]: Pump status mask.
         """
-        # FIXME: config.param.pump_setting should be Hertz(Enum) but it is str now.
-        # if config.param.pump_setting is Hertz.ZERO:
-        if self.config.param.pump_setting == str(Hertz.ZERO):
+        if self.config.param.pump_setting is Hertz.ZERO:
             return np.zeros(merged_df.shape[0], dtype=np.bool_)
-        return merged_df[f'timestamp_info.RATE_{self.config.param.xray}_{self.config.param.pump_setting}'].astype(bool)
+        return merged_df[f'timestamp_info.RATE_{self.config.param.xray.value}_{self.config.param.pump_setting.value}'].astype(bool)
 
     def get_data(self) -> dict[str, npt.NDArray]:
         """
@@ -160,7 +157,7 @@ if __name__ == "__main__":
     import time
     from src.utils.file_util import get_run_scan_directory
 
-    config: ExperimentConfiguration = load_config()
+    config: ExpConfig = load_config()
     load_dir: str = config.path.load_dir
     file: str = get_run_scan_directory(load_dir, 1, 1, 110)
     print(f"Load HDF5 File: {file}")

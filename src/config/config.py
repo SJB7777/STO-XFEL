@@ -1,32 +1,32 @@
 import configparser
 
-from cuptlib_config.palxfel import load_palxfel_config, save_palxfel_dict, ExperimentConfiguration
+import yaml
+
+from src.config.config_definitions import ExpConfig
 
 
 config: configparser.ConfigParser = configparser.ConfigParser()
-
 config_file: str = "config\\config.ini"
 config.read(config_file)
 config_dir: str = config["config"]["config_dir"]
 
 
-def load_config() -> ExperimentConfiguration:
+def load_config() -> ExpConfig:
     """load config file and return config object"""
-    return load_palxfel_config(config_dir)
+    with open(config_dir, 'r', encoding="utf-8") as f:
+        config_dict = yaml.safe_load(f)
+    return ExpConfig(**config_dict)
 
 
 def save_config(config_dict: dict) -> None:
     """get config dict and save to file"""
-    save_palxfel_dict(config_dict, config_dir)
+    with open(config_dir, 'w', encoding="utf-8") as f:
+        yaml.safe_dump(config_dict, f, default_flow_style=False, sort_keys=False)
 
 
 if __name__ == "__main__":
-    from cuptlib_config.palxfel.enums import Hertz, Hutch, Detector, Xray
+    from src.config.enums import Hutch, Detector, Xray, Hertz
 
-    # sdd = 1.3 # m
-    # dps = 75e-06 # m (73 um)
-    # beam_energy = 9.7 # keV
-    # wavelength [A]
 
     config_dict = {
         "path": {
@@ -44,13 +44,13 @@ if __name__ == "__main__":
         },
         "param": {
             # Hutch
-            "hutch": Hutch.EH1,
+            "hutch": Hutch.EH1.value,
             # Detector
-            "detector": Detector.JUNGFRAU2,
+            "detector": Detector.JUNGFRAU2.value,
             # Xray used in experiment.
-            "xray": Xray.HARD,
+            "xray": Xray.HARD.value,
             # Rate of laser.
-            "pump_setting": Hertz.FIFTEEN,
+            "pump_setting": Hertz.FIFTEEN.value,
             # Index of roi coordinate inside h5 file.
             "x1": 0, "x2": 1, "y1": 2, "y2": 3,
             # Metric of SDD and DPS is meters.
@@ -59,5 +59,4 @@ if __name__ == "__main__":
             "beam_energy": 9.7,
         }
     }
-
     save_config(config_dict)
