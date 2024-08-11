@@ -6,7 +6,7 @@ from roi_rectangle import RoiRectangle
 from src.gui.roi import RoiSelector
 from src.utils.file_util import create_run_scan_directory
 from src.config import load_config
-from src.logger import AppLogger
+from src.logger import setup_logger, Logger
 from src.analyzer.draw_figure import (
     patch_rectangle,
     draw_com_figure,
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 def main() -> None:
     config: ExperimentConfiguration = load_config()
-    logger: AppLogger = AppLogger("MainProcessor")
+    logger: Logger = setup_logger()
 
     # Define run and scan numbers
     run_num: int = 1

@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
 from typing import Optional, DefaultDict, Type, Any
+import json
 
 import numpy as np
 import numpy.typing as npt
@@ -10,7 +11,7 @@ from src.utils.file_util import get_file_list
 from src.processor.saver import SaverStrategy
 from src.processor.loader import RawDataLoader
 from src.preprocessor.image_qbpm_preprocessor import ImagesQbpmProcessor
-from src.logger import AppLogger
+from src.logger import setup_logger, Logger
 from src.config import load_config, ExperimentConfiguration
 
 
@@ -22,18 +23,18 @@ class CoreProcessor:
         self,
         LoaderStrategy: Type[RawDataLoader],  # pylint: disable=invalid-name
         preprocessor: Optional[dict[str, ImagesQbpmProcessor]] = None,
-        logger: Optional[AppLogger] = None
+        logger: Optional[Logger] = None
     ) -> None:
 
         self.LoaderStrategy: Type[RawDataLoader] = LoaderStrategy  # pylint: disable=invalid-name
         self.preprocessor: dict[str, ImagesQbpmProcessor] = preprocessor if preprocessor is not None else {"no_processing": lambda x: x}
         self.preprocessor_data_dict: dict[str, DefaultDict[str, list]] = {pipline_name: defaultdict(list) for pipline_name in self.preprocessor}
 
-        self.logger: AppLogger = logger if logger is not None else AppLogger("MainProcessor")
+        self.logger: Logger = logger if logger is not None else setup_logger("MainProcessor")
         self.config: ExperimentConfiguration = load_config()
         self.result: dict[str, DefaultDict[str, npt.NDArray]] = {}
-
-        self.logger.add_metadata(self.config.to_config_dict())
+        config_dict_jump: str = json.dumps(self.config.to_config_dict(), indent=4)
+        self.logger.info(f"Meta Data:\n{config_dict_jump}")
 
     def scan(self, scan_dir: str):
         """
@@ -157,7 +158,7 @@ if __name__ == "__main__":
 
     run_num: int = 1
     scan_num: int = 1
-    logger: AppLogger = AppLogger("MainProcessor")
+    logger: Logger = setup_logger()
 
     # preprocessor 1
     preprocessor_normalize_images_by_qbpm: ImagesQbpmProcessor = compose(

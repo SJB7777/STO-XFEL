@@ -2,7 +2,7 @@ from typing import Optional
 
 from roi_rectangle import RoiRectangle
 
-from src.logger import AppLogger
+from src.logger import setup_logger, Logger
 from src.processor.core import CoreProcessor
 from src.processor.loader import HDF5FileLoader
 from src.processor.saver import SaverFactory, SaverStrategy
@@ -18,7 +18,7 @@ from src.utils.file_util import get_folder_list, get_run_scan_directory
 from src.config import load_config, ExperimentConfiguration
 
 
-logger: AppLogger = AppLogger("MainProcessor")
+logger: Logger = setup_logger()
 
 
 def get_scan_nums(run_num: int, config: ExperimentConfiguration) -> list[int]:
