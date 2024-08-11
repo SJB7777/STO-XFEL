@@ -1,10 +1,10 @@
 import os
 
 
-def gather_python_files(directory, output_file):
+def gather_python_files(directory: str, output_file: str):
     total_length = 0
     with open(output_file, 'w', encoding='utf-8') as outfile:
-        for root, dirs, files in os.walk(directory):
+        for root, _, files in os.walk(directory):
             for file in files:
                 if file.endswith('.py'):
                     file_path = os.path.join(root, file)
@@ -18,6 +18,6 @@ def gather_python_files(directory, output_file):
 
 
 if __name__ == "__main__":
-    project_directory = '.'
-    output_file = 'project_code.txt'
+    project_directory: str = '.'
+    output_file: str = 'project_code.txt'
     gather_python_files(project_directory, output_file)

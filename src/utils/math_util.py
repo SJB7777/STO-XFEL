@@ -141,6 +141,7 @@ def get_min_max(arr: npt.NDArray) -> tuple[float, float]:
 
 
 def chunck(arr: list, size: int) -> list:
+    """divide the list into chunck"""
     return [arr[i:i + size] for i in range(0, len(arr), size)]
 
 
@@ -156,7 +157,7 @@ def get_most_common_element(arr: npt.NDArray) -> int:
     """
 
     max_val = int(np.max(arr))
-    counts, bins = np.histogram(arr, bins=max_val + 1, range=(0, max_val + 1))
+    counts, _ = np.histogram(arr, bins=max_val + 1, range=(0, max_val + 1))
     most_common_element = np.argmax(counts)
 
     return most_common_element

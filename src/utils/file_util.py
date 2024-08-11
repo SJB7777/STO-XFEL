@@ -10,7 +10,6 @@ import numpy.typing as npt
 import scipy.io
 
 
-
 def get_file_list(mother: str = ".") -> list[str]:
     """
     Get a list of files in the specified directory or the current directory if no directory is specified.

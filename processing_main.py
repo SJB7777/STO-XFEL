@@ -1,5 +1,4 @@
 from typing import Optional
-import traceback
 
 from roi_rectangle import RoiRectangle
 
@@ -7,7 +6,8 @@ from src.logger import AppLogger
 from src.processor.core import CoreProcessor
 from src.processor.loader import HDF5FileLoader
 from src.processor.saver import SaverFactory, SaverStrategy
-from src.preprocess.image_qbpm_pipeline import (
+from src.preprocessor.image_qbpm_preprocessor import (
+    compose,
     subtract_dark_background,
     normalize_images_by_qbpm,
     create_ransac_roi_outlier_remover,
@@ -16,7 +16,6 @@ from src.preprocess.image_qbpm_pipeline import (
 from src.gui.roi import select_roi_by_run_scan
 from src.utils.file_util import get_folder_list, get_run_scan_directory
 from src.config import load_config, ExperimentConfiguration
-
 
 
 logger: AppLogger = AppLogger("MainProcessor")
@@ -29,18 +28,18 @@ def get_scan_nums(run_num: int, config: ExperimentConfiguration) -> list[int]:
     return [int(scan_dir.split("=")[1]) for scan_dir in scan_folders]
 
 
-def setup_pipelines(roi_rect: RoiRectangle) -> dict[str, list[ImagesQbpmProcessor]]:
-    """Return Pipelines"""
+def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor]:
+    """Return preprocessors"""
     remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
 
-    standard_pipeline = [
+    standard_preprocessor = compose(
         subtract_dark_background,
         remove_by_ransac_roi,
         normalize_images_by_qbpm,
-    ]
+    )
 
     return {
-        "standard": standard_pipeline,
+        "standard": standard_preprocessor,
     }
 
 
@@ -54,14 +53,12 @@ def process_scan(run_num: int, scan_num: int, config: ExperimentConfiguration) -
         raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
 
     logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
-    pipelines: dict[str, list[ImagesQbpmProcessor]] = setup_pipelines(roi_rect)
+    preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
 
-    for pipeline_name, pipeline in pipelines.items():
-        logger.info(f"PipeLine: {pipeline_name}")
-        for function in pipeline:
-            logger.info(f"preprocess: {function.__name__}")
+    for preprocessor_name in preprocessors:
+        logger.info(f"preprocessor: {preprocessor_name}")
 
-    processor: CoreProcessor = CoreProcessor(HDF5FileLoader, pipelines, logger)
+    processor: CoreProcessor = CoreProcessor(HDF5FileLoader, preprocessors, logger)
     processor.scan(scan_dir)
 
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
@@ -76,7 +73,7 @@ def main() -> None:
     """
     60 Hz laser:
     197, 201, 202, 203, 204, 212, 213, 214, 217, 218,
-    219, 220, 221, 222, 223, 228, 229, 230, 231, 234, 
+    219, 220, 221, 222, 223, 228, 229, 230, 231, 234,
     235, 236, 237, 238, 241, 242, 243, 244, 246, 251,
     252, 253, 254, 255, 256, 259, 260, 261, 262, 263
     """

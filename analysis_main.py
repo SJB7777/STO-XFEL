@@ -33,8 +33,6 @@ def main() -> None:
     scan_num: int = 1
     comment: Optional[str] = None
 
-    logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3}")
-
     # Define file paths and names
     npz_dir: str = config.path.npz_dir
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
@@ -42,6 +40,11 @@ def main() -> None:
         file_name += comment
     npz_file: str = os.path.join(npz_dir, file_name + ".npz")
 
+    if not os.path.exists(npz_file):
+        logger.error(f"The file {npz_file} does not exist.")
+        raise FileNotFoundError(f"The file {npz_file} does not exist.")
+
+    logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3}")
     # Initialize MeanDataProcessor
     processor: DataAnalyzer = DataAnalyzer(npz_file, 0)
 
@@ -56,6 +59,7 @@ def main() -> None:
     if roi is None:
         logger.error(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
         raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+
     logger.info(f"ROI rectangle: {roi}")
     roi_rect: RoiRectangle = RoiRectangle.from_tuple(roi)
 

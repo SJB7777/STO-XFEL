@@ -75,7 +75,7 @@ class HDF5FileLoader(RawDataLoader):
             images_ts = np.asarray(
                 hf[f'detector/{self.config.param.hutch}/{self.config.param.detector}/image/block0_items'],
                 dtype=np.int64
-                )
+            )
             qbpm = hf[f'qbpm/{self.config.param.hutch}/qbpm1']
             qbpm_ts = qbpm['waveforms.ch1/axis1'][()]
             qbpm_sum = np.sum(

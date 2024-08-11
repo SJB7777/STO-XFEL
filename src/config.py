@@ -1,4 +1,3 @@
-import os
 import configparser
 
 from cuptlib_config.palxfel import load_palxfel_config, save_palxfel_dict, ExperimentConfiguration

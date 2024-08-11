@@ -9,7 +9,6 @@ from sklearn.linear_model import RANSACRegressor
 from src.config import load_config
 
 
-
 def ransac_regression(y: np.ndarray, x: np.ndarray, min_samples: Optional[int] = None) -> tuple[npt.NDArray[np.bool_], npt.NDArray, npt.NDArray]:
     """
     Perform RANSAC (Random Sample Consensus) regression to identify inliers and estimate the regression model.

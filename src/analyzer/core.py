@@ -14,7 +14,7 @@ from src.utils.math_util import gaussian, mul_deltaQ
 class DataAnalyzer:
     def __init__(self, file: str, angle: int = 0) -> None:
         if not os.path.exists(file):
-            raise FileNotFoundError(f"The file {file} was not found.")
+            raise FileNotFoundError(f"The file {file} does not exist.")
 
         data: Mapping[str, npt.NDArray] = np.load(file)
 
