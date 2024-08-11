@@ -1,15 +1,14 @@
-import os
 from typing import Optional
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 import numpy.typing as npt
+from roi_rectangle import RoiRectangle
 
 from src.processor.loader import HDF5FileLoader
-from roi_rectangle import RoiRectangle
 from src.utils.file_util import get_run_scan_directory, get_file_list
-from src.config.config import load_config
+from src.config.config import load_config, ExpConfig
 
 
 class RoiSelector:
@@ -72,6 +71,20 @@ class RoiSelector:
             return (x1, y1, x2, y2)
 
 
+def get_single_images_from_hdf5(run_num, scan_num, file_num):
+    """get summed image from a hdf5 file by run, scan numbers."""
+    config: ExpConfig = load_config()
+    load_dir = config.path.load_dir
+    file = get_run_scan_directory(load_dir, run_num, scan_num, file_num)
+
+    hfl = HDF5FileLoader(file)
+    data = hfl.get_data()
+    images = data.get("poff", None)
+    if images is None:
+        images = data.get("pon", None)
+    return images
+
+
 def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None) -> Optional[RoiRectangle]:
     config = load_config()
     load_dir = config.path.load_dir
@@ -82,13 +95,7 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None
         index = len(files) // 2
     elif isinstance(index_mode, int):
         index = index_mode
-
-    file = os.path.join(scan_dir, files[index])
-    hfl = HDF5FileLoader(file)
-    data = hfl.get_data()
-    images = data.get("poff", None)
-    if images is None:
-        images = data.get("pon", None)
+    images = get_single_images_from_hdf5(run, scan, index)
 
     image = np.log1p(images.sum(axis=0))
 
@@ -98,14 +105,25 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None
     return RoiRectangle(*roi)
 
 
+def get_roi_auto(
+    image,
+    width: int = 5,
+) -> RoiRectangle:
+
+    """get roi_rect by max pixel"""
+
+    max_y, max_x = np.unravel_index(np.argmax(image), image.shape)
+
+    return RoiRectangle(max_x - width, max_y - width, max_x + width, max_y + width)
+
+
 if __name__ == "__main__":
 
-    config = load_config()
-    load_dir = config.path.load_dir
-    file = get_run_scan_directory(load_dir, 154, 1, 1)
-    loader = HDF5FileLoader(file)
+    images = get_single_images_from_hdf5(1, 1, 110)
 
-    image = np.log1p(loader.images.sum(axis=0))
+    image = np.log1p(images.sum(axis=0))
+    roi_rect = get_roi_auto(image)
+    print(roi_rect)
     roi = RoiSelector().select_roi(image)
 
     print(roi)
