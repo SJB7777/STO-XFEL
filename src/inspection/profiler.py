@@ -3,13 +3,14 @@ import pstats
 import io
 import logging
 
+# import processing_main
 from src.processor.loader import HDF5FileLoader
 from src.config.config import load_config, ExpConfig
 from src.utils.file_util import get_run_scan_directory
 
 
 def main() -> None:
-    """Profile program with cProfile module."""
+    """Profile program with cProfile module and visualize with tuna."""
     config: ExpConfig = load_config()
     load_dir: str = config.path.load_dir
     file: str = get_run_scan_directory(load_dir, 1, 1, 110)
@@ -26,7 +27,7 @@ def main() -> None:
 
     # Run the main function from the other file
     HDF5FileLoader(file)
-
+    # processing_main.main()
     # Disable the profiler
     profiler.disable()
 
@@ -47,6 +48,10 @@ def main() -> None:
 
     # Log the captured output
     logging.info(profiling_results)
+
+    # Save the profiling results to a file
+    stats_file = 'logs\\profiling\\profiling.prof'
+    stats.dump_stats(stats_file)
 
     print(f"Profiling results logged to '{logging_file}'")
 
