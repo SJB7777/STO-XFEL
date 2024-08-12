@@ -30,7 +30,7 @@ def get_scan_nums(run_num: int, config: ExpConfig) -> list[int]:
 
 def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor]:
     """Return preprocessors"""
-    
+
     remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
 
     standard_preprocessor = compose(
@@ -58,10 +58,9 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
         index = index_mode
     images = get_single_images_from_hdf5(run_num, scan_num, index)
     roi_rect = get_roi_auto(images.sum(axis=0))
-    # roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
     if roi_rect is None:
         raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
-    #################################
+    ################################
 
     logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
     preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
@@ -90,12 +89,7 @@ def main() -> None:
     """
 
     config = load_config()
-    run_nums: list[int] = [
-        208, 209, 210, 211, 29, 30, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 
-        43, 44, 45, 46, 47, 48, 51, 54, 55, 56, 57, 59, 62, 63, 65, 66, 68, 
-        74, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 
-        120, 121, 124, 126, 127, 131, 132 
-    ]
+    run_nums: list[int] = config.runs
     logger.info(f"Runs to process: {run_nums}")
 
     for run_num in run_nums:
@@ -106,8 +100,7 @@ def main() -> None:
                 process_scan(run_num, scan_num, config)
             except Exception:
                 logger.exception(f"Failed to process run={run_num}, scan={scan_num}")
-                continue
-                # raise
+                raise
 
     logger.info("All processing is complete")
 

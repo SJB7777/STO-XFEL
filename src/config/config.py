@@ -1,26 +1,17 @@
-import configparser
-
 import yaml
 
 from src.config.config_definitions import ExpConfig
 
-
-def _get_config_dir() -> str:
-    config = configparser.ConfigParser()
-    config.read("config\\config.ini")
-    return config["config"]["config_dir"]
-
-
 def load_config() -> ExpConfig:
     """load config file and return config object"""
-    with open(_get_config_dir(), 'r', encoding="utf-8") as f:
+    with open("config.yaml", 'r', encoding="utf-8") as f:
         config_dict = yaml.safe_load(f)
     return ExpConfig(**config_dict)
 
 
 def save_config(config_dict: dict) -> None:
     """get config dict and save to file"""
-    with open(_get_config_dir(), 'w', encoding="utf-8") as f:
+    with open("config.yaml", 'w', encoding="utf-8") as f:
         yaml.safe_dump(config_dict, f, default_flow_style=False, sort_keys=False)
 
 
@@ -28,7 +19,10 @@ if __name__ == "__main__":
     from src.config.enums import Hutch, Detector, Xray, Hertz
 
 
+    # config = load_config()
+    # print(config.runs)
     config_dict = {
+        "runs": [1, 2, 3],
         "path": {
             # Mother Directory of run files.
             "load_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",

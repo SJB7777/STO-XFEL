@@ -10,7 +10,7 @@ Classes:
 """
 import os
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, Field
 
 from src.config.enums import Hutch, Detector, Xray, Hertz
 
@@ -96,12 +96,14 @@ class ExpConfig(BaseModel):
         param (ConfigurationParameters): The configuration parameters.
         path (ConfigurationPaths): The configuration paths.
     """
+    runs: list[int] = Field(default_factory=list)
     param: ExpParams = ExpParams()
     path: ExpPaths = ExpPaths()
 
 
 if __name__ == "__main__":
     config_dict = {
+        "runs" : ["1", "2", "3"],
         'path': {
             'load_dir': 'your\\path', 
             'save_dir': 'your\\path',
@@ -127,7 +129,7 @@ if __name__ == "__main__":
         }
 
     config = ExpConfig(**config_dict)
-    print(config)
+    print(config.runs)
 
     print(config.path.load_dir)
     print(config.path.save_dir)
