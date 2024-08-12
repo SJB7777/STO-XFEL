@@ -94,8 +94,8 @@ class DataAnalyzer:
                 print(e, ": y")
                 params_y = [np.nan, np.nan, np.nan]
 
-            gaussian_a_x, gaussain_com_x, gaussian_sig_x = params_x
-            gaussian_a_y, gaussain_com_y, gaussian_sig_y = params_y
+            gaussian_a_x, gaussain_com_x, _ = params_x
+            gaussian_a_y, gaussain_com_y, _ = params_y
 
             gaussian_a = np.sqrt(gaussian_a_x * gaussian_a_y)
             intensities.append(gaussian_a)
