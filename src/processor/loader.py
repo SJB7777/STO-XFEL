@@ -77,11 +77,8 @@ class HDF5FileLoader(RawDataLoader):
             )
             qbpm = hf[f'qbpm/{self.config.param.hutch.value}/qbpm1']
             qbpm_ts = qbpm['waveforms.ch1/axis1'][()]
-
-            qbpm_sum = np.stack(
-                [qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)],
-                axis=0, dtype=np.float32
-            ).sum(axis=(0, 2), dtype=np.float32)
+            qbpm_channels = np.stack([qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)], axis=0)
+            qbpm_sum = np.sum(qbpm_channels, axis=(0, 2))
 
         image_df = pd.DataFrame(
             {
@@ -158,19 +155,24 @@ if __name__ == "__main__":
     import time
     from src.utils.file_util import get_run_scan_directory
 
+
     config: ExpConfig = load_config()
     load_dir: str = config.path.load_dir
-    file: str = get_run_scan_directory(load_dir, 1, 1, 110)
-    print(f"Load HDF5 File: {file}")
+    file: str = get_run_scan_directory(load_dir, 243, 1, 40)
 
-    start = time.time()
-    loader: HDF5FileLoader = HDF5FileLoader(file)
-    delta_time = time.time() - start
+    metadata = pd.read_hdf(file, key='metadata')
+    metadata.to_csv("metadata.csv")
 
-    print(f"Loading Time: {delta_time} sec")
-    data: dict = loader.get_data()
+    # print(f"Load HDF5 File: {file}")
 
-    print()
-    print(f"delay: {loader.delay}")
-    for key, val in data.items():
-        print(f"data[{key}] shape: {val.shape}")
+    # start = time.time()
+    # loader: HDF5FileLoader = HDF5FileLoader(file)
+    # delta_time = time.time() - start
+
+    # print(f"Loading Time: {delta_time} sec")
+    # data: dict = loader.get_data()
+
+    # print()
+    # print(f"delay: {loader.delay}")
+    # for key, val in data.items():
+    #     print(f"data[{key}] shape: {val.shape}")

@@ -13,8 +13,8 @@ from src.preprocessor.image_qbpm_preprocessor import (
     create_ransac_roi_outlier_remover,
     ImagesQbpmProcessor
 )
-from src.gui.roi import select_roi_by_run_scan
-from src.utils.file_util import get_folder_list, get_run_scan_directory
+from src.gui.roi import get_roi_auto, get_single_images_from_hdf5
+from src.utils.file_util import get_folder_list, get_run_scan_directory, get_file_list
 from src.config.config import load_config, ExpConfig
 
 
@@ -30,11 +30,12 @@ def get_scan_nums(run_num: int, config: ExpConfig) -> list[int]:
 
 def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor]:
     """Return preprocessors"""
-    # remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
+    
+    remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
 
     standard_preprocessor = compose(
         subtract_dark_background,
-        # remove_by_ransac_roi,
+        remove_by_ransac_roi,
         normalize_images_by_qbpm,
     )
 
@@ -45,16 +46,25 @@ def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor
 
 def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     """Process Single Scan"""
+    ################################
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
+    files = get_file_list(scan_dir)
 
+    index_mode: Optional[int] = None
+    if index_mode is None:
+        index = len(files) // 2
+    else:
+        index = index_mode
+    images = get_single_images_from_hdf5(run_num, scan_num, index)
+    roi_rect = get_roi_auto(images.sum(axis=0))
     # roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
-    # if roi_rect is None:
-    #     raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+    if roi_rect is None:
+        raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+    #################################
 
-    # logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
-    # preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
-    preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(None)
+    logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
+    preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
 
     for preprocessor_name in preprocessors:
         logger.info(f"preprocessor: {preprocessor_name}")
@@ -80,17 +90,24 @@ def main() -> None:
     """
 
     config = load_config()
-    run_nums: list[int] = [1]
+    run_nums: list[int] = [
+        208, 209, 210, 211, 29, 30, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 
+        43, 44, 45, 46, 47, 48, 51, 54, 55, 56, 57, 59, 62, 63, 65, 66, 68, 
+        74, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 
+        120, 121, 124, 126, 127, 131, 132 
+    ]
     logger.info(f"Runs to process: {run_nums}")
 
     for run_num in run_nums:
+        logger.info(f"Run: {run_num}")
         scan_nums: list[int] = get_scan_nums(run_num, config)
         for scan_num in scan_nums:
             try:
                 process_scan(run_num, scan_num, config)
             except Exception:
                 logger.exception(f"Failed to process run={run_num}, scan={scan_num}")
-                raise
+                continue
+                # raise
 
     logger.info("All processing is complete")
 
