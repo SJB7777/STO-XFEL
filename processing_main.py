@@ -30,11 +30,11 @@ def get_scan_nums(run_num: int, config: ExpConfig) -> list[int]:
 
 def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor]:
     """Return preprocessors"""
-    remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
+    # remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
 
     standard_preprocessor = compose(
         subtract_dark_background,
-        remove_by_ransac_roi,
+        # remove_by_ransac_roi,
         normalize_images_by_qbpm,
     )
 
@@ -48,12 +48,13 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
 
-    roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
-    if roi_rect is None:
-        raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+    # roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
+    # if roi_rect is None:
+    #     raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
 
-    logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
-    preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
+    # logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
+    # preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
+    preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(None)
 
     for preprocessor_name in preprocessors:
         logger.info(f"preprocessor: {preprocessor_name}")
@@ -89,7 +90,6 @@ def main() -> None:
                 process_scan(run_num, scan_num, config)
             except Exception:
                 logger.exception(f"Failed to process run={run_num}, scan={scan_num}")
-
                 raise
 
     logger.info("All processing is complete")

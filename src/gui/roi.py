@@ -1,7 +1,7 @@
 from typing import Optional
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+from matplotlib import patches
 import numpy as np
 import numpy.typing as npt
 from roi_rectangle import RoiRectangle
@@ -77,8 +77,8 @@ def get_single_images_from_hdf5(run_num, scan_num, file_num):
     load_dir = config.path.load_dir
     file = get_run_scan_directory(load_dir, run_num, scan_num, file_num)
 
-    hfl = HDF5FileLoader(file)
-    data = hfl.get_data()
+    loader = HDF5FileLoader(file)
+    data = loader.get_data()
     images = data.get("poff", None)
     if images is None:
         images = data.get("pon", None)

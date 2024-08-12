@@ -77,10 +77,11 @@ class HDF5FileLoader(RawDataLoader):
             )
             qbpm = hf[f'qbpm/{self.config.param.hutch.value}/qbpm1']
             qbpm_ts = qbpm['waveforms.ch1/axis1'][()]
-            qbpm_sum = np.sum(
+
+            qbpm_sum = np.stack(
                 [qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)],
                 axis=0, dtype=np.float32
-            ).sum(axis=1)
+            ).sum(axis=(0, 2), dtype=np.float32)
 
         image_df = pd.DataFrame(
             {
@@ -127,7 +128,7 @@ class HDF5FileLoader(RawDataLoader):
         """
         if self.config.param.pump_setting is Hertz.ZERO:
             return np.zeros(merged_df.shape[0], dtype=np.bool_)
-        return merged_df[f'timestamp_info.RATE_{self.config.param.xray.value}_{self.config.param.pump_setting.value}'].astype(bool)
+        return merged_df[f'timestamp_info.RATE_{self.config.param.xray.value}_{self.config.param.pump_setting.value}'].astype(np.bool_)
 
     def get_data(self) -> dict[str, npt.NDArray]:
         """

@@ -61,7 +61,7 @@ def print_project_structure(structure, indent=""):
 def analyze_code_complexity(root_dir):
     complexity_data = {}
 
-    for dirpath, dirnames, filenames in os.walk(root_dir):
+    for dirpath, _, filenames in os.walk(root_dir):
         rel_path = os.path.relpath(dirpath, root_dir)
         if rel_path == ".":
             rel_path = ""
@@ -117,7 +117,7 @@ def print_code_complexity(complexity_data):
 
 def print_complexity_grades(root_dir):
 
-    for dirpath, dirnames, filenames in os.walk(root_dir):
+    for dirpath, _, filenames in os.walk(root_dir):
         rel_path = os.path.relpath(dirpath, root_dir)
         if rel_path == ".":
             rel_path = ""
