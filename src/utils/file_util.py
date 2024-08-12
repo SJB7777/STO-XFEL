@@ -178,7 +178,7 @@ def get_sigma_factor(mother: str) -> Optional[float]:
 
 
 def save_roi_list(mother: str, roi_rect_list: list[RoiRectangle]) -> None:
-    region_list = [list(region.get_coordinate()) for region in roi_rect_list]
+    region_list = [list(region.to_tuple()) for region in roi_rect_list]
     file_name = os.path.join(mother, 'ROI_coords.json')
     with open(file_name, 'w') as f:
         f.write(json.dumps(region_list))

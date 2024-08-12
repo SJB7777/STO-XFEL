@@ -96,7 +96,7 @@ def main() -> None:
     # Create figures
     image_fig: Figure = patch_rectangle(
         np.log1p(processor.poff_images.sum(axis=0)),
-        *roi_rect.get_coordinate()
+        *roi_rect.to_tuple()
     )
     intensity_fig: Figure = draw_intensity_figure(data_df)
     intensity_diff_fig: Figure = draw_intensity_diff_figure(data_df)
