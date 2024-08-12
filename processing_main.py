@@ -13,7 +13,7 @@ from src.preprocessor.image_qbpm_preprocessor import (
     create_ransac_roi_outlier_remover,
     ImagesQbpmProcessor
 )
-from src.gui.roi import select_roi_by_run_scan, get_roi_auto, get_single_images_from_hdf5
+from src.gui.roi import get_roi_auto, get_single_images_from_hdf5
 from src.utils.file_util import get_folder_list, get_run_scan_directory, get_file_list
 from src.config.config import load_config, ExpConfig
 
@@ -63,7 +63,7 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
         raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
     #################################
 
-    logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
+    logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
     preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
 
     for preprocessor_name in preprocessors:
@@ -73,9 +73,9 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     processor.scan(scan_dir)
 
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
-    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
-    # npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
-    processor.save(mat_saver, file_name)
+    # mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
+    processor.save(npz_saver, file_name)
 
     logger.info(f"Processing run={run_num}, scan={scan_num} is complete")
 
@@ -91,7 +91,10 @@ def main() -> None:
 
     config = load_config()
     run_nums: list[int] = [
-        244, 246, 251, 252, 253, 254, 255, 256, 259, 260, 261, 262, 263
+        208, 209, 210, 211, 29, 30, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 
+        43, 44, 45, 46, 47, 48, 51, 54, 55, 56, 57, 59, 62, 63, 65, 66, 68, 
+        74, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 
+        120, 121, 124, 126, 127, 131, 132 
     ]
     logger.info(f"Runs to process: {run_nums}")
 

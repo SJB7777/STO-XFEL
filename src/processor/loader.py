@@ -122,7 +122,7 @@ class HDF5FileLoader(RawDataLoader):
         """
         if self.config.param.pump_setting is Hertz.ZERO:
             return np.zeros(merged_df.shape[0], dtype=np.bool_)
-        return merged_df[f'timestamp_info.RATE_{self.config.param.xray.value}_{self.config.param.pump_setting.value}'].astype(bool)
+        return merged_df[f'timestamp_info.RATE_{self.config.param.xray.value}_{self.config.param.pump_setting.value}'].astype(np.bool_)
 
     def get_data(self) -> dict[str, npt.NDArray]:
         """
