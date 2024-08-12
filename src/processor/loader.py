@@ -1,17 +1,14 @@
 import os
 from abc import ABC, abstractmethod
 from typing import Union
-import importlib
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import h5py
-
+import hdf5plugin  # pylint: disable=unused-import
 from src.config.config import load_config, ExpConfig
 from src.config.enums import Hertz
-
-importlib.import_module("hdf5plugin")
 
 
 class RawDataLoader(ABC):

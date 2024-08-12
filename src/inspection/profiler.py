@@ -3,7 +3,6 @@ import pstats
 import io
 import logging
 
-# import processing_main
 from src.processor.loader import HDF5FileLoader
 from src.config.config import load_config, ExpConfig
 from src.utils.file_util import get_run_scan_directory
@@ -28,6 +27,7 @@ def main() -> None:
     # Run the main function from the other file
     HDF5FileLoader(file)
     # processing_main.main()
+
     # Disable the profiler
     profiler.disable()
 
