@@ -1,6 +1,6 @@
 path:
-  load_dir: D:\\dev\\xfel_sample_data
-  save_dir: D:\\dev\\xfel_sample_data
+  load_dir: D:\dev\xfel_sample_data
+  save_dir: D:\dev\xfel_sample_data
   image_dir: Image
   param_dir: DataParameter
   mat_dir: Mat_files

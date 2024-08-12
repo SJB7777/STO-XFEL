@@ -33,8 +33,7 @@ class MatSaverStrategy(SaverStrategy):
 
         for key, val in data_dict.items():
             if val.ndim == 3:
-                mat_format_images = val.swapaxes(0, 2)
-                mat_format_images = mat_format_images.swapaxes(0, 1)  # TEMP
+                mat_format_images = val.swapaxes(0, 2).swapaxes(0, 1) # TEMP
 
                 mat_file = os.path.join(mat_dir, f"{file_base_name}_{key}{comment}.mat")
 
@@ -93,6 +92,8 @@ class TifSaverStrategy(SaverStrategy):
 
 
 class SaverFactory:
+    """Get SaverStrategy"""
+
     @staticmethod
     def get_saver(file_type) -> SaverStrategy:
         if file_type == 'mat':

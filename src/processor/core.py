@@ -20,12 +20,12 @@ class CoreProcessor:
     """
     def __init__(
         self,
-        LoaderStrategy: Type[RawDataLoader],  # pylint: disable=invalid-name
+        LoaderStrategy: Type[RawDataLoader],
         preprocessor: Optional[dict[str, ImagesQbpmProcessor]] = None,
         logger: Optional[Logger] = None
     ) -> None:
 
-        self.LoaderStrategy: Type[RawDataLoader] = LoaderStrategy  # pylint: disable=invalid-name
+        self.LoaderStrategy: Type[RawDataLoader] = LoaderStrategy
         self.preprocessor: dict[str, ImagesQbpmProcessor] = preprocessor if preprocessor is not None else {"no_processing": lambda x: x}
         self.preprocessor_data_dict: dict[str, DefaultDict[str, list]] = {
             pipline_name: defaultdict(list)
@@ -80,11 +80,11 @@ class CoreProcessor:
             return self.LoaderStrategy(hdf5_dir)
         except KeyError as e:
             self.logger.warning(f"{e}")
-            self.logger.warning(f"KeyError happened in {scan_dir}")
+            self.logger.warning(f"KeyError happened in {hdf5_dir}")
             return None
         except FileNotFoundError as e:
             self.logger.warning(f"{e}")
-            self.logger.warning(f"FileNotFoundError happened in {scan_dir}")
+            self.logger.warning(f"FileNotFoundError happened in {hdf5_dir}")
             return None
         # except Exception as e:
         #     self.logger.exception(f"Failed to load: {type(e)}: {str(e)}")

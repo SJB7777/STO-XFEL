@@ -95,10 +95,9 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None
         index = len(files) // 2
     elif isinstance(index_mode, int):
         index = index_mode
+
     images = get_single_images_from_hdf5(run, scan, index)
-
     image = np.log1p(images.sum(axis=0))
-
     roi = RoiSelector().select_roi(image)
     if roi is None:
         return None
@@ -109,21 +108,18 @@ def get_roi_auto(
     image,
     width: int = 5,
 ) -> RoiRectangle:
-
     """get roi_rect by max pixel"""
-
     max_y, max_x = np.unravel_index(np.argmax(image), image.shape)
-
     return RoiRectangle(max_x - width, max_y - width, max_x + width, max_y + width)
 
 
 if __name__ == "__main__":
 
-    images = get_single_images_from_hdf5(1, 1, 110)
+    images = get_single_images_from_hdf5(201, 1, 1)
 
-    image = np.log1p(images.sum(axis=0))
+    image = images.sum(axis=0)
     roi_rect = get_roi_auto(image)
     print(roi_rect)
-    roi = RoiSelector().select_roi(image)
+    roi = RoiSelector().select_roi(np.log1p(image))
 
     print(roi)

@@ -13,8 +13,8 @@ from src.preprocessor.image_qbpm_preprocessor import (
     create_ransac_roi_outlier_remover,
     ImagesQbpmProcessor
 )
-from src.gui.roi import select_roi_by_run_scan
-from src.utils.file_util import get_folder_list, get_run_scan_directory
+from src.gui.roi import select_roi_by_run_scan, get_roi_auto, get_single_images_from_hdf5
+from src.utils.file_util import get_folder_list, get_run_scan_directory, get_file_list
 from src.config.config import load_config, ExpConfig
 
 
@@ -30,6 +30,7 @@ def get_scan_nums(run_num: int, config: ExpConfig) -> list[int]:
 
 def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor]:
     """Return preprocessors"""
+    
     remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
 
     standard_preprocessor = compose(
@@ -45,12 +46,22 @@ def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor
 
 def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     """Process Single Scan"""
+    ################################
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
+    files = get_file_list(scan_dir)
 
-    roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
+    index_mode: Optional[int] = None
+    if index_mode is None:
+        index = len(files) // 2
+    else:
+        index = index_mode
+    images = get_single_images_from_hdf5(run_num, scan_num, index)
+    roi_rect = get_roi_auto(images.sum(axis=0))
+    # roi_rect: Optional[RoiRectangle] = select_roi_by_run_scan(run_num, scan_num)
     if roi_rect is None:
         raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+    #################################
 
     logger.info(f"ROI rectangle: {roi_rect.get_coordinate()}")
     preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
@@ -62,9 +73,9 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     processor.scan(scan_dir)
 
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
-    # mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
-    npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
-    processor.save(npz_saver, file_name)
+    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    # npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
+    processor.save(mat_saver, file_name)
 
     logger.info(f"Processing run={run_num}, scan={scan_num} is complete")
 
@@ -79,18 +90,21 @@ def main() -> None:
     """
 
     config = load_config()
-    run_nums: list[int] = [1]
+    run_nums: list[int] = [
+        244, 246, 251, 252, 253, 254, 255, 256, 259, 260, 261, 262, 263
+    ]
     logger.info(f"Runs to process: {run_nums}")
 
     for run_num in run_nums:
+        logger.info(f"Run: {run_num}")
         scan_nums: list[int] = get_scan_nums(run_num, config)
         for scan_num in scan_nums:
             try:
                 process_scan(run_num, scan_num, config)
             except Exception:
                 logger.exception(f"Failed to process run={run_num}, scan={scan_num}")
-
-                raise
+                continue
+                # raise
 
     logger.info("All processing is complete")
 
