@@ -65,15 +65,15 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
 
-    roi_rect = get_roi(scan_dir, config)
-    if roi_rect is None:
-        raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
-    logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
-    preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
+    # roi_rect = get_roi(scan_dir, config, 0)
+    # if roi_rect is None:
+    #     raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+    # logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
+    # preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
 
-    for preprocessor_name in preprocessors:
-        logger.info(f"preprocessor: {preprocessor_name}")
-
+    # for preprocessor_name in preprocessors:
+    #     logger.info(f"preprocessor: {preprocessor_name}")
+    preprocessors = None
     processor: CoreProcessor = CoreProcessor(HDF5FileLoader, preprocessors, logger)
     processor.scan(scan_dir)
 
@@ -86,14 +86,6 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
 
 
 def main() -> None:
-    """
-    60 Hz laser:
-    197, 201, 202, 203, 204, 212, 213, 214, 217, 218,
-    219, 220, 221, 222, 223, 228, 229, 230, 231, 234,
-    235, 236, 237, 238, 241, 242, 243, 244, 246, 251,
-    252, 253, 254, 255, 256, 259, 260, 261, 262, 263
-    """
-
     config = load_config()
     run_nums: list[int] = config.runs
     logger.info(f"Runs to process: {run_nums}")

@@ -1,6 +1,6 @@
 """
 This module defines enumerations for various experiment configurations.
-It includes enums for detectors, hutch settings, X-ray types, and Hertz settings, 
+It includes enums for detectors, hutch settings, X-ray types, and Hertz settings,
 providing a structured approach to handle these configuration options.
 
 Classes:
@@ -26,6 +26,7 @@ class Detector(Enum):
     JUNGFRAU1 = 'jungfrau1'
     JUNGFRAU2 = 'jungfrau2'
 
+
 class Hutch(Enum):
     """
     Enum representing different hutch settings.
@@ -38,12 +39,14 @@ class Hutch(Enum):
     EH1 = 'eh1'
     EH2 = 'eh2'
 
+
 class Xray(Enum):
     """
     Enum representing different X-ray types.
     """
     SOFT = 'SX'
     HARD = 'HX'
+
 
 class Hertz(Enum):
     """

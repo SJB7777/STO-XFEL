@@ -78,20 +78,15 @@ class CoreProcessor:
         hdf5_dir = os.path.join(scan_dir, hdf5_file)
         try:
             return self.LoaderStrategy(hdf5_dir)
-        except KeyError as e:
-            self.logger.warning(f"{e}")
-            self.logger.warning(f"KeyError happened in {hdf5_dir}")
+        except (KeyError, FileNotFoundError, ValueError) as e:
+            self.logger.error(f"{type(e)} happened in {hdf5_dir}")
             return None
-        except FileNotFoundError as e:
-            self.logger.warning(f"{e}")
-            self.logger.warning(f"FileNotFoundError happened in {hdf5_dir}")
+        except Exception as e:
+            self.logger.exception(f"Failed to load: {type(e)}: {str(e)}")
             return None
         # except Exception as e:
-        #     self.logger.exception(f"Failed to load: {type(e)}: {str(e)}")
-        #     import traceback
-        #     error_message = traceback.format_exc()
-        #     self.logger.exception(error_message)
-        #     return None
+        #     self.logger.critical(f"{type(e)} happened in {hdf5_dir}")
+        #     raise
 
     def add_processed_data_to_dict(self, loader_strategy: RawDataLoader) -> dict[str, DefaultDict[str, list]]:
 

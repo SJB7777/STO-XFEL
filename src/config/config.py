@@ -4,6 +4,7 @@ import yaml
 
 from src.config.config_definitions import ExpConfig
 
+
 @lru_cache(maxsize=1)
 def load_config() -> ExpConfig:
     """load config file and return config object"""
@@ -20,7 +21,6 @@ def save_config(config_dict: dict) -> None:
 
 if __name__ == "__main__":
     from src.config.enums import Hutch, Detector, Xray, Hertz
-
 
     # config = load_config()
     # print(config.runs)

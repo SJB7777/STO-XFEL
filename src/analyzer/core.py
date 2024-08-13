@@ -39,8 +39,11 @@ class DataAnalyzer:
         self.pon_images: npt.NDArray = data["pon"]
 
         if angle:
-            self.poff_images = rotate(self.poff_images, 45, axes=(1, 2), reshape=False)
-            self.pon_images = rotate(self.pon_images, 45, axes=(1, 2), reshape=False)
+            self.poff_images = rotate(self.poff_images, angle, axes=(1, 2), reshape=False)
+            self.pon_images = rotate(self.pon_images, angle, axes=(1, 2), reshape=False)
+
+        self.poff_images = np.maximum(0, self.poff_images)
+        self.pon_images = np.maximum(0, self.pon_images)
 
     def get_summed_image(self) -> tuple[npt.NDArray, npt.NDArray]:
         """

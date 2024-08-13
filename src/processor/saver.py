@@ -10,6 +10,7 @@ from src.config.config import load_config
 
 
 class SaverStrategy(ABC):
+    """Save data_dict to a file."""
     @abstractmethod
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str = ""):
         pass
@@ -33,7 +34,7 @@ class MatSaverStrategy(SaverStrategy):
 
         for key, val in data_dict.items():
             if val.ndim == 3:
-                mat_format_images = val.swapaxes(0, 2).swapaxes(0, 1) # TEMP
+                mat_format_images = val.swapaxes(0, 2).swapaxes(0, 1)  # TEMP
 
                 mat_file = os.path.join(mat_dir, f"{file_base_name}_{key}{comment}.mat")
 
@@ -55,9 +56,9 @@ class NpzSaverStrategy(SaverStrategy):
         config = load_config()
         npz_dir = config.path.npz_dir
         npz_file = os.path.join(npz_dir, file_base_name + comment + ".npz")
-        
+
         os.makedirs(npz_dir, exist_ok=True)
-        
+
         np.savez(npz_file, **data_dict)
         self._file_name = npz_file
 

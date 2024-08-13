@@ -71,7 +71,7 @@ class RoiSelector:
 
 
 def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None) -> Optional[RoiRectangle]:
-    config = load_config()
+    config: ExpConfig = load_config()
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run, scan)
     files = get_file_list(scan_dir)
@@ -96,15 +96,3 @@ def get_roi_auto(
     """get roi_rect by max pixel"""
     center = np.unravel_index(np.argmax(image), image.shape)[::-1]
     return RoiRectangle(center[0] - width, center[1] - width, center[0] + width, center[1] + width)
-
-
-if __name__ == "__main__":
-
-    images = get_single_images_from_hdf5(201, 1, 1)
-
-    image = images.sum(axis=0)
-    roi_rect = get_roi_auto(image)
-    print(roi_rect)
-    roi = RoiSelector().select_roi(np.log1p(image))
-
-    print(roi)

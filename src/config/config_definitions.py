@@ -23,7 +23,7 @@ class ExpParams(BaseModel):
     dps = 75e-06m (75 um)
     beam_energy = 9.7 keV
     wavelength [A]
-    
+
     Attributes:
         hutch (Hutch): The hutch setting.
         detector (Detector): The detector setting.
@@ -104,16 +104,16 @@ class ExpConfig(BaseModel):
 
 if __name__ == "__main__":
     config_dict = {
-        "runs" : ["1", "2", "3"],
+        "runs": ["1", "2", "3"],
         'path': {
-            'load_dir': 'your\\path', 
+            'load_dir': 'your\\path',
             'save_dir': 'your\\path',
-            'image_dir': 'Image', 
-            'mat_dir': 'mat_files', 
-            'npz_dir': 'npz_files', 
-            'param_dir': 'DataParameter', 
+            'image_dir': 'Image',
+            'mat_dir': 'mat_files',
+            'npz_dir': 'npz_files',
+            'param_dir': 'DataParameter',
             'tif_dir': 'tif_files'
-            },
+        },
         'param': {
             'xray': 'HX',
             'detector': 'jungfrau2',
@@ -122,12 +122,12 @@ if __name__ == "__main__":
             'sdd': 1.3,
             'dps': 7.5e-05,
             'beam_energy': 9.7,
-            'x1': 0, 
-            'x2': 1, 
-            'y1': 2, 
+            'x1': 0,
+            'x2': 1,
+            'y1': 2,
             'y2': 3
-            }
         }
+    }
 
     config = ExpConfig(**config_dict)
     print(config.runs)

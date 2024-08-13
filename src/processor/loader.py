@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import h5py
-import hdf5plugin  # pylint: disable=unused-import
+import hdf5plugin  # pylint: disable=unused-import # noqa: F401
 from src.config.config import load_config, ExpConfig
 from src.config.enums import Hertz
 
@@ -41,7 +41,8 @@ class HDF5FileLoader(RawDataLoader):
         merged_df: pd.DataFrame = self.get_merged_df(metadata)
 
         # Fill Negative Values to Zero
-        self.images: npt.NDArray[np.float32] = np.maximum(0, np.stack(merged_df['image'].values))
+        # self.images: npt.NDArray[np.float32] = np.maximum(0, np.stack(merged_df['image'].values))
+        self.images: npt.NDArray[np.float32] = np.stack(merged_df['image'].values)
         self.qbpm: npt.NDArray[np.float32] = np.stack(merged_df['qbpm'].values)
         self.pump_status: npt.NDArray[np.bool_] = self.get_pump_mask(merged_df)
         self.delay: Union[np.float32, float] = self.get_delay(metadata)
@@ -71,7 +72,7 @@ class HDF5FileLoader(RawDataLoader):
         """
         with h5py.File(self.file, "r") as hf:
             if "detector" not in hf:
-                raise KeyError("Key 'detector' not found in the HDF5 file")
+                raise KeyError(f"Key 'detector' not found in {self.file}")
 
             image_group = hf[f'detector/{self.config.param.hutch.value}/{self.config.param.detector.value}/image']
             images_ts = np.asarray(image_group["block0_items"], dtype=np.int64)
@@ -159,7 +160,7 @@ def get_hdf5_images(file: str, config: ExpConfig) -> npt.NDArray:
     """get images form hdf5"""
     with h5py.File(file, "r") as hf:
         if "detector" not in hf:
-            raise KeyError("Key 'detector' not found in the HDF5 file")
+            raise KeyError(f"Key 'detector' not found in {file}")
 
         return np.asarray(
             hf[f'detector/{config.param.hutch.value}/{config.param.detector.value}/image/block0_values'],

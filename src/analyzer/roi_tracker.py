@@ -23,7 +23,7 @@ if __name__ == "__main__":
     data: Mapping[str, npt.NDArray] = np.load(npz_file)
     delays: npt.NDArray = data["delay"]
     images: npt.NDArray = data["pon"]
-    
+
     init_roi = RoiSelector().select_roi(np.log1p(images[0]))
     init_roi_rect: RoiRectangle = RoiRectangle.from_tuple(init_roi)
     roi_rects: list[RoiRectangle] = [init_roi_rect]
