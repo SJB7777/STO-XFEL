@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 from roi_rectangle import RoiRectangle
 
-from src.processor.loader import HDF5FileLoader
+from src.processor.loader import get_hdf5_images
 from src.utils.file_util import get_run_scan_directory, get_file_list
 from src.config.config import load_config, ExpConfig
 
@@ -65,24 +65,9 @@ class RoiSelector:
 
         if self.ix == -1 or self.iy == -1 or self.fx == -1 or self.fy == -1:
             return None
-        else:
-            x1, y1 = min(self.ix, self.fx), min(self.iy, self.fy)
-            x2, y2 = max(self.ix, self.fx), max(self.iy, self.fy)
-            return (x1, y1, x2, y2)
-
-
-def get_single_images_from_hdf5(run_num, scan_num, file_num):
-    """get summed image from a hdf5 file by run, scan numbers."""
-    config: ExpConfig = load_config()
-    load_dir = config.path.load_dir
-    file = get_run_scan_directory(load_dir, run_num, scan_num, file_num)
-
-    loader = HDF5FileLoader(file)
-    data = loader.get_data()
-    images = data.get("poff", None)
-    if images is None:
-        images = data.get("pon", None)
-    return images
+        x1, y1 = min(self.ix, self.fx), min(self.iy, self.fy)
+        x2, y2 = max(self.ix, self.fx), max(self.iy, self.fy)
+        return (x1, y1, x2, y2)
 
 
 def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None) -> Optional[RoiRectangle]:
@@ -96,7 +81,7 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None
     elif isinstance(index_mode, int):
         index = index_mode
 
-    images = get_single_images_from_hdf5(run, scan, index)
+    images = get_hdf5_images(files[index], config)
     image = np.log1p(images.sum(axis=0))
     roi = RoiSelector().select_roi(image)
     if roi is None:
@@ -109,8 +94,8 @@ def get_roi_auto(
     width: int = 5,
 ) -> RoiRectangle:
     """get roi_rect by max pixel"""
-    max_y, max_x = np.unravel_index(np.argmax(image), image.shape)
-    return RoiRectangle(max_x - width, max_y - width, max_x + width, max_y + width)
+    center = np.unravel_index(np.argmax(image), image.shape)[::-1]
+    return RoiRectangle(center[0] - width, center[1] - width, center[0] + width, center[1] + width)
 
 
 if __name__ == "__main__":

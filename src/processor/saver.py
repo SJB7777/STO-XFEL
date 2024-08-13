@@ -55,7 +55,9 @@ class NpzSaverStrategy(SaverStrategy):
         config = load_config()
         npz_dir = config.path.npz_dir
         npz_file = os.path.join(npz_dir, file_base_name + comment + ".npz")
-
+        
+        os.makedirs(npz_dir, exist_ok=True)
+        
         np.savez(npz_file, **data_dict)
         self._file_name = npz_file
 

@@ -22,7 +22,7 @@ class RawDataLoader(ABC):
 
 
 class HDF5FileLoader(RawDataLoader):
-
+    """Load hdf5 file and remove unmatching data."""
     def __init__(self, file: str):
         """
         Initializes the HDF5FileLoader by loading
@@ -46,8 +46,17 @@ class HDF5FileLoader(RawDataLoader):
         self.pump_status: npt.NDArray[np.bool_] = self.get_pump_mask(merged_df)
         self.delay: Union[np.float32, float] = self.get_delay(metadata)
 
-        # roi_coord = np.array(self.metadata[f'detector_{self.config.param.hutch}_{self.config.param.detector}_parameters.ROI'].iloc[0][0])
-        # roi = np.array([roi_coord[self.config.param.x1], roi_coord[self.config.param.x2], roi_coord[self.config.param.y1], roi_coord[self.config.param.y2]], dtype=np.int_)
+        # roi_coord = np.array(
+        #     self.metadata[
+        #         f'detector_{self.config.param.hutch}_{self.config.param.detector}_parameters.ROI'
+        #     ].iloc[0][0]
+        # )
+        # roi = np.array([
+        #     roi_coord[self.config.param.x1],
+        #     roi_coord[self.config.param.x2],
+        #     roi_coord[self.config.param.y1],
+        #     roi_coord[self.config.param.y2]
+        # ], dtype=np.int_)
         # self.roi_rect = RoiRectangle().from_tuple(roi)
 
     def get_merged_df(self, metadata: pd.DataFrame) -> pd.DataFrame:
@@ -64,18 +73,16 @@ class HDF5FileLoader(RawDataLoader):
             if "detector" not in hf:
                 raise KeyError("Key 'detector' not found in the HDF5 file")
 
-            images = np.asarray(
-                hf[f'detector/{self.config.param.hutch.value}/{self.config.param.detector.value}/image/block0_values'],
-                dtype=np.float32
-            )
-            images_ts = np.asarray(
-                hf[f'detector/{self.config.param.hutch.value}/{self.config.param.detector.value}/image/block0_items'],
-                dtype=np.int64
-            )
-            qbpm = hf[f'qbpm/{self.config.param.hutch.value}/qbpm1']
-            qbpm_ts = qbpm['waveforms.ch1/axis1'][()]
-            qbpm_channels = np.stack([qbpm[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)], axis=0)
-            qbpm_sum = np.sum(qbpm_channels, axis=(0, 2))
+            image_group = hf[f'detector/{self.config.param.hutch.value}/{self.config.param.detector.value}/image']
+            images_ts = np.asarray(image_group["block0_items"], dtype=np.int64)
+            images = np.asarray(image_group["block0_values"], dtype=np.float32)
+
+            qbpm_group = hf[f'qbpm/{self.config.param.hutch.value}/qbpm1']
+            qbpm_ts = np.asarray(qbpm_group['waveforms.ch1/axis1'], dtype=np.int64)
+            qbpm_sum = np.stack(
+                [qbpm_group[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)],
+                axis=0
+            ).sum(axis=(0, 2))
 
         image_df = pd.DataFrame(
             {
@@ -148,28 +155,29 @@ class HDF5FileLoader(RawDataLoader):
         return data
 
 
-if __name__ == "__main__":
-    import time
-    from src.utils.file_util import get_run_scan_directory
+def get_hdf5_images(file: str, config: ExpConfig) -> npt.NDArray:
+    """get images form hdf5"""
+    with h5py.File(file, "r") as hf:
+        if "detector" not in hf:
+            raise KeyError("Key 'detector' not found in the HDF5 file")
 
+        return np.asarray(
+            hf[f'detector/{config.param.hutch.value}/{config.param.detector.value}/image/block0_values'],
+            dtype=np.float32
+        )
+
+
+if __name__ == "__main__":
+    from src.utils.file_util import get_run_scan_directory
+    import time
 
     config: ExpConfig = load_config()
     load_dir: str = config.path.load_dir
-    file: str = get_run_scan_directory(load_dir, 243, 1, 40)
+    file: str = get_run_scan_directory(load_dir, 146, 1, 40)
 
-    metadata = pd.read_hdf(file, key='metadata')
-    metadata.to_csv("metadata.csv")
+    start = time.time()
+    # loader = HDF5FileLoader(file)
+    images = get_hdf5_images(file, config)
+    print(time.time() - start, "sec")
 
-    # print(f"Load HDF5 File: {file}")
-
-    # start = time.time()
-    # loader: HDF5FileLoader = HDF5FileLoader(file)
-    # delta_time = time.time() - start
-
-    # print(f"Loading Time: {delta_time} sec")
-    # data: dict = loader.get_data()
-
-    # print()
-    # print(f"delay: {loader.delay}")
-    # for key, val in data.items():
-    #     print(f"data[{key}] shape: {val.shape}")
+    print(images.shape, "images.shape")

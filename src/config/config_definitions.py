@@ -93,6 +93,7 @@ class ExpConfig(BaseModel):
     A dataclass to represent the complete configuration for an experiment.
 
     Attributes:
+        runs (list[int]): The run numbers.
         param (ConfigurationParameters): The configuration parameters.
         path (ConfigurationPaths): The configuration paths.
     """

@@ -12,6 +12,17 @@ from src.utils.math_util import gaussian, mul_delta_q
 
 
 class DataAnalyzer:
+    """
+    Analyzes data from a given file and performs various operations on the images.
+
+    Args:
+        file (str): The path to the file containing the data.
+        angle (int, optional): The angle to rotate the images. Defaults to 0.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If the file does not contain the required keys.
+    """
     def __init__(self, file: str, angle: int = 0) -> None:
         if not os.path.exists(file):
             raise FileNotFoundError(f"The file {file} does not exist.")
@@ -39,6 +50,7 @@ class DataAnalyzer:
         return self.poff_images.sum(axis=0), self.pon_images.sum(axis=0)
 
     def pon_subtract_by_poff(self):
+        """Subtrack pump on images by pump off images"""
         return np.maximum(self.pon_images - self.poff_images, 0)
 
     def _roi_center_of_masses(

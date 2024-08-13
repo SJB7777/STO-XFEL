@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 from roi_rectangle import RoiRectangle
@@ -13,7 +14,7 @@ from src.preprocessor.image_qbpm_preprocessor import (
     create_ransac_roi_outlier_remover,
     ImagesQbpmProcessor
 )
-from src.gui.roi import get_roi_auto, get_single_images_from_hdf5
+from src.gui.roi import get_roi_auto, get_hdf5_images
 from src.utils.file_util import get_folder_list, get_run_scan_directory, get_file_list
 from src.config.config import load_config, ExpConfig
 
@@ -26,6 +27,20 @@ def get_scan_nums(run_num: int, config: ExpConfig) -> list[int]:
     run_dir: str = get_run_scan_directory(config.path.load_dir, run_num)
     scan_folders: list[str] = get_folder_list(run_dir)
     return [int(scan_dir.split("=")[1]) for scan_dir in scan_folders]
+
+
+def get_roi(scan_dir: str, config: ExpConfig, index_mode: Optional[int] = None) -> RoiRectangle:
+    """Get Roi for QBPM Normalization"""
+    files = get_file_list(scan_dir)
+
+    if index_mode is None:
+        index = len(files) // 2
+    else:
+        index = index_mode
+
+    file: str = os.path.join(scan_dir, files[index])
+    image = get_hdf5_images(file, config).sum(axis=0)
+    return get_roi_auto(image)
 
 
 def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor]:
@@ -46,22 +61,13 @@ def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor
 
 def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     """Process Single Scan"""
-    ################################
+
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
-    files = get_file_list(scan_dir)
 
-    index_mode: Optional[int] = None
-    if index_mode is None:
-        index = len(files) // 2
-    else:
-        index = index_mode
-    images = get_single_images_from_hdf5(run_num, scan_num, index)
-    roi_rect = get_roi_auto(images.sum(axis=0))
+    roi_rect = get_roi(scan_dir, config)
     if roi_rect is None:
         raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
-    ################################
-
     logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
     preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
 

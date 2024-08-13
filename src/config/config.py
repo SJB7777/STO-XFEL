@@ -1,7 +1,10 @@
+from functools import lru_cache
+
 import yaml
 
 from src.config.config_definitions import ExpConfig
 
+@lru_cache(maxsize=1)
 def load_config() -> ExpConfig:
     """load config file and return config object"""
     with open("config.yaml", 'r', encoding="utf-8") as f:
