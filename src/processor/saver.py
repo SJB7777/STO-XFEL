@@ -7,6 +7,7 @@ from scipy.io import savemat
 import tifffile
 
 from src.config.config import load_config
+from src.utils.file_util import create_run_scan_directory
 
 
 class SaverStrategy(ABC):
@@ -31,7 +32,7 @@ class MatSaverStrategy(SaverStrategy):
         comment = "_" + comment if comment else ""
         config = load_config()
         mat_dir = config.path.mat_dir
-
+        
         for key, val in data_dict.items():
             if val.ndim == 3:
                 mat_format_images = val.swapaxes(0, 2).swapaxes(0, 1)  # TEMP
@@ -56,7 +57,7 @@ class NpzSaverStrategy(SaverStrategy):
         config = load_config()
         npz_dir = config.path.npz_dir
         npz_file = os.path.join(npz_dir, file_base_name + comment + ".npz")
-
+        create_run_scan_directory
         os.makedirs(npz_dir, exist_ok=True)
 
         np.savez(npz_file, **data_dict)
