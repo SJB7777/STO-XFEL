@@ -49,7 +49,7 @@ def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor
     remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
 
     standard_preprocessor = compose(
-        subtract_dark_background,
+        # subtract_dark_background,
         remove_by_ransac_roi,
         normalize_images_by_qbpm,
     )
@@ -65,14 +65,14 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
 
-    # roi_rect = get_roi(scan_dir, config, 0)
-    # if roi_rect is None:
-    #     raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
-    # logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
-    # preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
+    roi_rect = get_roi(scan_dir, config, 0)
+    if roi_rect is None:
+        raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
+    logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
+    preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
 
-    # for preprocessor_name in preprocessors:
-    #     logger.info(f"preprocessor: {preprocessor_name}")
+    for preprocessor_name in preprocessors:
+        logger.info(f"preprocessor: {preprocessor_name}")
     preprocessors = None
     processor: CoreProcessor = CoreProcessor(HDF5FileLoader, preprocessors, logger)
     processor.scan(scan_dir)
