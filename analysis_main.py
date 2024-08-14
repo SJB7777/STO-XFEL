@@ -27,17 +27,21 @@ if TYPE_CHECKING:
 
 
 def main() -> None:
+    """
+    126
+    """
+
     config: ExpConfig = load_config()
     logger: Logger = setup_logger()
     runs: list[int] = [
-        42
+        127, 131, 137
     ]
     logger.info(f"Data Analysing run={runs}")
     for run_num in runs:
         # Define run and scan numbers
         scan_num: int = 1
+        roi_name: str = "roi_small"
         comment: Optional[str] = None
-
         # Define file paths and names
         npz_dir: str = config.path.npz_dir
         file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
@@ -60,7 +64,7 @@ def main() -> None:
 
         # Select ROI using GUI
         roi: Optional[tuple[int, int, int, int]] = RoiSelector().select_roi(
-            np.log1p(poff_images.sum(axis=0))
+            np.log1p(poff_images[0])
         )
         if roi is None:
             logger.error(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
@@ -74,7 +78,9 @@ def main() -> None:
 
         # Define save directory
         image_dir: str = config.path.image_dir
-        save_dir: str = create_run_scan_directory(image_dir, run_num, scan_num)
+        scan_dir: str = create_run_scan_directory(image_dir, run_num, scan_num)
+        save_dir: str = os.path.join(scan_dir, roi_name)
+        os.makedirs(save_dir, exist_ok=True)
 
         # Slice images to ROI
         roi_poff_images: npt.NDArray = roi_rect.slice(poff_images)
