@@ -2,12 +2,12 @@ import os
 import json
 from typing import Optional
 
-from src.config.config import load_config
-
 from roi_rectangle import RoiRectangle
 import numpy as np
 import numpy.typing as npt
 import scipy.io
+
+from src.config.config import load_config
 
 
 def get_file_list(mother: str = ".") -> list[str]:
@@ -84,7 +84,7 @@ def get_run_scan_directory(mother: str, run: int, scan: Optional[int] = None, fi
         return os.path.join(mother, f"run={run:0>3}", f"scan={scan:0>3}", f"p{file_num:0>4}.h5")
 
 
-def create_run_scan_directory(dir: str, run: int, scan: int) -> str:
+def create_run_scan_directory(mother: str, run: int, scan: int) -> str:
     """
     Create a nested directory structure for the given run and scan numbers.
 
@@ -97,8 +97,8 @@ def create_run_scan_directory(dir: str, run: int, scan: int) -> str:
         str: The path of the created nested directory.
     """
 
-    os.makedirs(dir, exist_ok=True)
-    path = os.path.join(dir, f'run={run:0>3d}')
+    os.makedirs(mother, exist_ok=True)
+    path = os.path.join(mother, f'run={run:0>3d}')
     os.makedirs(path, exist_ok=True)
     path = os.path.join(path, f'scan={scan:0>3d}')
     os.makedirs(path, exist_ok=True)
@@ -132,8 +132,7 @@ def get_roi_list(mother: str) -> Optional[list[RoiRectangle]]:
 
     file_path = os.path.join(mother, 'ROI_coords.json')
     if os.path.exists(file_path):
-        # If paramter file exists, open json file.
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding="utf-8") as f:
             try:
                 roi_rect_list = json.load(f)
             except json.decoder.JSONDecodeError:
@@ -154,7 +153,7 @@ def get_ooi(mother: str) -> Optional[RoiRectangle]:
     file_path = os.path.join(mother, 'OOI_coords.txt')
     if os.path.exists(file_path):
         # If paramter file exists, open json file.
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding="utf-8") as f:
 
             temp = list(map(int, f.readline().split()))
             ooi_rect = RoiRectangle(*temp)
@@ -169,7 +168,7 @@ def get_sigma_factor(mother: str) -> Optional[float]:
 
     file_path = os.path.join(mother, 'sigma_factor.txt')
     if os.path.exists(file_path):
-        with open(os.path.join(mother, 'sigma_factor.txt'), 'r') as f:
+        with open(os.path.join(mother, 'sigma_factor.txt'), 'r', encoding="utf-8") as f:
             sig_fac = float(f.read())
     else:
         sig_fac = None
@@ -180,18 +179,18 @@ def get_sigma_factor(mother: str) -> Optional[float]:
 def save_roi_list(mother: str, roi_rect_list: list[RoiRectangle]) -> None:
     region_list = [list(region.to_tuple()) for region in roi_rect_list]
     file_name = os.path.join(mother, 'ROI_coords.json')
-    with open(file_name, 'w') as f:
+    with open(file_name, 'w', encoding="utf-8") as f:
         f.write(json.dumps(region_list))
 
 
 def save_ooi(mother: str, ooi_rect: RoiRectangle) -> None:
 
-    with open(os.path.join(mother, 'OOI_coords.txt'), 'w') as f:
+    with open(os.path.join(mother, 'OOI_coords.txt'), 'w', encoding="utf-8") as f:
         f.write(f"{ooi_rect.x1} {ooi_rect.y1} {ooi_rect.x2} {ooi_rect.y2}")
 
 
 def save_sigma_factor(mother: str, sig_fac: float) -> None:
-    with open(os.path.join(mother, 'sigma_factor.txt'), 'w') as f:
+    with open(os.path.join(mother, 'sigma_factor.txt'), 'w', encoding="utf-8") as f:
         f.write(str(sig_fac))
 
 
