@@ -49,7 +49,7 @@ def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor
     remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
 
     standard_preprocessor = compose(
-        # subtract_dark_background,
+        subtract_dark_background,
         remove_by_ransac_roi,
         normalize_images_by_qbpm,
     )
@@ -78,9 +78,9 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     processor.scan(scan_dir)
 
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
-    # mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
-    npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
-    processor.save(npz_saver, file_name)
+    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    # npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
+    processor.save(mat_saver, file_name)
 
     logger.info(f"Processing run={run_num}, scan={scan_num} is complete")
 

@@ -9,6 +9,10 @@ class MatLoader:
         images = mat_images.swapaxes(0, 2)
         self.images = images.swapaxes(1, 2)
 
+class NpzLoader:
+    def __init__(self, file: str):
+        self.data =  dict(np.load(file))
+
 
 class NpzLoader:
     def __init__(self, file: str):
