@@ -97,13 +97,13 @@ class CoreProcessor:
 
             images_dict = loader_strategy.get_data()
             if "pon" in images_dict:
-                applied_images: npt.NDArray = preprocessor((images_dict['pon'], images_dict['pon_qbpm']))[0]
-                data['pon'] = applied_images.mean(axis=0)
+                applied_pon_images: npt.NDArray = preprocessor((images_dict['pon'], images_dict['pon_qbpm']))[0]
+                data['pon'] = applied_pon_images.mean(axis=0)
             if 'poff' in images_dict:
-                applied_images: npt.NDArray = preprocessor((images_dict['poff'], images_dict['poff_qbpm']))[0]
-                data['poff'] = applied_images.mean(axis=0)
+                applied_poff_images: npt.NDArray = preprocessor((images_dict['poff'], images_dict['poff_qbpm']))[0]
+                data['poff'] = applied_poff_images.mean(axis=0)
+            data["delay"] = images_dict['delay']
 
-            data["delay"] = loader_strategy.delay
             preprocessor_data[preprocessor_name] = data
 
         for preprocessor_name, data in preprocessor_data.items():
@@ -113,7 +113,9 @@ class CoreProcessor:
     def stack_processed_data(self, preprocessor_data_dict: dict[str, DefaultDict[str, list]]) -> dict[str, DefaultDict[str, npt.NDArray]]:
         preprocessor_data_dict_result: dict[str, DefaultDict[str, npt.NDArray]] = {}
         for preprocessor_name, data in preprocessor_data_dict.items():
-            preprocessor_data_dict_result[preprocessor_name] = {data_name: np.stack(data_list) for data_name, data_list in data.items()}
+            preprocessor_data_dict_result[preprocessor_name] = {
+                data_name: np.stack(data_list) for data_name, data_list in data.items()
+            }
 
         return preprocessor_data_dict_result
 
@@ -198,11 +200,11 @@ if __name__ == "__main__":
 
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
 
-    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    # mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
     # tif_saver: SaverStrategy = SaverFactory.get_saver("tif")
-    # npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
-    cp.save(mat_saver, file_name)
+    npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
+    # cp.save(mat_saver, file_name)
     # cp.save(tif_saver)
-    # cp.save(npz_saver)
+    cp.save(npz_saver)
 
     logger.info("Processing is over")

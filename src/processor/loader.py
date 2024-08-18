@@ -41,11 +41,11 @@ class HDF5FileLoader(RawDataLoader):
         merged_df: pd.DataFrame = self.get_merged_df(metadata)
 
         # Fill Negative Values to Zero
-        # self.images: npt.NDArray[np.float32] = np.maximum(0, np.stack(merged_df['image'].values))
+        # self.images: npt.NDArray[np.float64] = np.maximum(0, np.stack(merged_df['image'].values))
         self.images: npt.NDArray[np.float32] = np.stack(merged_df['image'].values)
         self.qbpm: npt.NDArray[np.float32] = np.stack(merged_df['qbpm'].values)
-        self.pump_status: npt.NDArray[np.bool_] = self.get_pump_mask(merged_df)
-        self.delay: Union[np.float32, float] = self.get_delay(metadata)
+        self.pump_state: npt.NDArray[np.bool_] = self.get_pump_mask(merged_df)
+        self.delay: npt.NDArray[np.float64] = self.get_delay(merged_df)
 
         # roi_coord = np.array(
         #     self.metadata[
@@ -80,9 +80,10 @@ class HDF5FileLoader(RawDataLoader):
 
             qbpm_group = hf[f'qbpm/{self.config.param.hutch.value}/qbpm1']
             qbpm_ts = np.asarray(qbpm_group['waveforms.ch1/axis1'], dtype=np.int64)
-            qbpm_sum = np.stack(
+            qbpm = np.stack(
                 [qbpm_group[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)],
-                axis=0
+                axis=0, 
+                dtype=np.float32
             ).sum(axis=(0, 2))
 
         image_df = pd.DataFrame(
@@ -95,27 +96,27 @@ class HDF5FileLoader(RawDataLoader):
         qbpm_df = pd.DataFrame(
             {
                 "timestamp": qbpm_ts,
-                "qbpm": list(qbpm_sum)
+                "qbpm": list(qbpm)
             }
         ).set_index('timestamp')
 
         merged_df = pd.merge(image_df, qbpm_df, left_index=True, right_index=True, how='inner')
         return pd.merge(metadata, merged_df, left_index=True, right_index=True, how='inner')
 
-    def get_delay(self, metadata: pd.DataFrame) -> Union[np.float32, float]:
+    def get_delay(self, merged_df: pd.DataFrame) -> Union[np.float64, float]:
         """
-        Retrieves the delay value from the metadata.
+        Retrieves the delay value from the merged_df.
 
         Parameters:
-        - metadata (pd.DataFrame): Metadata DataFrame.
+        - merged_df (pd.DataFrame): merged_df DataFrame.
 
         Returns:
-        - Union[np.float32, float]: Delay value or NaN if not found.
+        - Union[np.float64, float]: Delay value or NaN if not found.
         """
-        if "th_value" in metadata:
-            return np.asarray(metadata['th_value'], dtype=np.float32)[0]
-        if "delay_value" in metadata:
-            return np.asarray(metadata['delay_value'], dtype=np.float32)[0]
+        if "th_value" in merged_df:
+            return np.asarray(merged_df['th_value'], dtype=np.float64)[0]
+        if "delay_value" in merged_df:
+            return np.asarray(merged_df['delay_value'], dtype=np.float64)[0]
         return np.nan
 
     def get_pump_mask(self, merged_df: pd.DataFrame) -> npt.NDArray[np.bool_]:
@@ -130,7 +131,10 @@ class HDF5FileLoader(RawDataLoader):
         """
         if self.config.param.pump_setting is Hertz.ZERO:
             return np.zeros(merged_df.shape[0], dtype=np.bool_)
-        return merged_df[f'timestamp_info.RATE_{self.config.param.xray.value}_{self.config.param.pump_setting.value}'].astype(np.bool_)
+        return np.asarray(
+            merged_df[f'timestamp_info.RATE_{self.config.param.xray.value}_{self.config.param.pump_setting.value}'],
+            dtype=np.bool_
+            )
 
     def get_data(self) -> dict[str, npt.NDArray]:
         """
@@ -139,12 +143,12 @@ class HDF5FileLoader(RawDataLoader):
         Returns:
         - dict[str, npt.NDArray]: Dictionary containing images and qbpm data for both pump-on and pump-off states.
         """
-        data = {}
+        data: dict[str, npt.NDArray] = {"delay": self.delay}
 
-        poff_images = self.images[~self.pump_status]
-        poff_qbpm = self.qbpm[~self.pump_status]
-        pon_images = self.images[self.pump_status]
-        pon_qbpm = self.qbpm[self.pump_status]
+        poff_images = self.images[~self.pump_state]
+        poff_qbpm = self.qbpm[~self.pump_state]
+        pon_images = self.images[self.pump_state]
+        pon_qbpm = self.qbpm[self.pump_state]
 
         if poff_images.size > 0:
             data["poff"] = poff_images
@@ -162,10 +166,7 @@ def get_hdf5_images(file: str, config: ExpConfig) -> npt.NDArray:
         if "detector" not in hf:
             raise KeyError(f"Key 'detector' not found in {file}")
 
-        return np.asarray(
-            hf[f'detector/{config.param.hutch.value}/{config.param.detector.value}/image/block0_values'],
-            dtype=np.float32
-        )
+        return np.asarray(hf[f'detector/{config.param.hutch.value}/{config.param.detector.value}/image/block0_values'])
 
 
 if __name__ == "__main__":
@@ -174,11 +175,18 @@ if __name__ == "__main__":
 
     config: ExpConfig = load_config()
     load_dir: str = config.path.load_dir
-    file: str = get_run_scan_directory(load_dir, 146, 1, 40)
+    file: str = get_run_scan_directory(load_dir, 146, 1, 2)
 
     start = time.time()
-    # loader = HDF5FileLoader(file)
-    images = get_hdf5_images(file, config)
-    print(time.time() - start, "sec")
-
-    print(images.shape, "images.shape")
+    with h5py.File(file, "r") as hf:
+        qbpm_group = hf[f'qbpm/{config.param.hutch.value}/qbpm1']
+        qbpm_ts = np.asarray(qbpm_group['waveforms.ch1/axis1'], dtype=np.int64)
+        qbpm_sum = np.stack(
+            [qbpm_group[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)],
+            axis=0,
+            dtype=np.float32
+        ).sum(axis=(0, 2))
+        
+    print(type(qbpm_sum[0]))
+    
+    print(f"{time.time() - start} sec")

@@ -14,12 +14,6 @@ class NpzLoader:
         self.data =  dict(np.load(file))
 
 
-class NpzLoader:
-    def __init__(self, file: str):
-        self.data =  dict(np.load(file))
-
-
-
 if __name__ == "__main__":
     import os
     from src.config.config import load_config
