@@ -1,3 +1,5 @@
+import os
+
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -54,7 +56,7 @@ class RoiSelector:
     def select_roi(self, image: npt.NDArray) -> Optional[tuple[int, int, int, int]]:
         if image.ndim != 2:
             raise TypeError(f"Invalid shape {image.shape} for image data")
-        fig, self.ax = plt.subplots()
+        fig, self.ax = plt.subplots(figsize=(10, 6))
         self.ax.imshow(image)
 
         fig.canvas.mpl_connect('button_press_event', self.on_mouse_press)
@@ -81,8 +83,9 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None
     elif isinstance(index_mode, int):
         index = index_mode
 
-    images = get_hdf5_images(files[index], config)
+    images = get_hdf5_images(os.path.join(scan_dir, files[index]), config)
     image = np.log1p(images.sum(axis=0))
+    image = np.maximum(0, image)
     roi = RoiSelector().select_roi(image)
     if roi is None:
         return None
@@ -96,3 +99,7 @@ def get_roi_auto(
     """get roi_rect by max pixel"""
     center = np.unravel_index(np.argmax(image), image.shape)[::-1]
     return RoiRectangle(center[0] - width, center[1] - width, center[0] + width, center[1] + width)
+
+if __name__ == "__main__":
+    roi_rect = select_roi_by_run_scan(144, 1, 0)
+    print(roi_rect)

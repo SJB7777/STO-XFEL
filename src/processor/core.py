@@ -45,12 +45,12 @@ class CoreProcessor:
         - dict[str, npt.NDArray]: Dictionary containing stacked images from the scan.
         """
         self.logger.info(f"Starting scan: {scan_dir}")
-        
+
         preprocessor_data_dict: dict[str, DefaultDict[str, list]] = {
             pipline_name: defaultdict(list)
             for pipline_name in self.preprocessor
         }
-        
+
         hdf5_files = get_file_list(scan_dir)
         pbar = tqdm(hdf5_files, total=len(hdf5_files))
         for hdf5_file in pbar:
@@ -70,7 +70,6 @@ class CoreProcessor:
             result[preprocessor_name] = {
                 data_name: np.stack(data_list) for data_name, data_list in data.items()
             }
-
         return result
 
     def get_loader(self, hdf5_dir: str) -> Optional[RawDataLoader]:
@@ -78,14 +77,14 @@ class CoreProcessor:
         try:
             return self.LoaderStrategy(hdf5_dir)
         except (KeyError, FileNotFoundError, ValueError) as e:
-            self.logger.error(f"{type(e)} happened in {hdf5_dir}")
-            return None
-        except Exception as e:
-            self.logger.exception(f"Failed to load: {type(e)}: {str(e)}")
+            self.logger.exception(f"{type(e)} happened in {hdf5_dir}")
             return None
         # except Exception as e:
-        #     self.logger.critical(f"{type(e)} happened in {hdf5_dir}")
-        #     raise
+        #     self.logger.exception(f"Failed to load: {type(e)}: {str(e)}")
+        #     return None
+        except Exception as e:
+            self.logger.critical(f"{type(e)} happened in {hdf5_dir}")
+            raise
 
     def preprocess_data(
         self,
@@ -128,71 +127,3 @@ class CoreProcessor:
             self.logger.info(f"Finished preprocessor: {pipline_name}")
             self.logger.info(f"Data Dict Keys: {data_dict.keys()}")
             self.logger.info(f"Saved file '{saver.file}'")
-
-
-if __name__ == "__main__":
-
-    from src.processor.loader import HDF5FileLoader
-    from src.processor.saver import SaverFactory
-    from src.preprocessor.image_qbpm_preprocessor import (
-        compose,
-        subtract_dark_background,
-        normalize_images_by_qbpm,
-        remove_outliers_using_ransac,
-        equalize_intensities
-    )
-
-    run_num: int = 1
-    scan_num: int = 1
-    logger: Logger = setup_logger()
-
-    # preprocessor 1
-    preprocessor_normalize_images_by_qbpm: ImagesQbpmProcessor = compose(
-        subtract_dark_background,
-        remove_outliers_using_ransac,
-        normalize_images_by_qbpm,
-    )
-    logger.info("preprocessor: normalize_images_by_qbpm")
-    logger.info("preprocessing: subtract_dark_background")
-    logger.info("preprocessing: remove_by_ransac")
-    logger.info("preprocessing: normalize_images_by_qbpm")
-
-    # preprocessor 2
-    preprocessor_equalize_intensities: ImagesQbpmProcessor = compose(
-        subtract_dark_background,
-        remove_outliers_using_ransac,
-        equalize_intensities,
-    )
-    logger.info("preprocessor: normalize_images_by_qbpm")
-    logger.info("preprocessing: subtract_dark_background")
-    logger.info("preprocessing: remove_by_ransac")
-    logger.info("preprocessing: equalize_intensities")
-
-    # preprocessor 3
-    preprocessor_no_normalize: ImagesQbpmProcessor = compose(
-        subtract_dark_background,
-        remove_outliers_using_ransac,
-    )
-    logger.info("preprocessor: no_normalize")
-    logger.info("preprocessing: subtract_dark_background")
-    logger.info("preprocessing: remove_by_ransac")
-
-    preprocessors: dict[str, ImagesQbpmProcessor] = {
-        "normalize_images_by_qbpm": preprocessor_normalize_images_by_qbpm,
-        "equalize_intensities": preprocessor_equalize_intensities,
-        "no_normalize": preprocessor_no_normalize
-    }
-
-    cp = CoreProcessor(HDF5FileLoader, preprocessors, logger)
-    cp.scan(run_num)
-
-    file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
-
-    # mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
-    # tif_saver: SaverStrategy = SaverFactory.get_saver("tif")
-    npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
-    # cp.save(mat_saver, file_name)
-    # cp.save(tif_saver)
-    cp.save(npz_saver)
-
-    logger.info("Processing is over")

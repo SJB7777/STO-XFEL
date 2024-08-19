@@ -70,11 +70,14 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig, logger: Logger)
 
     for preprocessor_name in preprocessors:
         logger.info(f"preprocessor: {preprocessor_name}")
-    preprocessors = None
     processor: CoreProcessor = CoreProcessor(HDF5FileLoader, scan_dir, preprocessors, logger)
 
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
-    # mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+
+    # Set SaverStrategy
+    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    processor.save(mat_saver, file_name)
+
     npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
     processor.save(npz_saver, file_name)
 
@@ -82,13 +85,14 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig, logger: Logger)
 
 
 def main() -> None:
+    """Processing"""
     logger: Logger = setup_logger()
 
     config = load_config()
     run_nums: list[int] = config.runs
     logger.info(f"Runs to process: {run_nums}")
 
-    for run_num in run_nums:
+    for run_num in run_nums: # pylint: disable=not-an-iterable
         logger.info(f"Run: {run_num}")
         scan_nums: list[int] = get_scan_nums(run_num, config)
         for scan_num in scan_nums:

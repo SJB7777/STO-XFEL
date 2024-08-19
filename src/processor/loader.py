@@ -150,13 +150,15 @@ class HDF5FileLoader(RawDataLoader):
         pon_images = self.images[self.pump_state]
         pon_qbpm = self.qbpm[self.pump_state]
 
+        poff_images = np.maximum(0, poff_images)
+        pon_images = np.maximum(0, pon_images)
+
         if poff_images.size > 0:
             data["poff"] = poff_images
             data["poff_qbpm"] = poff_qbpm
         if pon_images.size > 0:
             data["pon"] = pon_images
             data["pon_qbpm"] = pon_qbpm
-
         return data
 
 
@@ -166,7 +168,12 @@ def get_hdf5_images(file: str, config: ExpConfig) -> npt.NDArray:
         if "detector" not in hf:
             raise KeyError(f"Key 'detector' not found in {file}")
 
-        return np.asarray(hf[f'detector/{config.param.hutch.value}/{config.param.detector.value}/image/block0_values'])
+        return np.maximum(
+            0,
+            np.asarray(
+                hf[f'detector/{config.param.hutch.value}/{config.param.detector.value}/image/block0_values']
+            )
+        )
 
 
 if __name__ == "__main__":
@@ -178,6 +185,6 @@ if __name__ == "__main__":
     file: str = get_run_scan_directory(load_dir, 146, 1, 2)
 
     start = time.time()
-    
-    pd.read_hdf(file, key='metadata').to_csv("metadata.csv")
+
+    pd.read_hdf(file, key='metadata')
     print(f"{time.time() - start} sec")

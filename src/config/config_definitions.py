@@ -64,10 +64,10 @@ class ExpPaths(BaseModel):
 
     Attributes:
         load_dir (str): The load directory path.
-        save_dir (str): The save directory path.
+        anaylsis_dir (str): The save directory path.
     """
     load_dir: str = ""
-    save_dir: str = ""
+    analysis_dir: str = ""
     param_dir: str = "DataParameters"
     image_dir: str = "Images"
     mat_dir: str = "MatFiles"
@@ -78,13 +78,13 @@ class ExpPaths(BaseModel):
     @classmethod
     def join_paths(cls, values):
         """join paths"""
-        save_dir = values.get('save_dir')
-        if save_dir is not None:
-            values['param_dir'] = os.path.join(save_dir, values['param_dir'])
-            values['image_dir'] = os.path.join(save_dir, values['image_dir'])
-            values['mat_dir'] = os.path.join(save_dir, values['mat_dir'])
-            values['npz_dir'] = os.path.join(save_dir, values['npz_dir'])
-            values['tif_dir'] = os.path.join(save_dir, values['tif_dir'])
+        analysis_dir = values.get('analysis_dir')
+        if analysis_dir is not None:
+            values['param_dir'] = os.path.join(analysis_dir, values['param_dir'])
+            values['image_dir'] = os.path.join(analysis_dir, values['image_dir'])
+            values['mat_dir'] = os.path.join(analysis_dir, values['mat_dir'])
+            values['npz_dir'] = os.path.join(analysis_dir, values['npz_dir'])
+            values['tif_dir'] = os.path.join(analysis_dir, values['tif_dir'])
         return values
 
 
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         "runs": ["1", "2", "3"],
         'path': {
             'load_dir': 'your\\path',
-            'save_dir': 'your\\path',
+            'anaylsis_dir': 'your\\path',
             'image_dir': 'Image',
             'mat_dir': 'mat_files',
             'npz_dir': 'npz_files',
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     print(config.runs)
 
     print(config.path.load_dir)
-    print(config.path.save_dir)
+    print(config.path.analysis_dir)
     print(config.path.param_dir)
 
     params = ExpParams(beam_energy=9.7)

@@ -30,19 +30,17 @@ def main() -> None:
     config: ExpConfig = load_config()
     logger: Logger = setup_logger()
     runs: list[int] = [
-        144, 145, 146, 147, 148, 149, 150
+        144
     ]
     logger.info(f"Data Analysing run={runs}")
     for run_num in runs:
         # Define run and scan numbers
         scan_num: int = 1
         roi_name: str = "roi_small"
-        comment: Optional[str] = None
+
         # Define file paths and names
         npz_dir: str = config.path.npz_dir
         file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
-        if comment is not None:
-            file_name += comment
         npz_file: str = os.path.join(npz_dir, file_name + ".npz")
 
         if not os.path.exists(npz_file):
@@ -51,6 +49,7 @@ def main() -> None:
             raise FileNotFoundError(error_message)
 
         logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3}")
+        
         # Initialize MeanDataProcessor
         processor: DataAnalyzer = DataAnalyzer(npz_file, 0)
 
@@ -75,28 +74,28 @@ def main() -> None:
         # Define save directory
         image_dir: str = config.path.image_dir
         scan_dir: str = create_run_scan_directory(image_dir, run_num, scan_num)
-        save_dir: str = os.path.join(scan_dir, roi_name)
-        os.makedirs(save_dir, exist_ok=True)
+        anaylsis_dir: str = os.path.join(scan_dir, roi_name)
+        os.makedirs(anaylsis_dir, exist_ok=True)
 
         # Slice images to ROI
         roi_poff_images: npt.NDArray = roi_rect.slice(poff_images)
         roi_pon_images: npt.NDArray = roi_rect.slice(pon_images)
 
         # Save images as TIFF files
-        tifffile.imwrite(os.path.join(save_dir, "poff.tif"), poff_images.astype(np.float32))
-        logger.info(f"Saved TIF '{os.path.join(save_dir, 'poff.tif')}'")
+        tifffile.imwrite(os.path.join(anaylsis_dir, "poff.tif"), poff_images.astype(np.float32))
+        logger.info(f"Saved TIF '{os.path.join(anaylsis_dir, 'poff.tif')}'")
 
-        tifffile.imwrite(os.path.join(save_dir, 'pon.tif'), pon_images.astype(np.float32))
-        logger.info(f"Saved TIF '{os.path.join(save_dir, 'pon.tif')}'")
+        tifffile.imwrite(os.path.join(anaylsis_dir, 'pon.tif'), pon_images.astype(np.float32))
+        logger.info(f"Saved TIF '{os.path.join(anaylsis_dir, 'pon.tif')}'")
 
-        tifffile.imwrite(os.path.join(save_dir, "roi_poff.tif"), roi_poff_images.astype(np.float32))
-        logger.info(f"Saved TIF '{os.path.join(save_dir, 'roi_poff.tif')}'")
+        tifffile.imwrite(os.path.join(anaylsis_dir, "roi_poff.tif"), roi_poff_images.astype(np.float32))
+        logger.info(f"Saved TIF '{os.path.join(anaylsis_dir, 'roi_poff.tif')}'")
 
-        tifffile.imwrite(os.path.join(save_dir, "roi_pon.tif"), roi_pon_images.astype(np.float32))
-        logger.info(f"Saved TIF '{os.path.join(save_dir, 'roi_pon.tif')}'")
+        tifffile.imwrite(os.path.join(anaylsis_dir, "roi_pon.tif"), roi_pon_images.astype(np.float32))
+        logger.info(f"Saved TIF '{os.path.join(anaylsis_dir, 'roi_pon.tif')}'")
 
         # Save data as CSV
-        data_file: str = os.path.join(save_dir, "data.csv")
+        data_file: str = os.path.join(anaylsis_dir, "data.csv")
         data_df.to_csv(data_file)
         logger.info(f"Saved CSV '{data_file}'")
 
@@ -111,23 +110,22 @@ def main() -> None:
         com_diff_fig: Figure = draw_com_diff_figure(data_df)
 
         # Save figures as PNG files
-        image_fig.savefig(os.path.join(save_dir, "log_image.png"))
-        logger.info(f"Saved PNG '{os.path.join(save_dir, 'log_image.png')}'")
+        image_fig.savefig(os.path.join(anaylsis_dir, "log_image.png"))
+        logger.info(f"Saved PNG '{os.path.join(anaylsis_dir, 'log_image.png')}'")
 
-        intensity_fig.savefig(os.path.join(save_dir, "delay-intensity.png"))
-        logger.info(f"Saved PNG '{os.path.join(save_dir, 'delay-intensity.png')}'")
+        intensity_fig.savefig(os.path.join(anaylsis_dir, "delay-intensity.png"))
+        logger.info(f"Saved PNG '{os.path.join(anaylsis_dir, 'delay-intensity.png')}'")
 
-        intensity_diff_fig.savefig(os.path.join(save_dir, "delay-intensity_diff.png"))
-        logger.info(f"Saved PNG '{os.path.join(save_dir, 'delay-intensity_diff.png')}'")
+        intensity_diff_fig.savefig(os.path.join(anaylsis_dir, "delay-intensity_diff.png"))
+        logger.info(f"Saved PNG '{os.path.join(anaylsis_dir, 'delay-intensity_diff.png')}'")
 
-        com_fig.savefig(os.path.join(save_dir, "delay-com.png"))
-        logger.info(f"Saved PNG '{os.path.join(save_dir, 'delay-com.png')}'")
+        com_fig.savefig(os.path.join(anaylsis_dir, "delay-com.png"))
+        logger.info(f"Saved PNG '{os.path.join(anaylsis_dir, 'delay-com.png')}'")
 
-        com_diff_fig.savefig(os.path.join(save_dir, "delay-com_diff.png"))
-        logger.info(f"Saved PNG '{os.path.join(save_dir, 'delay-com_diff.png')}'")
+        com_diff_fig.savefig(os.path.join(anaylsis_dir, "delay-com_diff.png"))
+        logger.info(f"Saved PNG '{os.path.join(anaylsis_dir, 'delay-com_diff.png')}'")
 
         logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3} is Done.")
-
         plt.close("all")
 
 
