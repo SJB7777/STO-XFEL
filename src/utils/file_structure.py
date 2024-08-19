@@ -2,13 +2,13 @@ from pathlib import Path
 
 
 class StorageHandler:
-    def __init__(self, root_dir):
+    def __init__(self, root_dir: str):
         self.root_dir: Path = Path(root_dir)
-        self.dirs: dict[str, dict[int, set[int]]] = self._parse_directory_structure()
+        self.dirs: dict[int, dict[int, set[int]]] = self._parse_directory_structure()
 
-    def _parse_directory_structure(self) -> dict[str, dict[int, set[int]]]:
+    def _parse_directory_structure(self) -> dict[int, dict[int, set[int]]]:
         """walk through root get structure of storage"""
-        dirs: dict[str, dict[int, set[int]]] = {}
+        dirs: dict[int, dict[int, set[int]]] = {}
         for run_dir in self.root_dir.glob("run=[0-9][0-9][0-9]"):
             run_id: int = int(run_dir.name.split("=")[1])
             dirs[run_id] = {}
@@ -22,6 +22,14 @@ class StorageHandler:
                     dirs[run_id][scan_id].add(p_id)
 
         return dirs
+    
+    def __contains__(self, item: tuple[int, int, int]) -> bool:
+        run_id, scan_id, p_id = item
+        if run_id not in self.dirs:
+            return False
+        if scan_id not in self.dirs[run_id]:
+            return False
+        return p_id in self.dirs[run_id][scan_id]
 
 
 if __name__ == "__main__":
@@ -31,4 +39,5 @@ if __name__ == "__main__":
     load_dir: str = config.path.load_dir
     print(f"{load_dir = }")
     storage = StorageHandler(load_dir)
-    print(storage.dirs)
+    print((144, 1, 3) in storage)
+    print((145, 2, 3) in storage)

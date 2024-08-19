@@ -90,7 +90,7 @@ def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:
 def find_outliers_run_scan_gui(run: int, scan: int) -> float:
 
     config = load_config()
-    scan_dir = get_run_scan_directory(config.path.save_dir, run, scan)
+    scan_dir = get_run_scan_directory(config.path.load_dir, run, scan)
     files = get_file_list(scan_dir)
     file = os.path.join(scan_dir, files[len(files) // 2])
 
@@ -103,7 +103,7 @@ def find_outliers_run_scan_gui(run: int, scan: int) -> float:
 
 def RANSAC_regression_gui(run: int, scan: int) -> None:
     config = load_config()
-    scan_dir = get_run_scan_directory(config.path.save_dir, run, scan)
+    scan_dir = get_run_scan_directory(config.path.load_dir, run, scan)
     files = get_file_list(scan_dir)
     file = os.path.join(scan_dir, files[len(files) // 2])
 
