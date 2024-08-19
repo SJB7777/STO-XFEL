@@ -20,4 +20,4 @@ if __name__ == "__main__":
     config = load_config()
     npz_file = os.path.join(config.path.npz_dir, "run=0144_scan=0001.npz")
     data: dict = NpzLoader(npz_file).data
-    print(list(data.keys()))
+    print(data)

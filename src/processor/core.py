@@ -21,36 +21,20 @@ class CoreProcessor:
     def __init__(
         self,
         LoaderStrategy: Type[RawDataLoader],
+        scan_dir: str,
         preprocessor: Optional[dict[str, ImagesQbpmProcessor]] = None,
         logger: Optional[Logger] = None
     ) -> None:
-
         self.LoaderStrategy: Type[RawDataLoader] = LoaderStrategy
         self.preprocessor: dict[str, ImagesQbpmProcessor] = preprocessor if preprocessor is not None else {"no_processing": lambda x: x}
-        self.preprocessor_data_dict: dict[str, DefaultDict[str, list]] = {
-            pipline_name: defaultdict(list)
-            for pipline_name in self.preprocessor
-        }
 
         self.logger: Logger = logger if logger is not None else setup_logger()
+        self.result: dict[str, DefaultDict[str, npt.NDArray]] = self.scan(scan_dir)
         self.config: ExpConfig = load_config()
-        self.result: dict[str, DefaultDict[str, npt.NDArray]] = {}
+
         self.logger.info(f"Meta Data:\n{self.config}")
 
-    def scan(self, scan_dir: str):
-        """
-        Scans directories for rocking scan data and processes them.
-
-        Parameters:
-        - run_num (int): Run number to scan.
-        """
-
-        self.logger.info(f"Starting scan: {scan_dir}")
-
-        self.result: dict[str, DefaultDict[str, npt.NDArray]] = self.process_scan_directory(scan_dir)
-        self.logger.info(f"Completed processing: {scan_dir}")
-
-    def process_scan_directory(self, scan_dir: str) -> dict[str, DefaultDict[str, npt.NDArray]]:
+    def scan(self, scan_dir: str) -> None:
         """
         Processes a single scan directory.
 
@@ -60,22 +44,37 @@ class CoreProcessor:
         Returns:
         - dict[str, npt.NDArray]: Dictionary containing stacked images from the scan.
         """
-        self.logger.info(f"Starting single scan for directory: {scan_dir}")
-
+        self.logger.info(f"Starting scan: {scan_dir}")
+        
+        preprocessor_data_dict: dict[str, DefaultDict[str, list]] = {
+            pipline_name: defaultdict(list)
+            for pipline_name in self.preprocessor
+        }
+        
         hdf5_files = get_file_list(scan_dir)
         pbar = tqdm(hdf5_files, total=len(hdf5_files))
-
         for hdf5_file in pbar:
+            loader_strategy = self.get_loader(os.path.join(scan_dir, hdf5_file))
+            if loader_strategy is None:
+                continue
+            preprocessed_data = self.preprocess_data(loader_strategy)
 
-            loader_strategy = self.get_loader(scan_dir, hdf5_file)
-            if loader_strategy is not None:
-                self.add_processed_data_to_dict(loader_strategy)
+            for preprocessor_name, data in preprocessed_data.items():
+                for data_key, data_value in data.items():
+                    preprocessor_data_dict[preprocessor_name][data_key].append(data_value)
 
-        return self.stack_processed_data(self.preprocessor_data_dict)
+        self.logger.info(f"Completed processing: {scan_dir}")
 
-    def get_loader(self, scan_dir: str, hdf5_file: str) -> Optional[RawDataLoader]:
+        result: dict[str, DefaultDict[str, npt.NDArray]] = {}
+        for preprocessor_name, data in preprocessor_data_dict.items():
+            result[preprocessor_name] = {
+                data_name: np.stack(data_list) for data_name, data_list in data.items()
+            }
+
+        return result
+
+    def get_loader(self, hdf5_dir: str) -> Optional[RawDataLoader]:
         """Get Loader"""
-        hdf5_dir = os.path.join(scan_dir, hdf5_file)
         try:
             return self.LoaderStrategy(hdf5_dir)
         except (KeyError, FileNotFoundError, ValueError) as e:
@@ -88,36 +87,25 @@ class CoreProcessor:
         #     self.logger.critical(f"{type(e)} happened in {hdf5_dir}")
         #     raise
 
-    def add_processed_data_to_dict(self, loader_strategy: RawDataLoader) -> dict[str, DefaultDict[str, list]]:
+    def preprocess_data(
+        self,
+        loader_strategy: RawDataLoader,
+    ) -> dict[str, dict[str, Any]]:
 
-        preprocessor_data: dict[str, dict[str, Any]] = {}
+        preprocessed_data: dict[str, dict[str, Any]] = {}
         for preprocessor_name, preprocessor in self.preprocessor.items():
-
             data: dict[str, Any] = {}
-
-            images_dict = loader_strategy.get_data()
-            if "pon" in images_dict:
-                applied_pon_images: npt.NDArray = preprocessor((images_dict['pon'], images_dict['pon_qbpm']))[0]
+            loader_dict = loader_strategy.get_data()
+            if "pon" in loader_dict:
+                applied_pon_images: npt.NDArray = preprocessor((loader_dict['pon'], loader_dict['pon_qbpm']))[0]
                 data['pon'] = applied_pon_images.mean(axis=0)
-            if 'poff' in images_dict:
-                applied_poff_images: npt.NDArray = preprocessor((images_dict['poff'], images_dict['poff_qbpm']))[0]
+            if 'poff' in loader_dict:
+                applied_poff_images: npt.NDArray = preprocessor((loader_dict['poff'], loader_dict['poff_qbpm']))[0]
                 data['poff'] = applied_poff_images.mean(axis=0)
-            data["delay"] = images_dict['delay']
+            data["delay"] = loader_dict['delay']
+            preprocessed_data[preprocessor_name] = data
 
-            preprocessor_data[preprocessor_name] = data
-
-        for preprocessor_name, data in preprocessor_data.items():
-            for data_name, data_value in data.items():
-                self.preprocessor_data_dict[preprocessor_name][data_name].append(data_value)
-
-    def stack_processed_data(self, preprocessor_data_dict: dict[str, DefaultDict[str, list]]) -> dict[str, DefaultDict[str, npt.NDArray]]:
-        preprocessor_data_dict_result: dict[str, DefaultDict[str, npt.NDArray]] = {}
-        for preprocessor_name, data in preprocessor_data_dict.items():
-            preprocessor_data_dict_result[preprocessor_name] = {
-                data_name: np.stack(data_list) for data_name, data_list in data.items()
-            }
-
-        return preprocessor_data_dict_result
+        return preprocessed_data
 
     def save(self, saver: SaverStrategy, file_name: str):
         """

@@ -19,9 +19,6 @@ from src.utils.file_util import get_folder_list, get_run_scan_directory, get_fil
 from src.config.config import load_config, ExpConfig
 
 
-logger: Logger = setup_logger()
-
-
 def get_scan_nums(run_num: int, config: ExpConfig) -> list[int]:
     """Get Scan numbers from real directory"""
     run_dir: str = get_run_scan_directory(config.path.load_dir, run_num)
@@ -59,7 +56,7 @@ def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor
     }
 
 
-def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
+def process_scan(run_num: int, scan_num: int, config: ExpConfig, logger: Logger) -> None:
     """Process Single Scan"""
 
     load_dir = config.path.load_dir
@@ -74,8 +71,7 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
     for preprocessor_name in preprocessors:
         logger.info(f"preprocessor: {preprocessor_name}")
     preprocessors = None
-    processor: CoreProcessor = CoreProcessor(HDF5FileLoader, preprocessors, logger)
-    processor.scan(scan_dir)
+    processor: CoreProcessor = CoreProcessor(HDF5FileLoader, scan_dir, preprocessors, logger)
 
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
     # mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
@@ -86,6 +82,8 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig) -> None:
 
 
 def main() -> None:
+    logger: Logger = setup_logger()
+
     config = load_config()
     run_nums: list[int] = config.runs
     logger.info(f"Runs to process: {run_nums}")
@@ -95,7 +93,7 @@ def main() -> None:
         scan_nums: list[int] = get_scan_nums(run_num, config)
         for scan_num in scan_nums:
             try:
-                process_scan(run_num, scan_num, config)
+                process_scan(run_num, scan_num, config, logger)
             except Exception:
                 logger.exception(f"Failed to process run={run_num}, scan={scan_num}")
                 raise

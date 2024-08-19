@@ -27,14 +27,10 @@ if TYPE_CHECKING:
 
 
 def main() -> None:
-    """
-    126
-    """
-
     config: ExpConfig = load_config()
     logger: Logger = setup_logger()
     runs: list[int] = [
-        127, 131, 137
+        144, 145, 146, 147, 148, 149, 150
     ]
     logger.info(f"Data Analysing run={runs}")
     for run_num in runs:

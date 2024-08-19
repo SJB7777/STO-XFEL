@@ -178,15 +178,6 @@ if __name__ == "__main__":
     file: str = get_run_scan_directory(load_dir, 146, 1, 2)
 
     start = time.time()
-    with h5py.File(file, "r") as hf:
-        qbpm_group = hf[f'qbpm/{config.param.hutch.value}/qbpm1']
-        qbpm_ts = np.asarray(qbpm_group['waveforms.ch1/axis1'], dtype=np.int64)
-        qbpm_sum = np.stack(
-            [qbpm_group[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)],
-            axis=0,
-            dtype=np.float32
-        ).sum(axis=(0, 2))
-        
-    print(type(qbpm_sum[0]))
     
+    pd.read_hdf(file, key='metadata').to_csv("metadata.csv")
     print(f"{time.time() - start} sec")
