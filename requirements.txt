@@ -1,0 +1,17 @@
+h5py
+hdf5plugin
+tables
+loguru
+numpy==1.26.4
+matplotlib
+pandas
+pydantic
+PyYAML
+radon
+tifffile
+tqdm
+scipy
+scikit-image
+scikit_learn
+roi_rectangle
+ipykernel
