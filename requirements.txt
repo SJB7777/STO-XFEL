@@ -15,3 +15,4 @@ scikit-image
 scikit_learn
 roi_rectangle
 ipykernel
+tuna

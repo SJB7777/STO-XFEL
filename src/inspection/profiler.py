@@ -12,7 +12,7 @@ def main() -> None:
     """Profile program with cProfile module and visualize with tuna."""
     config: ExpConfig = load_config()
     load_dir: str = config.path.load_dir
-    file: str = get_run_scan_directory(load_dir, 150, 1, 30)
+    file: str = get_run_scan_directory(load_dir, 1, 1, 110)
 
     logging_file: str = 'logs/profiling/profiling.log'
     # logging Setting
@@ -54,6 +54,7 @@ def main() -> None:
     stats.dump_stats(stats_file)
 
     print(f"Profiling results logged to '{logging_file}'")
+    print(f"Profiling results logged to '{stats_file}'")
 
 
 if __name__ == "__main__":

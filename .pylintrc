@@ -1,0 +1,7 @@
+[MASTER]
+
+[MESSAGES CONTROL]
+disable=redefined-outer-name
+
+[FORMAT]
+max-line-length=120
