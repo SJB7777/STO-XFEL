@@ -106,8 +106,8 @@ if __name__ == "__main__":
     config_dict = {
         "runs": ["1", "2", "3"],
         'path': {
-            'load_dir': 'your\\path',
-            'anaylsis_dir': 'your\\path',
+            'load_dir': 'your/path',
+            'anaylsis_dir': 'your/path',
             'image_dir': 'Image',
             'mat_dir': 'mat_files',
             'npz_dir': 'npz_files',

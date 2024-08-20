@@ -67,6 +67,6 @@ if __name__ == "__main__":
         ax.add_patch(rect)
 
         # 이미지와 ROI를 파일로 저장
-        output_path = os.path.join("Y:\\240608_FXS\\raw_data\\h5\\type=raw\\Image\\moving_roi", f"image_{idx}.png")
+        output_path = os.path.join("Y:/240608_FXS/raw_data/h5/type=raw/Image/moving_roi", f"image_{idx}.png")
         plt.savefig(output_path)
         plt.close(fig)

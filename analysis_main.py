@@ -29,11 +29,10 @@ if TYPE_CHECKING:
 def main() -> None:
     config: ExpConfig = load_config()
     logger: Logger = setup_logger()
-    runs: list[int] = [
-        144
-    ]
-    logger.info(f"Data Analysing run={runs}")
-    for run_num in runs:
+
+    run_nums: list[int] = config.runs
+    logger.info(f"Data Analysing run={run_nums}")
+    for run_num in run_nums:  # pylint: disable=not-an-iterable
         # Define run and scan numbers
         scan_num: int = 1
         roi_name: str = "roi_small"

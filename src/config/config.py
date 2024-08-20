@@ -31,10 +31,10 @@ if __name__ == "__main__":
         "runs": [1, 2, 3],
         "path": {
             # Mother Directory of run files.
-            "load_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
-            "anaylsis_dir": "Y:\\240608_FXS\\raw_data\\h5\\type=raw",
-            # "load_dir": "D:\\dev\\p_python\\xrd\\xfel_sample_data",
-            # "anaylsis_dir": "D:\\dev\\p_python\\xrd\\xfel_sample_data",
+            "load_dir": "Y:/240608_FXS/raw_data/h5/type=raw",
+            "anaylsis_dir": "Y:/240608_FXS/raw_data/h5/type=raw",
+            # "load_dir": "D:/dev/p_python/xrd/xfel_sample_data",
+            # "anaylsis_dir": "D:/dev/p_python/xrd/xfel_sample_data",
             # relative path based on anaylsis_dir
             "image_dir": "Image",
             "param_dir": "DataParameter",

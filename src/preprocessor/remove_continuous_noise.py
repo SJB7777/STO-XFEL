@@ -27,7 +27,7 @@ if __name__ == "__main__":
     from scipy.io import loadmat, savemat
     from roi_rectangle import RoiRectangle
 
-    file = "Y:\\240608_FXS\\raw_data\\h5\\type=raw\\Mat_files2\\run=0176_scan=0001_no_normalize_poff.mat"
+    file = "Y:/240608_FXS/raw_data/h5/type=raw/Mat_files2/run=0176_scan=0001_no_normalize_poff.mat"
     images = loadmat(file)["data"]
     images = images.swapaxes(0, 2)
     images = images.swapaxes(1, 2)

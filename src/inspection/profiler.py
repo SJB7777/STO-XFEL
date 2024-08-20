@@ -14,7 +14,7 @@ def main() -> None:
     load_dir: str = config.path.load_dir
     file: str = get_run_scan_directory(load_dir, 150, 1, 30)
 
-    logging_file: str = 'logs\\profiling\\profiling.log'
+    logging_file: str = 'logs/profiling/profiling.log'
     # logging Setting
     logging.basicConfig(filename=logging_file, level=logging.INFO, format='%(message)s')
 
@@ -50,7 +50,7 @@ def main() -> None:
     logging.info(profiling_results)
 
     # Save the profiling results to a file
-    stats_file = 'logs\\profiling\\profiling.prof'
+    stats_file = 'logs/profiling/profiling.prof'
     stats.dump_stats(stats_file)
 
     print(f"Profiling results logged to '{logging_file}'")

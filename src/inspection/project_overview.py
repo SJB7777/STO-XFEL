@@ -138,7 +138,7 @@ def print_complexity_grades(root_dir):
 
 
 if __name__ == "__main__":
-    root_dir: str = ".\\"
+    root_dir: str = "./"
 
     project_structure = analyze_project(root_dir)
     print("Project Structure:")

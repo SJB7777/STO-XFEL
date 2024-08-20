@@ -24,7 +24,7 @@ def setup_logger() -> Logger:
         Logger: The configured logger instance.
     """
     formatter = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name}:{function}:{line} - {message}"
-    log_file: str = "logs\\{time:YYYY-MM-DD}\\{time:YYYYMMDD_HHmmss}.log"
+    log_file: str = "logs/{time:YYYY-MM-DD}/{time:YYYYMMDD_HHmmss}.log"
     loguru.logger.add(log_file, format=formatter, rotation="500 MB", compression="zip")
 
     return loguru.logger
