@@ -46,7 +46,7 @@ def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor
     remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
 
     standard_preprocessor = compose(
-        subtract_dark_background,
+        # subtract_dark_background,
         remove_by_ransac_roi,
         normalize_images_by_qbpm,
     )

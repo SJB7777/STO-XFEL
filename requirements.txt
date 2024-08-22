@@ -13,6 +13,6 @@ tqdm
 scipy
 scikit-image
 scikit_learn
-roi_rectangle
+roi-rectangle
 ipykernel
 tuna

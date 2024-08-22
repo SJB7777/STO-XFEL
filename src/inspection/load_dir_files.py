@@ -1,6 +1,7 @@
 import os
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import h5py
 
@@ -41,22 +42,28 @@ def h5_tree(val: Any, pre: None = '') -> None:
         if items_cnt == 0:
             # the last item
             if isinstance(val, h5py._hl.group.Group):
-                print(pre + '└── ' + key)
-                h5_tree(val, pre + '    ')
+                print(f"{pre}└── {key}")
+                h5_tree(val, f'{pre}    ')
             else:
                 try:
-                    print(pre + '└── ' + key + ' (%d)' % len(val))
+                    if h5py.check_string_dtype(val.dtype):
+                        print(f"{pre}└── {key} ({val[()]})")
+                    else:
+                        print(f"{pre}└── {key} ({val.shape})")
                 except TypeError:
-                    print(pre + '└── ' + key + ' (scalar)')
+                    print(f"{pre}└── {key} (scalar)")
         else:
             if isinstance(val, h5py._hl.group.Group):
-                print(pre + '├── ' + key)
-                h5_tree(val, pre + '│   ')
+                print(f"{pre}├── {key}")
+                h5_tree(val, f"{pre}│   ")
             else:
                 try:
-                    print(pre + '├── ' + key + ' (%d)' % len(val))
+                    if h5py.check_string_dtype(val.dtype):
+                        print(f"{pre}├── {key} ({val[()]})")
+                    else:
+                        print(f"{pre}├── {key} ({val.shape})")
                 except TypeError:
-                    print(pre + '├── ' + key + ' (scalar)')
+                    print(f"{pre}├── {key} (scalar)")
 
 
 def load_matdata(h5file: str) -> pd.DataFrame:
@@ -65,17 +72,21 @@ def load_matdata(h5file: str) -> pd.DataFrame:
 
 if __name__ == "__main__":
 
-    from utils.file_util import get_run_scan_directory
-    from src.config.config import load_config
+    from src.utils.file_util import get_run_scan_directory
+    # from src.config.config import load_config
 
-    config = load_config()
-    load_dir = config.path.load_dir
+    # config = load_config()
+    # load_dir = config.path.load_dir
 
-    file = get_run_scan_directory(load_dir, 122, 1, 30)
+    # file = get_run_scan_directory(load_dir, 122, 1, 30)
 
-    # metadata = load_matdata(file)
-    # metadata.to_csv("metadata122.csv")
+    # # metadata = load_matdata(file)
+    # # metadata.to_csv("metadata122.csv")
 
+    run_n = 208
+    exp_id = 'ue_240607_FXS'
+    run_dir = f'/xfel/ffs/dat/{exp_id}/raw_data/h5/type=measurement'
+    file = get_run_scan_directory(run_dir, run_n, 1, 1)
     with h5py.File(file) as hf:
         print(hf)
         h5_tree(hf)

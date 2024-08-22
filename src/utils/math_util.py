@@ -153,7 +153,7 @@ def get_most_common_element(arr: npt.NDArray) -> int:
     arr (np.ndarray): Input NumPy array.
 
     Returns:
-    int: The most common element in the array.
+    element (int): The most common element in the array.
     """
 
     max_val = int(np.max(arr))

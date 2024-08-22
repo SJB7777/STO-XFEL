@@ -52,6 +52,7 @@ class CoreProcessor:
         }
 
         hdf5_files = get_file_list(scan_dir)
+        hdf5_files.sort(key=lambda name: int(name[1:-3]))
         pbar = tqdm(hdf5_files, total=len(hdf5_files))
         for hdf5_file in pbar:
             loader_strategy = self.get_loader(os.path.join(scan_dir, hdf5_file))
