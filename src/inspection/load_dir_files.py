@@ -83,9 +83,9 @@ if __name__ == "__main__":
     # # metadata = load_matdata(file)
     # # metadata.to_csv("metadata122.csv")
 
-    run_n = 208
+    run_n = 37
     exp_id = 'ue_240607_FXS'
-    run_dir = f'/xfel/ffs/dat/{exp_id}/raw_data/h5/type=measurement'
+    run_dir = f'/xfel/ffs/dat/{exp_id}/raw_data/h5/type=raw'
     file = get_run_scan_directory(run_dir, run_n, 1, 1)
     with h5py.File(file) as hf:
         print(hf)

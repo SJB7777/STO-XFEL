@@ -35,7 +35,7 @@ def main() -> None:
     for run_num in run_nums:  # pylint: disable=not-an-iterable
         # Define run and scan numbers
         scan_num: int = 1
-        roi_name: str = "roi_small"
+        roi_name: str = "roi_small2"
 
         # Define file paths and names
         npz_dir: str = config.path.npz_dir

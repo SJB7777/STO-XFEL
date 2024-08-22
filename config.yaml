@@ -28,7 +28,7 @@ param:
   hutch: eh1
   detector: jungfrau2
   xray: HX
-  pump_setting: 30HZ
+  pump_setting: 0HZ
   x1: 0
   x2: 1
   y1: 2

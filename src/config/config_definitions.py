@@ -44,7 +44,7 @@ class ExpParams(BaseModel):
     y2: int = 3
     sdd: float = 1.3
     dps: float = 7.5e-5
-    beam_energy: float = 10
+    beam_energy: float = 9.7
     sigma_factor: float = 1
     wavelength: float = None
 

@@ -1,6 +1,7 @@
 from functools import partial, reduce
 from typing import Callable
 
+import numpy as np
 import numpy.typing as npt
 from roi_rectangle import RoiRectangle
 
@@ -16,6 +17,34 @@ from src.preprocessor.generic_preprocessors import (
 
 ImagesQbpm = tuple[npt.NDArray, npt.NDArray]
 ImagesQbpmProcessor = Callable[[ImagesQbpm], ImagesQbpm]
+
+
+def create_pohang(roi_rect: RoiRectangle) -> ImagesQbpmProcessor:
+
+    def pohang(images_qbpm: ImagesQbpm) -> ImagesQbpm:
+        images, qbpm = images_qbpm
+        roi_images = roi_rect.slice(images)
+
+        roi_intensities = roi_images.sum((1, 2))
+
+        qbpm_mask = np.logical_and(
+            qbpm > qbpm.mean() - qbpm.std()*2,
+            qbpm < qbpm.mean() + qbpm.std()*2,
+        )
+
+        signal_ratio = roi_intensities[qbpm_mask] / qbpm[qbpm_mask]
+
+        valid = np.logical_and(
+            signal_ratio < np.median(signal_ratio) + np.std(signal_ratio) * .3, 
+            signal_ratio > np.median(signal_ratio) - np.std(signal_ratio) * .3
+        )
+
+        valid_qbpm = qbpm[qbpm_mask][valid]
+        valid_images = images[qbpm_mask][valid] / valid_qbpm[:, np.newaxis, np.newaxis] * np.mean(valid_qbpm)
+
+        return valid_images, qbpm[qbpm_mask][valid]
+
+    return pohang
 
 
 def shift_to_positive(images_qbpm: ImagesQbpm) -> ImagesQbpm:

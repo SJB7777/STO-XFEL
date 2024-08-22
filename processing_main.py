@@ -1,6 +1,7 @@
 import os
 from typing import Optional
 
+import numpy as np
 from roi_rectangle import RoiRectangle
 
 from src.logger import setup_logger, Logger
@@ -12,9 +13,10 @@ from src.preprocessor.image_qbpm_preprocessor import (
     subtract_dark_background,
     normalize_images_by_qbpm,
     create_ransac_roi_outlier_remover,
+    create_pohang,
     ImagesQbpmProcessor
 )
-from src.gui.roi import get_roi_auto, get_hdf5_images
+from src.gui.roi import get_roi_auto, get_hdf5_images, RoiSelector
 from src.utils.file_util import get_folder_list, get_run_scan_directory, get_file_list
 from src.config.config import load_config, ExpConfig
 
@@ -39,20 +41,33 @@ def get_roi(scan_dir: str, config: ExpConfig, index_mode: Optional[int] = None) 
     image = get_hdf5_images(file, config).sum(axis=0)
     return get_roi_auto(image)
 
+def select_roi(scan_dir: str, config: ExpConfig, index_mode: Optional[int] = None) -> RoiRectangle:
+    """Get Roi for QBPM Normalization"""
+    files = get_file_list(scan_dir)
+
+    if index_mode is None:
+        index = len(files) // 2
+    else:
+        index = index_mode
+
+    file: str = os.path.join(scan_dir, files[index])
+    image = get_hdf5_images(file, config).sum(axis=0)
+    return RoiRectangle.from_tuple(RoiSelector().select_roi(np.log1p(image)))
+
 
 def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor]:
     """Return preprocessors"""
 
-    remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
-
-    standard_preprocessor = compose(
+    # remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
+    pohang = create_pohang(roi_rect)
+    pohang_preprocessor = compose(
         # subtract_dark_background,
-        remove_by_ransac_roi,
-        normalize_images_by_qbpm,
+        pohang,
+        # normalize_images_by_qbpm,
     )
 
     return {
-        "standard": standard_preprocessor,
+        "pohang": pohang_preprocessor,
     }
 
 
@@ -62,7 +77,7 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig, logger: Logger)
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
 
-    roi_rect = get_roi(scan_dir, config, 0)
+    roi_rect = select_roi(scan_dir, config, None)
     if roi_rect is None:
         raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
     logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
@@ -75,11 +90,11 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig, logger: Logger)
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
 
     # Set SaverStrategy
-    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
-    processor.save(mat_saver, file_name)
-
     npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
     processor.save(npz_saver, file_name)
+
+    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    processor.save(mat_saver, file_name)
 
     logger.info(f"Processing run={run_num}, scan={scan_num} is complete")
 
