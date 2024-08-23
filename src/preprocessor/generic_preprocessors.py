@@ -127,9 +127,9 @@ def subtract_dark(images: npt.NDArray) -> npt.NDArray:
 
     dark_images = np.load(dark_file)
     dark = np.mean(dark_images, axis=0)
-    return np.maximum(images - dark[np.newaxis, :, :], 0)
-    # return images - dark[np.newaxis, :, :]
-
+    none_zero_dark = np.maximum(dark, 0)
+    return images - dark[np.newaxis, :, :]
+    # return np.maximum(images - dark[np.newaxis, :, :], 0)
 
 def add_bias(images: npt.NDArray):
     bias = np.min(images)

@@ -47,6 +47,11 @@ def create_pohang(roi_rect: RoiRectangle) -> ImagesQbpmProcessor:
     return pohang
 
 
+def no_negative(images_qbpm: ImagesQbpm) -> ImagesQbpm:
+    """No value below zero"""
+    return np.maximum(images_qbpm[0], 0), images_qbpm[1]
+
+
 def shift_to_positive(images_qbpm: ImagesQbpm) -> ImagesQbpm:
     """
     Shift the images to ensure all values are non-negative by adding a bias.

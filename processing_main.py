@@ -14,6 +14,7 @@ from src.preprocessor.image_qbpm_preprocessor import (
     normalize_images_by_qbpm,
     create_ransac_roi_outlier_remover,
     create_pohang,
+    no_negative,
     ImagesQbpmProcessor
 )
 from src.gui.roi import get_roi_auto, get_hdf5_images, RoiSelector
@@ -41,6 +42,7 @@ def get_roi(scan_dir: str, config: ExpConfig, index_mode: Optional[int] = None) 
     image = get_hdf5_images(file, config).sum(axis=0)
     return get_roi_auto(image)
 
+
 def select_roi(scan_dir: str, config: ExpConfig, index_mode: Optional[int] = None) -> RoiRectangle:
     """Get Roi for QBPM Normalization"""
     files = get_file_list(scan_dir)
@@ -60,14 +62,17 @@ def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor
 
     # remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
     pohang = create_pohang(roi_rect)
-    pohang_preprocessor = compose(
-        # subtract_dark_background,
+
+    new_standard = compose(
+        subtract_dark_background,
+        no_negative,
         pohang,
-        # normalize_images_by_qbpm,
     )
 
+    # none_preprocessor = lambda x: x
+
     return {
-        "pohang": pohang_preprocessor,
+        "new_standard": new_standard,
     }
 
 

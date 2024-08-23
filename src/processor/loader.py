@@ -150,8 +150,8 @@ class HDF5FileLoader(RawDataLoader):
         pon_images = self.images[self.pump_state]
         pon_qbpm = self.qbpm[self.pump_state]
 
-        poff_images = np.maximum(0, poff_images)
-        pon_images = np.maximum(0, pon_images)
+        # poff_images = np.maximum(0, poff_images)
+        # pon_images = np.maximum(0, pon_images)
 
         if poff_images.size > 0:
             data["poff"] = poff_images
