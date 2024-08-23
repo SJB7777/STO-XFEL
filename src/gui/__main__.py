@@ -2,13 +2,15 @@ import os
 
 import numpy as np
 from roi_rectangle import RoiRectangle
+import click
 
 from src.gui.roi import RoiSelector
 from src.config.config import load_config
 from src.analyzer.loader import NpzLoader
 
 
-def select_roi(run_n: int) -> RoiRectangle:
+def select_roi(run_n: int) -> tuple[int, int, int, int]:
+    """Select roi"""
     config = load_config()
     npz_file = os.path.join(config.path.npz_dir, f"run={run_n:0>4}_scan=0001.npz")
     image = NpzLoader(npz_file).data['poff'].sum(0)
@@ -16,10 +18,23 @@ def select_roi(run_n: int) -> RoiRectangle:
     return roi
 
 
+@click.command()
+@click.argument('arg0', type=str)
+@click.argument('run_n', type=int)
+def gui_cli(arg0: str, run_n: int) -> None:
+    """
+    Command-line interface function to handle commands.
 
-# if __name__ == "__main__":
+    Args:
+        arg1 (str): The first argument.
+        run_n (int): The run number.
+    """
+    if arg0 == 'roi':
+        roi = select_roi(run_n)
+        roi_rect = RoiRectangle.from_tuple(roi)
+        click.echo(str(roi_rect))
+    else:
+        raise click.UsageError('Invalid command. Please use "roi" as the first argument.')
 
-#     run_n: int = int(input("Enter run number to select roi: "))
-#     roi: tuple[int, int, int, int] = select_roi(run_n)
-
-#     print("Selected roi is", roi)
+if __name__ == '__main__':
+    gui_cli()
