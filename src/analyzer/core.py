@@ -1,5 +1,5 @@
 import os
-from typing import Mapping
+from collections.abc import Mapping
 
 import numpy as np
 import numpy.typing as npt

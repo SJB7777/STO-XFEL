@@ -1,6 +1,6 @@
 import os
 from collections import defaultdict
-from typing import Optional, DefaultDict, Type, Any
+from typing import Optional, Any
 
 import numpy as np
 import numpy.typing as npt
@@ -20,16 +20,16 @@ class CoreProcessor:
     """
     def __init__(
         self,
-        LoaderStrategy: Type[RawDataLoader],
+        LoaderStrategy: type[RawDataLoader],
         scan_dir: str,
         preprocessor: Optional[dict[str, ImagesQbpmProcessor]] = None,
         logger: Optional[Logger] = None
     ) -> None:
-        self.LoaderStrategy: Type[RawDataLoader] = LoaderStrategy
+        self.LoaderStrategy: type[RawDataLoader] = LoaderStrategy
         self.preprocessor: dict[str, ImagesQbpmProcessor] = preprocessor if preprocessor is not None else {"no_processing": lambda x: x}
 
         self.logger: Logger = logger if logger is not None else setup_logger()
-        self.result: dict[str, DefaultDict[str, npt.NDArray]] = self.scan(scan_dir)
+        self.result: dict[str, defaultdict[str, npt.NDArray]] = self.scan(scan_dir)
         self.config: ExpConfig = load_config()
 
         self.logger.info(f"Meta Data:\n{self.config}")
@@ -46,7 +46,7 @@ class CoreProcessor:
         """
         self.logger.info(f"Starting scan: {scan_dir}")
 
-        preprocessor_data_dict: dict[str, DefaultDict[str, list]] = {
+        preprocessor_data_dict: dict[str, defaultdict[str, list]] = {
             pipline_name: defaultdict(list)
             for pipline_name in self.preprocessor
         }
@@ -66,7 +66,7 @@ class CoreProcessor:
 
         self.logger.info(f"Completed processing: {scan_dir}")
 
-        result: dict[str, DefaultDict[str, npt.NDArray]] = {}
+        result: dict[str, defaultdict[str, npt.NDArray]] = {}
         for preprocessor_name, data in preprocessor_data_dict.items():
             result[preprocessor_name] = {
                 data_name: np.stack(data_list) for data_name, data_list in data.items()
