@@ -63,7 +63,7 @@ def select_roi(scan_dir: str, index_mode: Optional[int] = None) -> RoiRectangle:
 def setup_preprocessors(scan_dir: str) -> dict[str, ImagesQbpmProcessor]:
     """Return preprocessors"""
 
-    roi_rect = select_roi(scan_dir, config, None)
+    roi_rect = select_roi(scan_dir, None)
     if roi_rect is None:
         raise ValueError(f"No ROI Rectangle Set for {scan_dir}")
     logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
@@ -115,10 +115,10 @@ def main() -> None:
 
     for run_num in run_nums: # pylint: disable=not-an-iterable
         logger.info(f"Run: {run_num}")
-        scan_nums: list[int] = get_scan_nums(run_num, config)
+        scan_nums: list[int] = get_scan_nums(run_num)
         for scan_num in scan_nums:
             try:
-                process_scan(run_num, scan_num, config, logger)
+                process_scan(run_num, scan_num)
             except Exception:
                 logger.exception(f"Failed to process run={run_num}, scan={scan_num}")
                 raise
