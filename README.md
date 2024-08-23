@@ -1,5 +1,25 @@
 # PAL-XFEL Data Handling Toolkit for Time-Resolved Ultrafast Experiments
 
+## Prerequisites
+
+- [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed
+
+## Setting Up the Environment
+
+1. **Clone the repository:**
+    ```bash
+    git clone https://github.com/SJB7777/STO-XFEL.git
+    cd STO-XFEL
+    ```
+
+## Updating the Environment
+
+If you need to update the environment with new packages, you can do so by modifying the `environment.yaml` file and then running:
+
+```bash
+pip install -r requirements.txt
+```
+
 ## Project Overview
 The **PAL-XFEL Data Handling Toolkit** is a specialized suite of tools developed for the efficient processing and analysis of PAL-XFEL data, with a focus on time-resolved ultrafast experiments studying polaronic lattice distortions in Strontium Titanate (STO) nanocrystals. This toolkit is designed to enhance data handling, reduce processing times, and ensure the integrity of analytical results, making it an essential asset for our research on perovskite-oxide materials.
 

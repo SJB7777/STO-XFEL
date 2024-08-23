@@ -13,6 +13,8 @@ tqdm
 scipy
 scikit-image
 scikit_learn
+lmfit
 roi-rectangle
 ipykernel
 tuna
+lmfit
