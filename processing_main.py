@@ -22,14 +22,17 @@ from src.utils.file_util import get_folder_list, get_run_scan_directory, get_fil
 from src.config.config import load_config, ExpConfig
 
 
-def get_scan_nums(run_num: int, config: ExpConfig) -> list[int]:
+logger: Logger = setup_logger()
+config: ExpConfig = load_config()
+
+def get_scan_nums(run_num: int) -> list[int]:
     """Get Scan numbers from real directory"""
     run_dir: str = get_run_scan_directory(config.path.load_dir, run_num)
     scan_folders: list[str] = get_folder_list(run_dir)
     return [int(scan_dir.split("=")[1]) for scan_dir in scan_folders]
 
 
-def get_roi(scan_dir: str, config: ExpConfig, index_mode: Optional[int] = None) -> RoiRectangle:
+def get_roi(scan_dir: str, index_mode: Optional[int] = None) -> RoiRectangle:
     """Get Roi for QBPM Normalization"""
     files = get_file_list(scan_dir)
 
@@ -43,7 +46,7 @@ def get_roi(scan_dir: str, config: ExpConfig, index_mode: Optional[int] = None) 
     return get_roi_auto(image)
 
 
-def select_roi(scan_dir: str, config: ExpConfig, index_mode: Optional[int] = None) -> RoiRectangle:
+def select_roi(scan_dir: str, index_mode: Optional[int] = None) -> RoiRectangle:
     """Get Roi for QBPM Normalization"""
     files = get_file_list(scan_dir)
 
@@ -57,16 +60,20 @@ def select_roi(scan_dir: str, config: ExpConfig, index_mode: Optional[int] = Non
     return RoiRectangle.from_tuple(RoiSelector().select_roi(np.log1p(image)))
 
 
-def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor]:
+def setup_preprocessors(scan_dir: str) -> dict[str, ImagesQbpmProcessor]:
     """Return preprocessors"""
 
-    # remove_by_ransac_roi: ImagesQbpmProcessor = create_ransac_roi_outlier_remover(roi_rect)
+    roi_rect = select_roi(scan_dir, config, None)
+    if roi_rect is None:
+        raise ValueError(f"No ROI Rectangle Set for {scan_dir}")
+    logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
+
     pohang = create_pohang(roi_rect)
 
+    # compose make a function that exicuted from right to left
     new_standard = compose(
-        subtract_dark_background,
-        no_negative,
         pohang,
+        subtract_dark_background,
     )
 
     # none_preprocessor = lambda x: x
@@ -76,17 +83,13 @@ def setup_preprocessors(roi_rect: RoiRectangle) -> dict[str, ImagesQbpmProcessor
     }
 
 
-def process_scan(run_num: int, scan_num: int, config: ExpConfig, logger: Logger) -> None:
+def process_scan(run_num: int, scan_num: int) -> None:
     """Process Single Scan"""
 
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
 
-    roi_rect = select_roi(scan_dir, config, None)
-    if roi_rect is None:
-        raise ValueError(f"No ROI Rectangle Set for run={run_num}, scan={scan_num}")
-    logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
-    preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(roi_rect)
+    preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(scan_dir)
 
     for preprocessor_name in preprocessors:
         logger.info(f"preprocessor: {preprocessor_name}")
@@ -106,9 +109,7 @@ def process_scan(run_num: int, scan_num: int, config: ExpConfig, logger: Logger)
 
 def main() -> None:
     """Processing"""
-    logger: Logger = setup_logger()
 
-    config = load_config()
     run_nums: list[int] = config.runs
     logger.info(f"Runs to process: {run_nums}")
 

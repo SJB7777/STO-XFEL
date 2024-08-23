@@ -150,8 +150,8 @@ class HDF5FileLoader(RawDataLoader):
         pon_images = self.images[self.pump_state]
         pon_qbpm = self.qbpm[self.pump_state]
 
-        # poff_images = np.maximum(0, poff_images)
-        # pon_images = np.maximum(0, pon_images)
+        poff_images = np.maximum(0, poff_images)
+        pon_images = np.maximum(0, pon_images)
 
         if poff_images.size > 0:
             data["poff"] = poff_images
@@ -178,12 +178,16 @@ def get_hdf5_images(file: str, config: ExpConfig) -> npt.NDArray:
 
 if __name__ == "__main__":
     from src.utils.file_util import get_run_scan_directory
+    import matplotlib.pyplot as plt
     import time
 
     config: ExpConfig = load_config()
     load_dir: str = config.path.load_dir
-    file: str = get_run_scan_directory(load_dir, 146, 1, 2)
-
+    file: str = get_run_scan_directory(load_dir, 39, 1, 40)
+    images_1 = get_hdf5_images(file, config)
+    print(images_1.shape)
+    plt.imshow(images_1.mean(0))
+    plt.show()
     start = time.time()
 
     pd.read_hdf(file, key='metadata')
