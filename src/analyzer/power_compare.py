@@ -77,13 +77,8 @@ def save_power_df(power_df: pd.DataFrame, root: str):
 
 if __name__ == "__main__":
     power_run: dict[int, int] = {
-        1: 144,
-        2: 145,
-        3: 146,
-        4: 147,
-        5: 148,
-        6: 149,
-        7: 150
+        1: 89,
+        2: 90,
     }
 
     power_df = power_compare(power_run)

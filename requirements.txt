@@ -18,3 +18,4 @@ roi-rectangle
 ipykernel
 tuna
 lmfit
+click

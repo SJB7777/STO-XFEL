@@ -19,15 +19,17 @@ if __name__ == "__main__":
     from src.config.config import load_config
     from src.processor.saver import MatSaverStrategy, NpzSaverStrategy
     config = load_config()
-    npz_file = os.path.join(config.path.npz_dir, "run=0065_scan=0001.npz")
+    npz_file = os.path.join(config.path.npz_dir, "run=0169_scan=0001.npz")
 
-    darks = NpzLoader(npz_file).data['poff']
+    poff = NpzLoader(npz_file).data['poff']
+    pon = NpzLoader(npz_file).data['pon']
 
-    print(darks.shape)
-    print(darks.max())
-    print(darks.min())
-    print(darks.mean())
-    print(darks.dtype)
+    result = (pon + poff) / 2
+    print(result.shape)
+    print(result.max())
+    print(result.min())
+    print(result.mean())
+    print(result.dtype)
 
-    dark_dir = os.path.join(config.path.analysis_dir, 'DARK', 'dark.npy')
-    np.save(dark_dir, darks)
+    mat_saver = MatSaverStrategy()
+    mat_saver.save("run=0169_scan=0001", {'pon': result})

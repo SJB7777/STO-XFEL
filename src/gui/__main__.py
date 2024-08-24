@@ -19,9 +19,9 @@ def select_roi(run_n: int) -> tuple[int, int, int, int]:
 
 
 @click.command()
-@click.argument('arg0', type=str)
-@click.argument('run_n', type=int)
-def gui_cli(arg0: str, run_n: int) -> None:
+@click.argument('run_n', type=str)
+@click.option('--roi', type=bool)
+def gui_cli(run_n: int, is_roi: bool) -> None:
     """
     Command-line interface function to handle commands.
 
@@ -29,7 +29,7 @@ def gui_cli(arg0: str, run_n: int) -> None:
         arg1 (str): The first argument.
         run_n (int): The run number.
     """
-    if arg0 == 'roi':
+    if is_roi == 'roi':
         roi = select_roi(run_n)
         roi_rect = RoiRectangle.from_tuple(roi)
         click.echo(str(roi_rect))

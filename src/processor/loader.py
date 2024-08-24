@@ -168,12 +168,9 @@ def get_hdf5_images(file: str, config: ExpConfig) -> npt.NDArray:
         if "detector" not in hf:
             raise KeyError(f"Key 'detector' not found in {file}")
 
-        return np.maximum(
-            0,
-            np.asarray(
-                hf[f'detector/{config.param.hutch.value}/{config.param.detector.value}/image/block0_values']
-            )
-        )
+        images = np.asarray(hf[f'detector/{config.param.hutch.value}/{config.param.detector.value}/image/block0_values'])
+
+        return np.maximum(images, 0)
 
 
 if __name__ == "__main__":
@@ -183,12 +180,9 @@ if __name__ == "__main__":
 
     config: ExpConfig = load_config()
     load_dir: str = config.path.load_dir
-    file: str = get_run_scan_directory(load_dir, 39, 1, 40)
-    images_1 = get_hdf5_images(file, config)
-    print(images_1.shape)
-    plt.imshow(images_1.mean(0))
-    plt.show()
-    start = time.time()
+    file: str = get_run_scan_directory(load_dir, 141, 1, 77)
 
-    pd.read_hdf(file, key='metadata')
+
+    start = time.time()
+    loader = HDF5FileLoader(file)
     print(f"{time.time() - start} sec")

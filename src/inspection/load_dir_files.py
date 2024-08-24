@@ -47,7 +47,7 @@ def h5_tree(val: Any, pre: None = '') -> None:
             else:
                 try:
                     if h5py.check_string_dtype(val.dtype):
-                        print(f"{pre}└── {key} ({val[()]})")
+                        print(f"{pre}└── {key} ({val})")
                     else:
                         print(f"{pre}└── {key} ({val.shape})")
                 except TypeError:
@@ -59,7 +59,7 @@ def h5_tree(val: Any, pre: None = '') -> None:
             else:
                 try:
                     if h5py.check_string_dtype(val.dtype):
-                        print(f"{pre}├── {key} ({val[()]})")
+                        print(f"{pre}├── {key} ({val})")
                     else:
                         print(f"{pre}├── {key} ({val.shape})")
                 except TypeError:
@@ -73,20 +73,13 @@ def load_matdata(h5file: str) -> pd.DataFrame:
 if __name__ == "__main__":
 
     from src.utils.file_util import get_run_scan_directory
-    # from src.config.config import load_config
+    from src.config.config import load_config
 
-    # config = load_config()
-    # load_dir = config.path.load_dir
+    config = load_config()
+    load_dir = config.path.load_dir
 
-    # file = get_run_scan_directory(load_dir, 122, 1, 30)
+    file = get_run_scan_directory(load_dir, 152, 1, 81)
 
-    # # metadata = load_matdata(file)
-    # # metadata.to_csv("metadata122.csv")
-
-    run_n = 37
-    exp_id = 'ue_240607_FXS'
-    run_dir = f'/xfel/ffs/dat/{exp_id}/raw_data/h5/type=raw'
-    file = get_run_scan_directory(run_dir, run_n, 1, 1)
     with h5py.File(file) as hf:
         print(hf)
         h5_tree(hf)

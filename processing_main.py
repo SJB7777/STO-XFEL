@@ -49,7 +49,7 @@ def get_roi(scan_dir: str, index_mode: Optional[int] = None) -> RoiRectangle:
 def select_roi(scan_dir: str, index_mode: Optional[int] = None) -> RoiRectangle:
     """Get Roi for QBPM Normalization"""
     files = get_file_list(scan_dir)
-
+    files.sort(key=lambda name: int(name[1:-3]))
     if index_mode is None:
         index = len(files) // 2
     else:
@@ -67,7 +67,6 @@ def setup_preprocessors(scan_dir: str) -> dict[str, ImagesQbpmProcessor]:
     if roi_rect is None:
         raise ValueError(f"No ROI Rectangle Set for {scan_dir}")
     logger.info(f"ROI rectangle: {roi_rect.to_tuple()}")
-
     pohang = create_pohang(roi_rect)
 
     # compose make a function that exicuted from right to left
@@ -76,11 +75,13 @@ def setup_preprocessors(scan_dir: str) -> dict[str, ImagesQbpmProcessor]:
         subtract_dark_background,
     )
 
-    # none_preprocessor = lambda x: x
-
     return {
         "new_standard": new_standard,
     }
+
+    # return {
+    #     'none' : lambda x: x
+    # }
 
 
 def process_scan(run_num: int, scan_num: int) -> None:
