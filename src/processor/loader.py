@@ -7,6 +7,7 @@ import numpy.typing as npt
 import pandas as pd
 import h5py
 import hdf5plugin  # pylint: disable=unused-import # noqa: F401
+
 from src.config.config import load_config, ExpConfig
 from src.config.enums import Hertz
 
@@ -40,8 +41,6 @@ class HDF5FileLoader(RawDataLoader):
         metadata: pd.DataFrame = pd.read_hdf(self.file, key='metadata')
         merged_df: pd.DataFrame = self.get_merged_df(metadata)
 
-        # Fill Negative Values to Zero
-        # self.images: npt.NDArray[np.float64] = np.maximum(0, np.stack(merged_df['image'].values))
         self.images: npt.NDArray[np.float32] = np.stack(merged_df['image'].values)
         self.qbpm: npt.NDArray[np.float32] = np.stack(merged_df['qbpm'].values)
         self.pump_state: npt.NDArray[np.bool_] = self.get_pump_mask(merged_df)
@@ -175,7 +174,6 @@ def get_hdf5_images(file: str, config: ExpConfig) -> npt.NDArray:
 
 if __name__ == "__main__":
     from src.utils.file_util import get_run_scan_directory
-    import matplotlib.pyplot as plt
     import time
 
     config: ExpConfig = load_config()

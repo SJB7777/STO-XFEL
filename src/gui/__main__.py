@@ -15,7 +15,7 @@ def load_image(run_n: int) -> np.ndarray:
 
     # Check if the file exists
     if not os.path.exists(npz_file):
-        raise click.ClickException(f"Error: File '{npz_file}' not found.")
+        raise click.ClickException(f"File '{npz_file}' not found.")
 
     image = NpzLoader(npz_file).data['poff'].mean(0)
     return image
