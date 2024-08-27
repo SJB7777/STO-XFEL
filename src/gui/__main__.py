@@ -11,7 +11,7 @@ from src.analyzer.loader import NpzLoader
 def load_image(run_n: int) -> np.ndarray:
     """Load image data from npz file."""
     config = load_config()
-    npz_file = os.path.join(config.path.npz_dir, f"run={run_n:0>4}_scan=0001.npz")
+    npz_file = os.path.join(config.path.processed_dir, f"run={run_n:0>4}_scan=0001.npz")
 
     # Check if the file exists
     if not os.path.exists(npz_file):

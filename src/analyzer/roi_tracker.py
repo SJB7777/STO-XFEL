@@ -18,8 +18,8 @@ if __name__ == "__main__":
     scan = 1
 
     config: ExpConfig = load_config()
-    npz_dir: str = config.path.npz_dir
-    npz_file = os.path.join(npz_dir, f"run={run:0>4}_scan={scan:0>4}.npz")
+    processed_dir: str = config.path.processed_dir
+    npz_file = os.path.join(processed_dir, f"run={run:0>4}_scan={scan:0>4}.npz")
     data: Mapping[str, npt.NDArray] = np.load(npz_file)
     delays: npt.NDArray = data["delay"]
     images: npt.NDArray = data["pon"]

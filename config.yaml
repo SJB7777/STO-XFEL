@@ -3,7 +3,7 @@ runs:
 
 path:
   load_dir: Y:\240608_FXS\raw_data\h5\type=raw
-  analysis_dir: Y:\240608_FXS\raw_data\h5\type=raw
+  analysis_dir: Y:\240608_FXS\analysis_data
 
   # load_dir: /xfel/ffs/dat/ue_240821_FXS/raw_data/h5/type=raw/
   # analysis_dir: /home/hxpp-admin/Desktop/sogang/240821_sogang/
@@ -17,17 +17,15 @@ path:
   # load_dir: F:\XFEL
   # analysis_dir: F:\XFEL
 
-  image_dir: Image
-  param_dir: DataParameter
-  mat_dir: Mat_files
-  npz_dir: Npz_files
-  tif_dir: Tif_files
+  output_dir: output_data
+  mat_dir: mat_files
+  processed_dir: processed_data
 
 param:
   hutch: eh1
   detector: jungfrau2
   xray: HX
-  pump_setting: 60HZ # laser
+  pump_setting: 60HZ
   x1: 0
   x2: 1
   y1: 2
