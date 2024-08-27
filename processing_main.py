@@ -74,11 +74,11 @@ def setup_preprocessors(scan_dir: str) -> dict[str, ImagesQbpmProcessor]:
     }
 
 
-def process_scan(run_num: int, scan_num: int) -> None:
+def process_scan(run_n: int, scan_n: int) -> None:
     """Process Single Scan"""
 
     load_dir = config.path.load_dir
-    scan_dir = get_run_scan_directory(load_dir, run_num, scan_num)
+    scan_dir = get_run_scan_directory(load_dir, run_n, scan_n)
 
     preprocessors: dict[str, ImagesQbpmProcessor] = setup_preprocessors(scan_dir)
 
@@ -86,16 +86,14 @@ def process_scan(run_num: int, scan_num: int) -> None:
         logger.info(f"preprocessor: {preprocessor_name}")
     processor: CoreProcessor = CoreProcessor(HDF5FileLoader, scan_dir, preprocessors, logger)
 
-    file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
-
     # Set SaverStrategy
     npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
-    processor.save(npz_saver, file_name)
+    processor.save(npz_saver, run_n, scan_n)
 
     mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
-    processor.save(mat_saver, file_name)
+    processor.save(mat_saver, run_n, scan_n)
 
-    logger.info(f"Processing run={run_num}, scan={scan_num} is complete")
+    logger.info(f"Processing run={run_n}, scan={scan_n} is complete")
 
 
 def main() -> None:

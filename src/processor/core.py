@@ -107,7 +107,7 @@ class CoreProcessor:
 
         return preprocessed_data
 
-    def save(self, saver: SaverStrategy, file_name: str):
+    def save(self, saver: SaverStrategy, run_n: int, scan_n: int):
         """
         Saves processed images using a specified saving strategy.
 
@@ -122,9 +122,8 @@ class CoreProcessor:
             raise ValueError("Nothing to save")
 
         for pipline_name, data_dict in self.result.items():
-            file_base_name = f"{file_name}"
 
-            saver.save(file_base_name, data_dict)
+            saver.save(run_n, scan_n, data_dict)
             self.logger.info(f"Finished preprocessor: {pipline_name}")
             self.logger.info(f"Data Dict Keys: {data_dict.keys()}")
             self.logger.info(f"Saved file '{saver.file}'")

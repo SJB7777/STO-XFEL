@@ -31,7 +31,7 @@ def main() -> None:
     config: ExpConfig = load_config()
     logger: Logger = setup_logger()
 
-    run_nums: list[int] = [29]
+    run_nums: list[int] = [62]
     logger.info(f"Data Analysing run={run_nums}")
     for run_num in run_nums:  # pylint: disable=not-an-iterable
         # Define run and scan numbers
@@ -53,7 +53,7 @@ def main() -> None:
         logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3}")
 
         # Initialize MeanDataProcessor
-        processor: DataAnalyzer = DataAnalyzer(npz_file, 0)
+        processor: DataAnalyzer = DataAnalyzer(npz_file)
 
         # Extract images
         poff_images: npt.NDArray = processor.poff_images
