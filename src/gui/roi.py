@@ -9,7 +9,7 @@ import numpy.typing as npt
 from roi_rectangle import RoiRectangle
 
 from src.processor.loader import get_hdf5_images
-from src.utils.file_util import get_run_scan_directory, get_file_list
+from src.utils.file_util import get_run_scan_directory
 from src.config.config import load_config, ExpConfig
 
 
@@ -76,7 +76,7 @@ def select_roi_by_run_scan(run: int, scan: int, index_mode: Optional[int] = None
     config: ExpConfig = load_config()
     load_dir = config.path.load_dir
     scan_dir = get_run_scan_directory(load_dir, run, scan)
-    files = get_file_list(scan_dir)
+    files = os.listdir(scan_dir)
 
     if index_mode is None:
         index = len(files) // 2

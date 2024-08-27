@@ -6,7 +6,7 @@ from matplotlib.widgets import Slider
 
 from src.preprocessor.generic_preprocessors import get_linear_regression_confidence_bounds, ransac_regression
 from src.processor.loader import HDF5FileLoader
-from src.utils.file_util import get_run_scan_directory, get_file_list
+from src.utils.file_util import get_run_scan_directory
 
 from src.config.config import load_config
 import numpy.typing as npt
@@ -91,12 +91,12 @@ def find_outliers_run_scan_gui(run: int, scan: int) -> float:
 
     config = load_config()
     scan_dir = get_run_scan_directory(config.path.load_dir, run, scan)
-    files = get_file_list(scan_dir)
+    files = os.listdir(scan_dir)
     file = os.path.join(scan_dir, files[len(files) // 2])
 
     rr = HDF5FileLoader(file)
     images = rr.images
-    qbpm = rr.qbpm_sum
+    qbpm = rr.qbpm
 
     return find_outliers_gui(images.sum(axis=(1, 2)), qbpm)
 
@@ -104,15 +104,15 @@ def find_outliers_run_scan_gui(run: int, scan: int) -> float:
 def RANSAC_regression_gui(run: int, scan: int) -> None:
     config = load_config()
     scan_dir = get_run_scan_directory(config.path.load_dir, run, scan)
-    files = get_file_list(scan_dir)
+    files = os.listdir(scan_dir)
     file = os.path.join(scan_dir, files[len(files) // 2])
 
     rr = HDF5FileLoader(file)
     images = rr.images
-    qbpm = rr.qbpm_sum
+    qbpm = rr.qbpm
 
     intensities = images.sum(axis=(1, 2))
-    mask, coef, intercept = ransac_regression(intensities, qbpm)
+    mask, *_ = ransac_regression(intensities, qbpm)
     plt.scatter(qbpm[mask], intensities[mask], color="blue", label="Inliers")
     plt.scatter(qbpm[~mask], intensities[~mask], color="red", label="Outliers")
     plt.title("RANSAC - outliers vs inliers")
@@ -129,5 +129,5 @@ if __name__ == "__main__":
     y[0] += 10  # Add an outlier
     y[-1] -= 10  # Add another outlier
 
-    sigma = find_outliers_gui(x, y)
+    sigma = find_outliers_gui(y, x)
     print(sigma)

@@ -9,7 +9,7 @@ import tifffile
 from roi_rectangle import RoiRectangle
 
 from src.gui.roi import RoiSelector
-from src.utils.file_util import create_run_scan_directory
+from src.utils.file_util import make_run_scan_directory
 from src.config.config import load_config
 from src.logger import setup_logger, Logger
 from src.analyzer.draw_figure import (
@@ -42,7 +42,7 @@ def main() -> None:
         # Define file paths and names
         processed_dir: str = config.path.processed_dir
         file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
-        npz_dir: str = create_run_scan_directory(processed_dir, run_num, scan_num)
+        npz_dir: str = make_run_scan_directory(processed_dir, run_num, scan_num)
         npz_file: str = os.path.join(npz_dir, file_name + ".npz")
 
         if not os.path.exists(npz_file):
@@ -75,7 +75,7 @@ def main() -> None:
 
         # Define save directory
         output_root: str = config.path.output_dir
-        output_dir: str = os.path.join(create_run_scan_directory(output_root, run_num, scan_num), roi_name)
+        output_dir: str = os.path.join(make_run_scan_directory(output_root, run_num, scan_num), roi_name)
         os.makedirs(output_dir, exist_ok=True)
 
         # Slice images to ROI

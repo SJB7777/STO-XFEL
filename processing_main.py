@@ -15,7 +15,7 @@ from src.preprocessor.image_qbpm_preprocessor import (
     ImagesQbpmProcessor
 )
 from src.gui.roi import get_roi_auto, get_hdf5_images, RoiSelector
-from src.utils.file_util import get_folder_list, get_run_scan_directory, get_file_list
+from src.utils.file_util import get_run_scan_directory
 from src.config.config import load_config, ExpConfig
 
 
@@ -25,13 +25,13 @@ config: ExpConfig = load_config()
 def get_scan_nums(run_num: int) -> list[int]:
     """Get Scan numbers from real directory"""
     run_dir: str = get_run_scan_directory(config.path.load_dir, run_num)
-    scan_folders: list[str] = get_folder_list(run_dir)
+    scan_folders: list[str] = os.listdir(run_dir)
     return [int(scan_dir.split("=")[1]) for scan_dir in scan_folders]
 
 
 def get_roi(scan_dir: str, index_mode: Optional[int] = None) -> RoiRectangle:
     """Get Roi for QBPM Normalization"""
-    files = get_file_list(scan_dir)
+    files = os.listdir(scan_dir)
 
     if index_mode is None:
         index = len(files) // 2
@@ -45,7 +45,7 @@ def get_roi(scan_dir: str, index_mode: Optional[int] = None) -> RoiRectangle:
 
 def select_roi(scan_dir: str, index_mode: Optional[int] = None) -> RoiRectangle:
     """Get Roi for QBPM Normalization"""
-    files = get_file_list(scan_dir)
+    files = os.listdir(scan_dir)
     files.sort(key=lambda name: int(name[1:-3]))
     if index_mode is None:
         index = len(files) // 2

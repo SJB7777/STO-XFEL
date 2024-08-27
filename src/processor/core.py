@@ -6,7 +6,6 @@ import numpy as np
 import numpy.typing as npt
 from tqdm import tqdm
 
-from src.utils.file_util import get_file_list
 from src.processor.saver import SaverStrategy
 from src.processor.loader import RawDataLoader
 from src.preprocessor.image_qbpm_preprocessor import ImagesQbpmProcessor
@@ -51,7 +50,7 @@ class CoreProcessor:
             for pipline_name in self.preprocessor
         }
 
-        hdf5_files = get_file_list(scan_dir)
+        hdf5_files = os.listdir(scan_dir)
         hdf5_files.sort(key=lambda name: int(name[1:-3]))
         pbar = tqdm(hdf5_files, total=len(hdf5_files))
         for hdf5_file in pbar:

@@ -1,24 +1,20 @@
 import os
-from typing import Any
 
-import numpy as np
 import pandas as pd
 import h5py
-
-from src.utils.file_util import get_file_list, get_folder_list
 
 
 def get_file_status(root: str) -> dict:
 
     status: dict = {}
 
-    runs: list[str] = get_folder_list(root)
+    runs: list[str] = os.listdir(root)
     for run in runs:
         path = os.path.join(root, run)
-        scans = get_folder_list(path)
+        scans = os.listdir(path)
         for scan in scans:
             path = os.path.join(path, scan)
-            files = get_file_list(path)
+            files = os.listdir(path)
 
             name = "_".join(path[-2:])[:-2]
 
