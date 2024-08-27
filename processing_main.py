@@ -7,7 +7,7 @@ from roi_rectangle import RoiRectangle
 from src.logger import setup_logger, Logger
 from src.processor.core import CoreProcessor
 from src.processor.loader import HDF5FileLoader
-from src.processor.saver import SaverFactory, SaverStrategy
+from src.processor.saver import SaverStrategy, get_saver_strategy
 from src.preprocessor.image_qbpm_preprocessor import (
     compose,
     subtract_dark_background,
@@ -89,10 +89,10 @@ def process_scan(run_num: int, scan_num: int) -> None:
     file_name: str = f"run={run_num:0>4}_scan={scan_num:0>4}"
 
     # Set SaverStrategy
-    npz_saver: SaverStrategy = SaverFactory.get_saver("npz")
+    npz_saver: SaverStrategy = get_saver_strategy("npz")
     processor.save(npz_saver, file_name)
 
-    mat_saver: SaverStrategy = SaverFactory.get_saver("mat")
+    mat_saver: SaverStrategy = get_saver_strategy("mat")
     processor.save(mat_saver, file_name)
 
     logger.info(f"Processing run={run_num}, scan={scan_num} is complete")

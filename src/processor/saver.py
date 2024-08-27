@@ -18,12 +18,12 @@ class SaverStrategy(ABC):
     @property
     @abstractmethod
     def file(self) -> str:
-        pass
+        """Return File Name"""
 
     @property
     @abstractmethod
     def file_type(self) -> str:
-        pass
+        """Return File Type"""
 
 
 class MatSaverStrategy(SaverStrategy):
@@ -88,16 +88,12 @@ class TifSaverStrategy(SaverStrategy):
         return "tif"
 
 
-class SaverFactory:
-    """Get SaverStrategy"""
-
-    @staticmethod
-    def get_saver(file_type) -> SaverStrategy:
-        """return SaverStrategy"""
-        if file_type == 'mat':
-            return MatSaverStrategy()
-        if file_type == 'npz':
-            return NpzSaverStrategy()
-        if file_type == 'tif':
-            return TifSaverStrategy()
-        raise ValueError(f"Unsupported file type: {file_type}")
+def get_saver_strategy(file_type: str) -> SaverStrategy:
+    """Get SaverStrategy by file type."""
+    if file_type == 'mat':
+        return MatSaverStrategy()
+    if file_type == 'npz':
+        return NpzSaverStrategy()
+    if file_type == 'tif':
+        return TifSaverStrategy()
+    raise ValueError(f"Unsupported file type: {file_type}")

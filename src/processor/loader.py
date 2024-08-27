@@ -6,20 +6,41 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import h5py
-import hdf5plugin  # pylint: disable=unused-import # noqa: F401
+import hdf5plugin  # pylint: disable=unused-import
 
 from src.config.config import load_config, ExpConfig
 from src.config.enums import Hertz
 
 
 class RawDataLoader(ABC):
+    """
+    Abstract base class for loading raw data from various sources.
+
+    This class defines the interface for loading raw data using different strategies.
+    Subclasses must implement the abstract methods to provide specific implementations.
+
+    Attributes:
+        file (str): The path to the raw data file.
+    """
+
     @abstractmethod
     def __init__(self, file: str) -> None:
-        pass
+        """
+        Initialize the RawDataLoader with the path to the raw data file.
+
+        Args:
+            file (str): The path to the raw data file.
+        """
 
     @abstractmethod
     def get_data(self) -> dict[str, npt.NDArray]:
-        pass
+        """
+        Retrieve the raw data as a dictionary of numpy arrays.
+
+        Returns:
+            dict[str, npt.NDArray]: A dictionary where keys are data identifiers
+            and values are numpy arrays containing the raw data.
+        """
 
 
 class HDF5FileLoader(RawDataLoader):
@@ -81,7 +102,7 @@ class HDF5FileLoader(RawDataLoader):
             qbpm_ts = np.asarray(qbpm_group['waveforms.ch1/axis1'], dtype=np.int64)
             qbpm = np.stack(
                 [qbpm_group[f'waveforms.ch{i + 1}/block0_values'] for i in range(4)],
-                axis=0, 
+                axis=0,
                 dtype=np.float32
             ).sum(axis=(0, 2))
 
