@@ -85,12 +85,10 @@ class NpzSaverStrategy(SaverStrategy):
 
 def get_saver_strategy(file_type: str) -> SaverStrategy:
     """Get SaverStrategy by file type."""
-    strategies = {
-        'mat': MatSaverStrategy,
-        'npz': NpzSaverStrategy
-    }
-
-    strategy_class = strategies.get(file_type)
-    if strategy_class is None:
-        raise ValueError(f"Unsupported file type: {file_type}")
-    return strategy_class()
+    match file_type:
+        case 'mat':
+            return MatSaverStrategy()
+        case 'npz':
+            return NpzSaverStrategy()
+        case _:
+            raise ValueError(f"Unsupported file type: {file_type}")
