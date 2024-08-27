@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
@@ -30,12 +31,13 @@ def main() -> None:
     config: ExpConfig = load_config()
     logger: Logger = setup_logger()
 
-    run_nums: list[int] = [150, 151]
+    run_nums: list[int] = [29]
     logger.info(f"Data Analysing run={run_nums}")
     for run_num in run_nums:  # pylint: disable=not-an-iterable
         # Define run and scan numbers
         scan_num: int = 1
-        roi_name: str = "roi_small2"
+        now = datetime.now()
+        roi_name: str = now.strftime("%Y%m%d_%H%M%S")
 
         # Define file paths and names
         npz_dir: str = config.path.npz_dir
@@ -48,7 +50,7 @@ def main() -> None:
             raise FileNotFoundError(error_message)
 
         logger.info(f"Run DataAnalyzer run={run_num:0>3} scan={scan_num:0>3}")
-        
+
         # Initialize MeanDataProcessor
         processor: DataAnalyzer = DataAnalyzer(npz_file, 0)
 

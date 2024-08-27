@@ -2,8 +2,8 @@ runs:
   - 148
 
 path:
-  # load_dir: Y:\240608_FXS\raw_data\h5\type=raw
-  # analysis_dir: Y:\240608_FXS\raw_data\h5\type=raw
+  load_dir: Y:\240608_FXS\raw_data\h5\type=raw
+  analysis_dir: Y:\240608_FXS\raw_data\h5\type=raw
 
   # load_dir: /xfel/ffs/dat/ue_240821_FXS/raw_data/h5/type=raw/
   # analysis_dir: /home/hxpp-admin/Desktop/sogang/240821_sogang/
@@ -14,8 +14,8 @@ path:
   # load_dir: /mnt/d/dev/xfel_sample_data
   # analysis_dir: /mnt/d/dev/xfel_sample_data
 
-  load_dir: F:\XFEL
-  analysis_dir: F:\XFEL
+  # load_dir: F:\XFEL
+  # analysis_dir: F:\XFEL
 
   image_dir: Image
   param_dir: DataParameter

@@ -100,6 +100,7 @@ def get_roi_auto(
     center = np.unravel_index(np.argmax(image), image.shape)[::-1]
     return RoiRectangle(center[0] - width, center[1] - width, center[0] + width, center[1] + width)
 
+
 if __name__ == "__main__":
     roi_rect = select_roi_by_run_scan(144, 1, 0)
     print(roi_rect)

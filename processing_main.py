@@ -11,10 +11,7 @@ from src.processor.saver import SaverFactory, SaverStrategy
 from src.preprocessor.image_qbpm_preprocessor import (
     compose,
     subtract_dark_background,
-    normalize_images_by_qbpm,
-    create_ransac_roi_outlier_remover,
     create_pohang,
-    no_negative,
     ImagesQbpmProcessor
 )
 from src.gui.roi import get_roi_auto, get_hdf5_images, RoiSelector
@@ -70,18 +67,11 @@ def setup_preprocessors(scan_dir: str) -> dict[str, ImagesQbpmProcessor]:
     pohang = create_pohang(roi_rect)
 
     # compose make a function that exicuted from right to left
-    new_standard = compose(
-        pohang,
-        subtract_dark_background,
-    )
+    new_standard = compose(pohang, subtract_dark_background)
 
     return {
         "new_standard": new_standard,
     }
-
-    # return {
-    #     'none' : lambda x: x
-    # }
 
 
 def process_scan(run_num: int, scan_num: int) -> None:
