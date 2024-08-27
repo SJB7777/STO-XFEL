@@ -9,7 +9,7 @@ import tifffile
 from roi_rectangle import RoiRectangle
 
 from src.gui.roi import RoiSelector
-from src.utils.file_util import make_run_scan_directory
+from src.filesystem import make_run_scan_directory
 from src.config.config import load_config
 from src.logger import setup_logger, Logger
 from src.analyzer.draw_figure import (

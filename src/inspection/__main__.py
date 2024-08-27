@@ -5,7 +5,7 @@ import click
 import h5py
 
 from src.config.config import load_config
-from src.utils.file_util import get_run_scan_directory
+from src.filesystem import get_run_scan_directory
 
 
 def list_files_in_directory(directory: str, show_size: bool, show_modified: bool, show_hdf5_keys: bool) -> None:

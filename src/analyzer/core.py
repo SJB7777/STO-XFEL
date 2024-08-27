@@ -8,7 +8,7 @@ from scipy.ndimage import rotate
 from scipy.optimize import curve_fit
 from roi_rectangle import RoiRectangle
 
-from src.utils.math_util import gaussian, mul_delta_q
+from src.mathematics import gaussian, mul_delta_q
 
 
 class DataAnalyzer:

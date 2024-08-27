@@ -1,15 +1,15 @@
 import os
 
 import numpy as np
+import numpy.typing as npt
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
 from src.preprocessor.generic_preprocessors import get_linear_regression_confidence_bounds, ransac_regression
 from src.processor.loader import HDF5FileLoader
-from src.utils.file_util import get_run_scan_directory
+from src.filesystem import get_run_scan_directory
 
 from src.config.config import load_config
-import numpy.typing as npt
 
 
 def find_outliers_gui(y: npt.NDArray, x: npt.NDArray) -> float:

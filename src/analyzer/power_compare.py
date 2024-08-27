@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from src.config.config import load_config, ExpConfig
-from src.utils.file_util import get_run_scan_directory
+from src.filesystem import get_run_scan_directory
 
 
 def power_compare(power_run: dict[int, int]) -> pd.DataFrame:
@@ -20,7 +20,7 @@ def power_compare(power_run: dict[int, int]) -> pd.DataFrame:
         com_y = data_df["poff_com_y"].values - data_df["pon_com_y"].values
         com_x = data_df["poff_com_x"].values - data_df["pon_com_x"].values
         intensity = data_df["poff_intensity"].values - data_df["pon_intensity"].values
-        
+
         temp_df = pd.DataFrame({
             "power": power,
             "delay": delays,
@@ -28,7 +28,7 @@ def power_compare(power_run: dict[int, int]) -> pd.DataFrame:
             "com_x": com_x,
             "intensity": intensity
         })
-        
+
         power_df = pd.concat([power_df, temp_df], ignore_index=True)
 
     return power_df
@@ -49,7 +49,7 @@ def plot_power_compare(power_df: pd.DataFrame):
         axs[1].text(group["delay"].iloc[-1] + 1, group["com_x"].iloc[-1], f'{power}%', va='center', ha='left')
         axs[2].text(group["delay"].iloc[-1] + 1, group["intensity"].iloc[-1], f'{power}%', va='center', ha='left')
 
-    fig.suptitle(f"Different Powers in {list(power_run)}", fontsize=14)
+    fig.suptitle(f"Different Powers", fontsize=14)
 
     axs[0].set_title('COM x over Delays for Different Powers', fontsize=12)
     axs[1].set_title('COM y over Delays for Different Powers', fontsize=12)

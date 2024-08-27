@@ -5,11 +5,11 @@ path:
   # load_dir: Y:\240608_FXS\raw_data\h5\type=raw
   # analysis_dir: Y:\240608_FXS\analysis_data
 
-  load_dir: D:/dev/xfel_sample_data
-  analysis_dir: D:/dev/xfel_sample_data/analysis_data
-
-  # load_dir: F:\XFEL
+  # load_dir: D:/dev/xfel_sample_data
   # analysis_dir: D:/dev/xfel_sample_data/analysis_data
+
+  load_dir: F:\XFEL
+  analysis_dir: D:/dev/xfel_sample_data/analysis_data
 
   output_dir: output_data
   mat_dir: mat_files

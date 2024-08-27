@@ -6,7 +6,7 @@ import numpy as np
 from scipy.io import savemat
 
 from src.config.config import load_config
-from src.utils.file_util import make_run_scan_directory
+from src.filesystem import make_run_scan_directory
 
 
 def get_file_base_name(run_n: int, scan_n: int) -> str:

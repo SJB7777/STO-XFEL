@@ -1,4 +1,4 @@
-from functools import partial, reduce
+from functools import partial
 from collections.abc import Callable
 
 import numpy as np
@@ -151,20 +151,3 @@ def create_linear_model_outlier_remover(sigma) -> ImagesQbpmProcessor:
     """
     remove_outlier: ImagesQbpmProcessor = partial(filter_images_qbpm_by_linear_model, sigma=sigma)
     return remove_outlier
-
-
-def compose(*funcs: Callable):
-    """Combines multiple functions from right to left.
-    This means the rightmost function is executed first,
-    and its result is passed as input to the next function.
-    In this way, creates a single function from multiple functions
-
-    compose(h, g, f)(x) is equivalent to h(g(f(x)))
-    """
-    return reduce(lambda f, g: lambda x: f(g(x)), funcs)
-
-
-if __name__ == '__main__':
-
-    func = compose(lambda x: x + '1', lambda x: x + '2', lambda x:x + '3')
-    print(func('0'))

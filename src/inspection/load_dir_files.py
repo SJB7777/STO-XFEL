@@ -26,7 +26,7 @@ def get_file_status(root: str) -> dict:
     return status
 
 
-def h5_tree(val: Any, pre: None = '') -> None:
+def h5_tree(val, pre: None = '') -> None:
     """
     with h5py.File(file) as hf:
         print(hf)
@@ -63,18 +63,19 @@ def h5_tree(val: Any, pre: None = '') -> None:
 
 
 def load_matdata(h5file: str) -> pd.DataFrame:
+    """Return Dataframe that contains metadata"""
     return pd.read_hdf(h5file, 'metadata')
 
 
 if __name__ == "__main__":
 
-    from src.utils.file_util import get_run_scan_directory
+    from src.filesystem import get_run_scan_directory
     from src.config.config import load_config
 
     config = load_config()
-    load_dir = config.path.load_dir
+    load_dir: str = config.path.load_dir
 
-    file = get_run_scan_directory(load_dir, 152, 1, 81)
+    file = get_run_scan_directory(load_dir, 1, 1, 110)
 
     with h5py.File(file) as hf:
         print(hf)

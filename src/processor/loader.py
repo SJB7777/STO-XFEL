@@ -53,7 +53,7 @@ class HDF5FileLoader(RawDataLoader):
         Parameters:
         - file (str): Path to the HDF5 file.
         """
-        if not os.path.isfile(file):
+        if not os.path.exists(file):
             raise FileNotFoundError(f"No such file: {file}")
 
         self.file: str = file
@@ -194,7 +194,7 @@ def get_hdf5_images(file: str, config: ExpConfig) -> npt.NDArray:
 
 
 if __name__ == "__main__":
-    from src.utils.file_util import get_run_scan_directory
+    from src.filesystem import get_run_scan_directory
     import time
 
     config: ExpConfig = load_config()

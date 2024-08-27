@@ -5,14 +5,14 @@ import logging
 
 from src.processor.loader import HDF5FileLoader
 from src.config.config import load_config, ExpConfig
-from src.utils.file_util import get_run_scan_directory
+from src.filesystem import get_run_scan_directory
 
 
 def main() -> None:
     """Profile program with cProfile module and visualize with tuna."""
     config: ExpConfig = load_config()
     load_dir: str = config.path.load_dir
-    file: str = get_run_scan_directory(load_dir, 43, 1, 1)
+    file: str = get_run_scan_directory(load_dir, 150, 1, 10)
 
     logging_file: str = 'logs/profiling/profiling.log'
     # logging Setting
