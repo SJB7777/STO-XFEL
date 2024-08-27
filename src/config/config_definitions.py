@@ -68,11 +68,10 @@ class ExpPaths(BaseModel):
     """
     load_dir: str = ""
     analysis_dir: str = ""
-    param_dir: str = "DataParameters"
-    image_dir: str = "Images"
-    mat_dir: str = "MatFiles"
-    npz_dir: str = "NpzFiles"
-    tif_dir: str = "TifFiles"
+
+    mat_dir: str = "mat_files"
+    processed_dir: str = "processed_data"
+    output_dir: str = "output_data"
 
     @model_validator(mode='before')
     @classmethod
@@ -80,11 +79,9 @@ class ExpPaths(BaseModel):
         """join paths"""
         analysis_dir = values.get('analysis_dir')
         if analysis_dir is not None:
-            values['param_dir'] = os.path.join(analysis_dir, values['param_dir'])
-            values['image_dir'] = os.path.join(analysis_dir, values['image_dir'])
             values['mat_dir'] = os.path.join(analysis_dir, values['mat_dir'])
-            values['npz_dir'] = os.path.join(analysis_dir, values['npz_dir'])
-            values['tif_dir'] = os.path.join(analysis_dir, values['tif_dir'])
+            values['processed_dir'] = os.path.join(analysis_dir, values['processed_dir'])
+            values['output_dir'] = os.path.join(analysis_dir, values['output_dir'])
         return values
 
 
@@ -108,11 +105,9 @@ if __name__ == "__main__":
         'path': {
             'load_dir': 'your/path',
             'anaylsis_dir': 'your/path',
-            'image_dir': 'Image',
+            'output_dir': 'Image',
             'mat_dir': 'mat_files',
-            'npz_dir': 'npz_files',
-            'param_dir': 'DataParameter',
-            'tif_dir': 'tif_files'
+            'processed_dir': 'npz_files',
         },
         'param': {
             'xray': 'HX',

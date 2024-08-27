@@ -19,7 +19,7 @@ if __name__ == "__main__":
     from src.config.config import load_config
     from src.processor.saver import MatSaverStrategy, NpzSaverStrategy
     config = load_config()
-    npz_file = os.path.join(config.path.npz_dir, "run=0169_scan=0001.npz")
+    npz_file = os.path.join(config.path.processed_dir, "run=0169_scan=0001.npz")
 
     poff = NpzLoader(npz_file).data['poff']
     pon = NpzLoader(npz_file).data['pon']

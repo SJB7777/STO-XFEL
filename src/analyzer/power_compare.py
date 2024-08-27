@@ -12,9 +12,9 @@ def power_compare(power_run: dict[int, int]) -> pd.DataFrame:
 
     power_df = pd.DataFrame(columns=["power", "delay", "com_y", "com_x", "intensity"])
 
-    image_dir: str = config.path.image_dir
+    output_dir: str = config.path.output_dir
     for power, run_num in power_run.items():
-        data_file = os.path.join(get_run_scan_directory(image_dir, run_num, 1), "roi_small", "data.csv")
+        data_file = os.path.join(get_run_scan_directory(output_dir, run_num, 1), "roi_small", "data.csv")
         data_df = pd.read_csv(data_file, index_col=0)
         delays = data_df.index.values
         com_y = data_df["poff_com_y"].values - data_df["pon_com_y"].values

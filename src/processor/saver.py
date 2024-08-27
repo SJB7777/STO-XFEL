@@ -52,9 +52,9 @@ class NpzSaverStrategy(SaverStrategy):
     def save(self, file_base_name: str, data_dict: dict[str, npt.NDArray], comment: str = ""):
         comment = "_" + comment if comment else ""
         config = load_config()
-        npz_dir = config.path.npz_dir
-        os.makedirs(npz_dir, exist_ok=True)
-        npz_file = os.path.join(npz_dir, file_base_name + comment + ".npz")
+        processed_dir = config.path.processed_dir
+        os.makedirs(processed_dir, exist_ok=True)
+        npz_file = os.path.join(processed_dir, file_base_name + comment + ".npz")
         np.savez(npz_file, **data_dict)
         self._file_name = npz_file
 
