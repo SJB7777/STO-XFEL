@@ -22,7 +22,7 @@ class StorageHandler:
                     dirs[run_id][scan_id].add(p_id)
 
         return dirs
-    
+
     def __contains__(self, item: tuple[int, int, int]) -> bool:
         run_id, scan_id, p_id = item
         if run_id not in self.dirs:
