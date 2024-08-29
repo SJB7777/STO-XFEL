@@ -120,7 +120,7 @@ def div_images_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
 
 def subtract_dark(images: npt.NDArray) -> npt.NDArray:
     config = load_config()
-    dark_file = os.path.join(config.path.analysis_dir, "DARK/dark.npy")
+    dark_file = os.path.join(config.path.analysis_dir, "dark_images/dark.npy")
 
     if not os.path.exists(dark_file):
         raise FileNotFoundError(f"No such file or directory: {dark_file}")
