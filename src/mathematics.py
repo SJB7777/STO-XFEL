@@ -8,7 +8,7 @@ from src.config.config import load_config
 
 
 FWHM_COEFFICIENT: Final[float] = 2.35482  # FWHM_COEFFICIENT = 2 * np.sqrt(2 * np.log(2))
-
+WAVELENGTH_COEFFICIENT: Final[float] = 12.398419843320025
 
 def reverse_axis(array: npt.NDArray):
     return np.transpose(array, axes=range(array.ndim)[::-1])
@@ -84,18 +84,24 @@ def integrate_fwhm_2d(
     return result
 
 
+def get_wavelength(beam_energy: float) -> float:
+    return WAVELENGTH_COEFFICIENT / beam_energy
+
+
 def pixel_to_del_q(pixels: npt.NDArray) -> npt.NDArray:
 
     config = load_config()
     del_pixels = pixels - pixels[0]
     del_two_theta = np.arctan2(config.param.dps, config.param.sdd * del_pixels)
-    return 4 * np.pi / config.param.wavelength * np.sin(del_two_theta / 2)
+    wavelength = get_wavelength(config.param.wavelength)
+    return 4 * np.pi / wavelength * np.sin(del_two_theta / 2)
 
 
 def mul_delta_q(pixels: npt.NDArray) -> npt.NDArray:
     config = load_config()
     two_theta = np.arctan2(config.param.dps, config.param.sdd)
-    delta_q = (4 * np.pi / config.param.wavelength) * (two_theta)
+    wavelength = get_wavelength(config.param.wavelength)
+    delta_q = (4 * np.pi / wavelength) * two_theta
     return pixels * delta_q
 
 
@@ -108,59 +114,9 @@ def pixel_to_q(pixels: npt.NDArray) -> npt.NDArray:
       = pixels * (4 * pi / wavelength) * arctan(dps / sdd) / 2
     """
     config = load_config()
-
+    wavelength = get_wavelength(config.param.wavelength)
     two_theta = np.arctan2(config.param.dps, config.param.sdd * pixels)
-    return 4 * np.pi / config.param.wavelength * np.sin(two_theta / 2)
-
-
-def get_min_max(arr: npt.NDArray) -> tuple[float, float]:
-
-    arr = arr.flatten()
-    minimum = maximum = arr[0]
-    n = len(arr)
-    # If the array length is odd, initialize the variables with the first element
-    # Otherwise, compare the first two elements and assign them accordingly
-    if n % 2 == 0:
-        minimum = min(arr[0], arr[1])
-        maximum = max(arr[0], arr[1])
-        i = 2
-    else:
-        i = 1
-
-    # Iterate over pairs of elements, updating the minimum and maximum values
-    while i < n - 1:
-        if arr[i] < arr[i + 1]:
-            minimum = min(minimum, arr[i])
-            maximum = max(maximum, arr[i + 1])
-        else:
-            minimum = min(minimum, arr[i + 1])
-            maximum = max(maximum, arr[i])
-        i += 2
-
-    return minimum, maximum
-
-
-def chunck(arr: list, size: int) -> list:
-    """divide the list into chunck"""
-    return [arr[i:i + size] for i in range(0, len(arr), size)]
-
-
-def get_most_common_element(arr: npt.NDArray) -> int:
-    """
-    Get the most common element in a NumPy array along with its count.
-
-    Parameters:
-    arr (np.ndarray): Input NumPy array.
-
-    Returns:
-    element (int): The most common element in the array.
-    """
-
-    max_val = int(np.max(arr))
-    counts, _ = np.histogram(arr, bins=max_val + 1, range=(0, max_val + 1))
-    most_common_element = np.argmax(counts)
-
-    return most_common_element
+    return 4 * np.pi / wavelength * np.sin(two_theta / 2)
 
 
 def non_outlier_indices_percentile(

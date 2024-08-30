@@ -109,7 +109,9 @@ def div_images_by_qbpm(images: npt.NDArray, qbpm: npt.NDArray) -> npt.NDArray:
     Divide images by qbpm.
 
     Parameters:
-    images (NDArray): Array of images. Shape: (N, H, W), where N is the number of images, and H and W are the height and width of each image.
+    images (NDArray): Array of images. 
+        shape=(N, H, W), where N is the number of images,
+        and H and W are the height and width of each image.
     qbpm (NDArray): Array of QBPM (Quadrature Balanced Photodetector Measurements) values. Shape: (N,)
 
     Returns:

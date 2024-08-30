@@ -8,9 +8,7 @@ Classes:
     - `ExperimentConfiguration`: A dataclass representing the complete configuration for an experiment,
     combining configuration parameters and paths.
 """
-import os
-
-from pydantic import BaseModel, model_validator, Field
+from pydantic import BaseModel, Field
 
 from src.config.enums import Hutch, Detector, Xray, Hertz
 
@@ -46,16 +44,6 @@ class ExpParams(BaseModel):
     dps: float = 7.5e-5
     beam_energy: float = 9.7
     sigma_factor: float = 1
-    wavelength: float = None
-
-    @model_validator(mode='before')
-    @classmethod
-    def calculate_wavelength(cls, values):
-        """Calculate Wavelength"""
-        beam_energy = values.get('beam_energy')
-        if beam_energy is not None:
-            values['wavelength'] = 12.398419843320025 / beam_energy
-        return values
 
 
 class ExpPaths(BaseModel):
@@ -66,23 +54,14 @@ class ExpPaths(BaseModel):
         load_dir (str): The load directory path.
         anaylsis_dir (str): The save directory path.
     """
+    log_dir: str = ""
+    
     load_dir: str = ""
     analysis_dir: str = ""
 
     mat_dir: str = "mat_files"
     processed_dir: str = "processed_data"
     output_dir: str = "output_data"
-
-    @model_validator(mode='before')
-    @classmethod
-    def join_paths(cls, values):
-        """join paths"""
-        analysis_dir = values.get('analysis_dir')
-        if analysis_dir is not None:
-            values['mat_dir'] = os.path.join(analysis_dir, values['mat_dir'])
-            values['processed_dir'] = os.path.join(analysis_dir, values['processed_dir'])
-            values['output_dir'] = os.path.join(analysis_dir, values['output_dir'])
-        return values
 
 
 class ExpConfig(BaseModel):
@@ -103,8 +82,8 @@ if __name__ == "__main__":
     config_dict = {
         "runs": ["1", "2", "3"],
         'path': {
-            'load_dir': 'your/path',
-            'anaylsis_dir': 'your/path',
+            'load_dir': 'your/path/a',
+            'analysis_dir': 'your/path/b',
             'output_dir': 'Image',
             'mat_dir': 'mat_files',
             'processed_dir': 'npz_files',
@@ -128,8 +107,7 @@ if __name__ == "__main__":
     print(config.runs)
 
     print(config.path.load_dir)
-    print(config.path.analysis_dir)
-    print(config.path.param_dir)
+    print(config.path)
+    print(config.path.mat_dir)
 
-    params = ExpParams(beam_energy=9.7)
-    print(params.wavelength)
+    print(config.param.pump_setting)

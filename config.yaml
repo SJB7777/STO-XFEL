@@ -1,26 +1,28 @@
 runs:
-  - 142
+  - 193
 
 path:
-  load_dir: Y:\240608_FXS\raw_data\h5\type=raw
-  # load_dir: /mnt/y/240608_FXS/raw_data/h5/type=raw
-  analysis_dir: Y:\240608_FXS\analysis_data
-  # analysis_dir: /mnt/y/240608_FXS/analysis_data
+  log_dir: ./logs
 
-  output_dir: {{path.analysis_data}}\output_data
-  mat_dir: {{path.analysis_data}}\mat_files2
-  processed_dir: {{path.analysis_data}}\processed_data
+  # load_dir: Y:\240608_FXS\raw_data\h5\type=raw
+  # analysis_dir: Y:\240608_FXS\analysis_data
+
+  load_dir: /mnt/y/240608_FXS/raw_data/h5/type=raw
+  analysis_dir: /mnt/y/240608_FXS/analysis_data
+
+  output_dir: ${path.analysis_dir}\output_data
+  mat_dir: ${path.analysis_dir}\mat_files2
+  processed_dir: ${path.analysis_dir}\processed_data
 
 param:
+  pump_setting: 30HZ
   hutch: eh1
   detector: jungfrau2
   xray: HX
-  pump_setting: 15HZ
-  x1: 0
-  x2: 1
-  y1: 2z
-  y2: 3
+  x1: 2
+  x2: 3
+  y1: 0
+  y2: 1
   sdd: 1.3
   dps: 7.5e-05
   beam_energy: 9.7
-  wave_length: {{12.398419843320025 / param.beam_energy}}
