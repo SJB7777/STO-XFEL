@@ -19,3 +19,4 @@ ipykernel
 tuna
 lmfit
 click
+jupyter
