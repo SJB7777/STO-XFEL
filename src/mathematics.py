@@ -93,16 +93,8 @@ def pixel_to_del_q(pixels: npt.NDArray) -> npt.NDArray:
     config = load_config()
     del_pixels = pixels - pixels[0]
     del_two_theta = np.arctan2(config.param.dps, config.param.sdd * del_pixels)
-    wavelength = get_wavelength(config.param.wavelength)
+    wavelength = get_wavelength(config.param.beam_energy)
     return 4 * np.pi / wavelength * np.sin(del_two_theta / 2)
-
-
-def mul_delta_q(pixels: npt.NDArray) -> npt.NDArray:
-    config = load_config()
-    two_theta = np.arctan2(config.param.dps, config.param.sdd)
-    wavelength = get_wavelength(config.param.wavelength)
-    delta_q = (4 * np.pi / wavelength) * two_theta
-    return pixels * delta_q
 
 
 def pixel_to_q(pixels: npt.NDArray) -> npt.NDArray:
@@ -114,9 +106,18 @@ def pixel_to_q(pixels: npt.NDArray) -> npt.NDArray:
       = pixels * (4 * pi / wavelength) * arctan(dps / sdd) / 2
     """
     config = load_config()
-    wavelength = get_wavelength(config.param.wavelength)
+    wavelength = get_wavelength(config.param.beam_energy)
     two_theta = np.arctan2(config.param.dps, config.param.sdd * pixels)
     return 4 * np.pi / wavelength * np.sin(two_theta / 2)
+
+
+def mul_delta_q(pixels: npt.NDArray) -> npt.NDArray:
+    config = load_config()
+    two_theta = np.arctan2(config.param.dps, config.param.sdd)
+    wavelength = get_wavelength(config.param.beam_energy)
+    delta_q = (4 * np.pi / wavelength) * two_theta
+    del_pixels = pixels - pixels[0]
+    return del_pixels * delta_q
 
 
 def non_outlier_indices_percentile(
@@ -149,3 +150,10 @@ def non_outlier_indices_percentile(
     conditions = np.logical_and(arr > lower_bound, arr < upper_bound)
 
     return conditions
+
+
+if __name__ == '__main__':
+    arr = np.array([1, 2, 3])
+    print(mul_delta_q(arr))
+    print(pixel_to_q(arr))
+    print(pixel_to_del_q(arr))
